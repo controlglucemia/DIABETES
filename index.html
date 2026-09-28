@@ -40,7 +40,7 @@
     .error { color:#b52d43; font-size:.875rem; margin:0 0 14px; } .privacy { display:flex; gap:7px; align-items:center; justify-content:center; margin-top:13px; font-size:.75rem; color:var(--muted); } .privacy .icon { width:14px; height:14px; }
     .badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:650; white-space:nowrap; } .badge.low { background:var(--low-soft); color:var(--low); } .badge.normal { background:var(--green-soft); color:var(--green); } .badge.high { background:var(--high-soft); color:var(--high); } .badge.neutral { background:#e6edf7; color:#526581; }
     .filters { display:flex; gap:4px; padding:4px; background:#f2f5f9; border-radius:10px; flex-shrink:0; } .filters button { border:0; border-radius:7px; background:transparent; padding:7px 9px; min-height:36px; font-size:.8rem; color:var(--muted); } .filters button[aria-pressed="true"] { background:#fff; color:var(--blue); box-shadow:0 1px 5px #192b4510; font-weight:650; }
-    .chart-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:3px; font-size:.75rem; color:var(--muted); } .chart-scroll { overflow-x:auto; } .chart { width:100%; min-width:260px; height:235px; overflow:visible; } .chart text { font-family:inherit; font-size:12px; fill:var(--muted); } .chart .hit { cursor:pointer; outline:none; } .chart .hit:hover .dot,.chart .hit:focus .dot { stroke-width:4; stroke:#132c59; }
+    .chart-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:3px; font-size:.75rem; color:var(--muted); } .chart-scroll { overflow-x:hidden; } .chart { width:100%; min-width:260px; height:235px; overflow:visible; } .chart text { font-family:inherit; font-size:12px; fill:var(--muted); } .chart .hit { cursor:pointer; outline:none; } .chart .hit:hover .dot,.chart .hit:focus .dot { stroke-width:4; stroke:#132c59; }
     .chart-detail { min-height:63px; padding:11px 13px; border-radius:12px; background:#f5f8fc; font-size:.875rem; color:var(--muted); overflow-wrap:anywhere; } .chart-detail strong { color:var(--text); } .chart-detail:empty::before { content:"Toca un punto para ver la medición."; }
     .empty { padding:25px 12px; text-align:center; color:var(--muted); } .empty-icon { margin:0 auto 12px; background:var(--blue-soft); color:var(--blue); width:49px; height:49px; border-radius:16px; display:grid; place-items:center; } .empty h3 { color:var(--text); margin-bottom:6px; } .empty p { font-size:.875rem; max-width:320px; margin:auto; }
     .range-bar { height:13px; background:#edf1f6; border-radius:10px; display:flex; overflow:hidden; margin:6px 0 20px; } .range-bar span { transition:width .4s ease; } .range-bar .low { background:#eeb54c; } .range-bar .normal { background:#2fa780; } .range-bar .high { background:#de7788; }
@@ -163,15 +163,6 @@
     #go-meal { margin-bottom:16px; }
     #calendar-timeline { margin-top:16px; }
     .clock-date { font-size:13px; }
-    /* Gráfico responsive: los períodos largos usan un lienzo horizontal más ancho
-       para que las mediciones no queden amontonadas. */
-    .chart-scroll { -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
-    .chart-card .filters { flex-wrap:nowrap; }
-    @media (max-width:760px) {
-      .chart-card .card-head { display:block; }
-      .chart-card .filters { width:100%; margin-top:14px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; }
-      .chart-card .filters button { padding:8px 4px; white-space:nowrap; font-size:.74rem; }
-    }
   </style>
 </head>
 <body data-page="inicio">
@@ -607,10 +598,10 @@
     }
     function renderChart() {
       const now=Date.now();
-      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h"});
+      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h",compactLongPeriod:state.period===7||state.period===30});
     }
     // Un único renderizador para el gráfico general y el del día seleccionado.
-    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false}) {
+    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false}) {
       const q=id=>document.getElementById(prefix+id),{events,unresolved}=collectChartEvents(state.records,bounds);
       const visibleEvents=events.filter(event=>event.type==="meal"?showMeals:showMedications);
       q("show-meals").setAttribute("aria-checked",String(showMeals));q("meals-switch-label").textContent=showMeals?"ON":"OFF";
@@ -621,23 +612,39 @@
       const visible=records.length>0||visibleEvents.length>0;
       q("chart-empty").hidden=visible;q("chart-content").hidden=!visible;q("chart-detail").replaceChildren();
       const svg=q("chart");svg.replaceChildren();if(!visible)return;
-      // En 7 y 30 días damos espacio físico real al eje temporal. En pantallas
-      // estrechas el contenedor hace scroll horizontal en vez de comprimir puntos.
-      const spanDays=(bounds.end-bounds.start)/86400000;
-      const minTimelineWidth=spanDays>=29?1320:spanDays>=6?760:260;
-      const availableWidth=svg.parentElement?.clientWidth||svg.clientWidth||600;
-      const W=Math.max(minTimelineWidth,Math.min(1100,availableWidth)),H=270,left=42,right=14,top=42,bottom=60,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
-      svg.style.width=W+"px";
-      svg.style.maxWidth="none";
+      const W=Math.max(260,Math.min(1100,svg.clientWidth||600)),H=270,left=42,right=14,top=42,bottom=60,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
       svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
-      // La escala incluye TODO el período y nunca depende del interruptor de medicamentos.
-      const timeMin=bounds.start,timeMax=Math.max(bounds.end,bounds.start+1),x=timestamp=>left+(timestamp-timeMin)/(timeMax-timeMin)*plotW;
+      // Hoy y 24 h conservan una escala temporal real. En 7/30 días usamos una escala
+      // cronológica compacta basada en las mediciones para evitar grandes zonas vacías.
+      const timeMin=bounds.start,timeMax=Math.max(bounds.end,bounds.start+1);
+      const anchorTimes=records.map(record=>Date.parse(record.createdAt)).sort((a,b)=>a-b);
+      const compactX=timestamp=>{
+        if(anchorTimes.length<2)return left+plotW/2;
+        if(timestamp<=anchorTimes[0])return left;
+        if(timestamp>=anchorTimes.at(-1))return W-right;
+        let hi=anchorTimes.findIndex(value=>value>=timestamp),lo=Math.max(0,hi-1);
+        if(anchorTimes[hi]===timestamp){
+          const first=anchorTimes.indexOf(anchorTimes[hi]),last=anchorTimes.lastIndexOf(anchorTimes[hi]);
+          return left+((first+last)/2)/(anchorTimes.length-1)*plotW;
+        }
+        const span=Math.max(1,anchorTimes[hi]-anchorTimes[lo]),fraction=(timestamp-anchorTimes[lo])/span;
+        return left+(lo+fraction)/(anchorTimes.length-1)*plotW;
+      };
+      const x=timestamp=>compactLongPeriod?compactX(timestamp):left+(timestamp-timeMin)/(timeMax-timeMin)*plotW;
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5,"aria-hidden":"true"}));
       for(let i=0;i<=4;i++){const value=yMax*i/4,lineY=y(value);svg.append(svgElement("line",{x1:left,y1:lineY,x2:W-right,y2:lineY,stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-7,y:lineY+4,"text-anchor":"end"},Math.round(value)));}
       const tickCount=W<450?3:5;
       for(let i=0;i<tickCount;i++) {
-        const rawTimestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1),timestamp=i>0&&i<tickCount-1?Math.round(rawTimestamp/60000)*60000:rawTimestamp,position=x(timestamp),anchor=i===0?"start":i===tickCount-1?"end":"middle";
-        svg.append(svgElement("text",{x:position,y:H-32,"text-anchor":anchor},localTime(timestamp)));
+        let timestamp,position;
+        if(compactLongPeriod&&anchorTimes.length){
+          const index=Math.round((anchorTimes.length-1)*i/(tickCount-1));
+          timestamp=anchorTimes[index]; position=left+i/(tickCount-1)*plotW;
+        } else {
+          const rawTimestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1);
+          timestamp=i>0&&i<tickCount-1?Math.round(rawTimestamp/60000)*60000:rawTimestamp; position=x(timestamp);
+        }
+        const anchor=i===0?"start":i===tickCount-1?"end":"middle";
+        if(!compactLongPeriod)svg.append(svgElement("text",{x:position,y:H-32,"text-anchor":anchor},localTime(timestamp)));
         svg.append(svgElement("text",{x:position,y:H-14,"text-anchor":anchor},new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timestamp)));
       }
       if(showDayBoundary) {
