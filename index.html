@@ -677,7 +677,13 @@
       if(points.length>1)svg.append(svgElement("polyline",{points:points.map(point=>`${point.x},${point.y}`).join(" "),fill:"none",stroke:"#2563eb","stroke-width":2.5,"stroke-linejoin":"round","stroke-linecap":"round","pointer-events":"none"}));
       points.forEach(point=>{
         const record=point.record,category=classify(record.glucose),description=`${record.glucose} mg/dL, ${friendlyDate(record.createdAt)}, ${record.food||"Sin comida registrada"}, ${record.moment||record.measurementContext||"Sin contexto registrado"}`,group=svgElement("g",{class:"hit",tabindex:"0",role:"button","aria-label":description,"aria-controls":prefix+"chart-detail"});
-        group.append(svgElement("title",{},description),svgElement("circle",{cx:point.x,cy:point.y,r:14,fill:"transparent"}),svgElement("circle",{class:"dot",cx:point.x,cy:point.y,r:5,fill:category.color,stroke:"#fff","stroke-width":2,"pointer-events":"none"}));
+        const labelY=Math.max(16,point.y-12);
+        group.append(
+          svgElement("title",{},description),
+          svgElement("circle",{cx:point.x,cy:point.y,r:14,fill:"transparent"}),
+          svgElement("text",{x:point.x,y:labelY,"text-anchor":"middle","font-size":"12","font-weight":"700",fill:category.color,stroke:"#fff","stroke-width":"3","paint-order":"stroke","stroke-linejoin":"round","pointer-events":"none","aria-hidden":"true"},String(record.glucose)),
+          svgElement("circle",{class:"dot",cx:point.x,cy:point.y,r:5,fill:category.color,stroke:"#fff","stroke-width":2,"pointer-events":"none"})
+        );
         const show=()=>showChartDetail(record,prefix+"chart-detail");group.addEventListener("pointerenter",show);group.addEventListener("click",show);group.addEventListener("focus",show);group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});svg.append(group);
       });
     }
