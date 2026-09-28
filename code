@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7fb">
+  <meta name="description" content="Registro personal de glucemia, historial y estadísticas en tu navegador.">
+  <title>Control de Glucemia</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232563eb'/%3E%3Cpath d='M16 6C13 11 9 15 9 19a7 7 0 0014 0c0-4-4-8-7-13z' fill='white'/%3E%3C/svg%3E">
+  <style>
+    :root { color-scheme:light; --bg:#f4f7fb; --surface:#fff; --text:#182940; --muted:#62738a; --line:#e5ebf2; --blue:#2563eb; --blue-dark:#1d4ed8; --blue-soft:#edf3ff; --green:#087d61; --green-soft:#e7f6ef; --low:#a96609; --low-soft:#fff4dc; --high:#bf4357; --high-soft:#fff0f2; --radius:24px; --shadow:0 8px 28px rgba(35,56,84,.045); }
+    * { box-sizing:border-box; } [hidden] { display:none!important; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:16px; line-height:1.5; -webkit-tap-highlight-color:transparent; }
+    button,input,select,textarea { font:inherit; touch-action:manipulation; } button { cursor:pointer; transition:background .18s,transform .18s,box-shadow .18s; } button:active { transform:translateY(1px); } button:disabled { cursor:not-allowed; opacity:.5; }
+    :focus-visible { outline:3px solid #78a6ff; outline-offset:4px; } h1,h2,h3,p { margin:0; }
+    h1 { font-size:clamp(1.6rem,4vw,2rem); letter-spacing:-.055em; line-height:1.2; } h2 { font-size:1.15rem; letter-spacing:-.025em; } h3 { font-size:1rem; } svg { display:block; }
+    .icon { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; }
+    .muted { color:var(--muted); } .small { font-size:.875rem; } .eyebrow { font-size:.75rem; font-weight:700; letter-spacing:.11em; text-transform:uppercase; }
+    .sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; }
+    .app { max-width:1120px; margin:0 auto; padding:40px 28px 36px; } .header { display:flex; align-items:center; gap:15px; margin-bottom:27px; }
+    .brand { width:51px; height:55px; display:grid; place-items:center; background:var(--blue); color:#fff; border-radius:17px; box-shadow:0 6px 16px #2563eb26; flex-shrink:0; } .brand .icon { width:29px; height:29px; }
+    .header p { margin-top:6px; color:var(--muted); font-size:.95rem; } .local-label { margin-left:auto; display:flex; align-items:center; gap:7px; color:var(--muted); font-size:.8rem; } .local-label .icon { width:16px; height:16px; }
+    .nav { display:flex; gap:6px; padding:5px; margin-bottom:27px; background:#e9eef5; border-radius:16px; width:fit-content; }
+    .nav button { border:0; background:transparent; color:#56677e; border-radius:12px; display:flex; gap:9px; align-items:center; justify-content:center; padding:11px 20px; font-size:.875rem; font-weight:600; min-height:44px; }
+    .nav button[aria-current="page"] { background:#fff; color:var(--blue); box-shadow:0 2px 7px #18304b0a; } .nav .icon { width:19px; height:19px; }
+    .workspace { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+    .card { padding:26px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); } .full { grid-column:1/-1; }
+    .card-head { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:21px; } .heading-icon { display:flex; align-items:center; gap:10px; } .heading-icon>.icon { color:var(--blue); width:21px; height:21px; }
+    .section-label { margin-bottom:14px; color:var(--muted); } .overview { display:grid; grid-template-columns:1fr 1.2fr; gap:22px; }
+    .latest { background:linear-gradient(115deg,#edf4ff,#f6faff); border-color:#dae6fb; } .latest .card-head { margin-bottom:12px; }
+    .latest-value { font-size:clamp(2.8rem,7vw,3.8rem); font-weight:700; line-height:1.1; letter-spacing:-.065em; } .latest-value span { font-size:1rem; color:var(--muted); letter-spacing:0; font-weight:500; margin-left:7px; } .latest-date { margin-top:11px; color:var(--muted); font-size:.875rem; }
+    .stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; } .stat { border:1px solid var(--line); border-radius:20px; padding:17px 20px; background:#fff; } .stat dt { color:var(--muted); font-size:.875rem; } .stat dd { margin:4px 0 0; font-size:1.7rem; font-weight:700; letter-spacing:-.04em; } .stat dd small { font-size:.75rem; color:var(--muted); font-weight:500; letter-spacing:0; } dl { margin:0; }
+    .scope-note { margin-top:10px; color:var(--muted); font-size:.8rem; text-align:right; } .register-card { grid-row:span 2; } .form-field { margin-bottom:17px; }
+    label { display:block; font-size:.875rem; font-weight:600; margin-bottom:7px; } label .optional { color:var(--muted); font-weight:400; }
+    input,select,textarea { width:100%; color:var(--text); background:#fafbfd; border:1px solid #dce4ee; border-radius:12px; padding:12px 14px; min-height:48px; }
+    input::placeholder,textarea::placeholder { color:#8391a4; opacity:1; } input:focus,select:focus,textarea:focus { outline:0; border-color:var(--blue); box-shadow:0 0 0 3px #2563eb18; background:#fff; } textarea { resize:vertical; min-height:84px; }
+    .glucose-wrap { background:#f4f8ff; border:1px solid #dce8fb; border-radius:18px; padding:15px 20px; text-align:center; margin-bottom:20px; } .glucose-wrap label { color:var(--muted); font-size:.8rem; font-weight:500; }
+    .glucose-wrap input { display:block; width:100%; border:0; background:transparent; padding:0; min-height:72px; text-align:center; font-size:3.5rem; font-weight:650; letter-spacing:-.055em; color:var(--blue); } .glucose-wrap input::placeholder { color:#98b4e1; } .glucose-wrap input:focus { box-shadow:none; } .glucose-wrap:focus-within { border-color:var(--blue); box-shadow:0 0 0 3px #2563eb15; } .glucose-wrap .unit { color:var(--muted); font-size:.875rem; }
+    .primary { border:0; background:var(--blue); color:#fff; border-radius:13px; padding:14px 20px; min-height:50px; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:9px; } .primary:hover { background:var(--blue-dark); box-shadow:0 5px 16px #2563eb20; } .wide { width:100%; }
+    .error { color:#b52d43; font-size:.875rem; margin:0 0 14px; } .privacy { display:flex; gap:7px; align-items:center; justify-content:center; margin-top:13px; font-size:.75rem; color:var(--muted); } .privacy .icon { width:14px; height:14px; }
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.75rem; font-weight:650; white-space:nowrap; } .badge.low { background:var(--low-soft); color:var(--low); } .badge.normal { background:var(--green-soft); color:var(--green); } .badge.high { background:var(--high-soft); color:var(--high); } .badge.neutral { background:#e6edf7; color:#526581; }
+    .filters { display:flex; gap:4px; padding:4px; background:#f2f5f9; border-radius:10px; flex-shrink:0; } .filters button { border:0; border-radius:7px; background:transparent; padding:7px 9px; min-height:36px; font-size:.8rem; color:var(--muted); } .filters button[aria-pressed="true"] { background:#fff; color:var(--blue); box-shadow:0 1px 5px #192b4510; font-weight:650; }
+    .chart-top { display:flex; justify-content:space-between; gap:12px; margin-bottom:3px; font-size:.75rem; color:var(--muted); } .chart-scroll { overflow-x:auto; } .chart { width:100%; min-width:260px; height:235px; overflow:visible; } .chart text { font-family:inherit; font-size:12px; fill:var(--muted); } .chart .hit { cursor:pointer; outline:none; } .chart .hit:hover .dot,.chart .hit:focus .dot { stroke-width:4; stroke:#132c59; }
+    .chart-detail { min-height:63px; padding:11px 13px; border-radius:12px; background:#f5f8fc; font-size:.875rem; color:var(--muted); overflow-wrap:anywhere; } .chart-detail strong { color:var(--text); } .chart-detail:empty::before { content:"Toca un punto para ver la medición."; }
+    .empty { padding:25px 12px; text-align:center; color:var(--muted); } .empty-icon { margin:0 auto 12px; background:var(--blue-soft); color:var(--blue); width:49px; height:49px; border-radius:16px; display:grid; place-items:center; } .empty h3 { color:var(--text); margin-bottom:6px; } .empty p { font-size:.875rem; max-width:320px; margin:auto; }
+    .range-bar { height:13px; background:#edf1f6; border-radius:10px; display:flex; overflow:hidden; margin:6px 0 20px; } .range-bar span { transition:width .4s ease; } .range-bar .low { background:#eeb54c; } .range-bar .normal { background:#2fa780; } .range-bar .high { background:#de7788; }
+    .range-legend { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; } .range-item strong { display:block; font-size:1.65rem; letter-spacing:-.035em; margin:3px 0; } .range-label { display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--muted); } .swatch { width:8px; height:8px; border-radius:50%; flex-shrink:0; } .range-item small { color:var(--muted); font-size:.75rem; } .range-note { margin-top:18px; border-top:1px solid var(--line); padding-top:14px; color:var(--muted); font-size:.75rem; line-height:1.65; }
+    .history-list { display:grid; gap:12px; } .record { display:flex; gap:16px; justify-content:space-between; padding:19px; border:1px solid var(--line); border-radius:17px; background:#fff; } .record-main { min-width:0; } .record-top { display:flex; flex-wrap:wrap; align-items:center; gap:10px; } .record-value { font-size:1.45rem; font-weight:700; letter-spacing:-.035em; } .record-value small { font-size:.8rem; font-weight:500; letter-spacing:0; color:var(--muted); } .record-moment { font-size:.875rem; font-weight:600; margin-top:3px; } .record-food,.record-note { font-size:.875rem; color:var(--muted); margin-top:7px; overflow-wrap:anywhere; white-space:pre-wrap; } .record time { display:block; margin-top:11px; color:var(--muted); font-size:.8rem; }
+    .delete-one { width:42px; height:42px; flex-shrink:0; border:0; background:#f7f9fc; border-radius:12px; display:grid; place-items:center; color:#78859a; } .delete-one:hover { color:var(--high); background:var(--high-soft); } .delete-one .icon { width:19px; height:19px; }
+    .danger { border:1px solid #efced5; background:#fff; color:var(--high); border-radius:12px; min-height:46px; padding:10px 16px; font-size:.875rem; font-weight:600; } .danger:hover { background:var(--high-soft); } .history-footer { display:flex; justify-content:flex-end; margin-top:22px; }
+    .footer { text-align:center; color:var(--muted); font-size:.75rem; margin-top:28px; } .toast { position:fixed; z-index:30; left:50%; bottom:28px; transform:translate(-50%,20px); padding:14px 20px; background:#143e34; color:#fff; border-radius:14px; box-shadow:0 10px 30px #173d3430; opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; width:max-content; max-width:calc(100% - 32px); font-size:.875rem; text-align:center; } .toast.show { opacity:1; transform:translate(-50%,0); }
+    .storage-warning { border:1px solid #ecd49a; background:#fff8e6; color:#795819; padding:14px 18px; border-radius:14px; margin-bottom:20px; font-size:.875rem; }
+    .page-enter { animation:enter .25s ease both; } @keyframes enter { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    body[data-page="registrar"] .workspace { grid-template-columns:minmax(0,600px); justify-content:center; } body[data-page="estadisticas"] .chart-card,body[data-page="estadisticas"] .range-card { grid-column:1/-1; } body[data-page="estadisticas"] .chart { height:300px; }
+    @media (max-width:760px) {
+      .app { padding:25px 18px calc(104px + env(safe-area-inset-bottom)); } .header { gap:11px; margin-bottom:23px; } .header p { font-size:.875rem; } .brand { width:43px; height:47px; border-radius:14px; } .brand .icon { width:26px; height:26px; } .local-label { display:none; }
+      .nav { position:fixed; z-index:20; bottom:0; left:0; right:0; width:100%; margin:0; padding:9px 12px calc(9px + env(safe-area-inset-bottom)); border-radius:20px 20px 0 0; background:rgba(255,255,255,.97); border-top:1px solid var(--line); box-shadow:0 -5px 25px #142f5106; backdrop-filter:blur(12px); gap:3px; } .nav button { flex:1; flex-direction:column; padding:6px 2px; gap:4px; font-size:.75rem; min-width:0; } .nav button[aria-current="page"] { background:var(--blue-soft); box-shadow:none; } .nav .icon { width:22px; height:22px; }
+      .workspace { grid-template-columns:minmax(0,1fr); gap:18px; } .overview { grid-template-columns:1fr; gap:13px; } .card { padding:21px; border-radius:21px; } .latest { padding:23px; } .latest-value { font-size:3.4rem; } .stat { padding:14px 17px; border-radius:17px; } .stat dd { font-size:1.5rem; } .register-card { grid-row:auto; } .toast { bottom:calc(91px + env(safe-area-inset-bottom)); } .card-head { flex-wrap:wrap; gap:12px; } .chart { height:220px; } .scope-note { text-align:left; }
+    }
+    .medications-section { border-top:1px solid var(--line); padding-top:20px; margin:4px 0 22px; }
+    .medications-section>p { margin:5px 0 16px; }
+    .medication-card { padding:17px; margin-top:12px; background:#fafbfd; border:1px solid var(--line); border-radius:17px; min-width:0; }
+    .medication-card>p { margin-top:2px; }
+    .medication-choice { border:0; margin:17px 0 0; padding:0; min-width:0; }
+    .medication-choice legend { font-size:.875rem; font-weight:600; padding:0; margin-bottom:8px; }
+    .medication-toggle { display:inline-flex; gap:5px; padding:4px; background:#e9eef5; border-radius:12px; }
+    .medication-option { margin:0; position:relative; cursor:pointer; }
+    .medication-option input { position:absolute; width:1px; height:1px; min-height:0; opacity:0; padding:0; }
+    .medication-option span { display:block; min-width:64px; padding:10px 17px; text-align:center; border-radius:9px; color:var(--muted); }
+    .medication-option input:checked+span { color:var(--blue); background:#fff; box-shadow:0 2px 7px #18304b0a; }
+    .medication-option input:focus-visible+span { outline:3px solid #78a6ff; outline-offset:2px; }
+    .medication-details { border:0; padding:0; margin:17px 0 0; min-width:0; }
+    .medication-equivalent { display:block; margin:7px 0 16px; color:var(--green); font-size:.875rem; font-weight:600; }
+    .medication-time-row { display:flex; align-items:center; gap:9px; }
+    .medication-time-row input { min-width:0; flex:1; background:#fff; }
+    .now-button { flex-shrink:0; background:var(--blue-soft); color:var(--blue); border:1px solid #dce8fb; border-radius:12px; min-height:48px; padding:10px 14px; font-size:.875rem; font-weight:600; }
+    .now-button:hover { background:#dfeaff; }
+    .record-medications { margin-top:13px; padding-top:12px; border-top:1px solid var(--line); }
+    .record-medications h3 { font-size:.875rem; margin-bottom:7px; }
+    .record-medication { margin-top:8px; font-size:.875rem; overflow-wrap:anywhere; }
+    .record-medication strong { display:block; font-weight:600; }
+    .record-medication p { color:var(--muted); }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+  </style>
+</head>
+<body data-page="inicio">
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3C9 7.5 5.5 11 5.5 15a6.5 6.5 0 0 0 13 0C18.5 11 15 7.5 12 3Z"/><path d="M9 16a3 3 0 0 0 3 3"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.7 7M3 5v6h6M12 7v5l3 2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 4v16h16M8 15v-4M12 15V7M16 15V9"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+  </svg>
+  <div class="app">
+    <header class="header">
+      <div class="brand" aria-hidden="true"><svg class="icon"><use href="#i-drop"/></svg></div>
+      <div><h1>Control de Glucemia</h1><p>Registra y controla tus mediciones</p></div>
+      <span class="local-label"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Guardado en Supabase</span>
+    </header>
+    <nav class="nav" aria-label="Navegación principal">
+      <button type="button" data-nav="inicio" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Inicio</span></button>
+      <button type="button" data-nav="registrar"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span>Registrar</span></button>
+      <button type="button" data-nav="historial"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg><span>Historial</span></button>
+      <button type="button" data-nav="estadisticas"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg><span>Estadísticas</span></button>
+    </nav>
+    <div id="storage-warning" class="storage-warning" role="alert" hidden></div>
+    <div class="small muted" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px"><span id="cloud-status" role="status" aria-live="polite">Conectando con Supabase…</span><button id="cloud-refresh" type="button" class="now-button">Actualizar</button></div>
+    <noscript><p class="storage-warning">Activa JavaScript para registrar y consultar tus mediciones.</p></noscript>
+    <main class="workspace">
+      <section class="full" data-pages="inicio estadisticas" aria-label="Resumen de mediciones">
+        <div class="overview">
+          <article class="card latest"><div class="card-head"><h2>Última medición</h2><span id="latest-badge" class="badge neutral">Sin datos</span></div><div id="latest-value" class="latest-value">— <span>mg/dL</span></div><p id="latest-date" class="latest-date">Registra tu primera medición</p></article>
+          <dl class="stats">
+            <div class="stat"><dt>Promedio</dt><dd><span id="average">—</span> <small>mg/dL</small></dd></div>
+            <div class="stat"><dt>Mínimo</dt><dd><span id="minimum">—</span> <small>mg/dL</small></dd></div>
+            <div class="stat"><dt>Máximo</dt><dd><span id="maximum">—</span> <small>mg/dL</small></dd></div>
+            <div class="stat"><dt>Cantidad de mediciones</dt><dd id="count">0</dd></div>
+          </dl>
+        </div><p class="scope-note">Resumen de todas tus mediciones guardadas.</p>
+      </section>
+      <section class="card register-card" data-pages="inicio registrar" aria-labelledby="register-title">
+        <div class="card-head"><div class="heading-icon"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><h2 id="register-title">Registrar glucemia</h2></div></div>
+        <form id="measurement-form" novalidate>
+          <div class="glucose-wrap"><label for="glucose">Glucemia <span class="optional">· opcional si registras medicamentos</span></label><input id="glucose" name="glucose" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="3" placeholder="95" autocomplete="off" aria-describedby="glucose-unit form-error"><div id="glucose-unit" class="unit">mg/dL</div></div>
+          <div class="form-field"><label for="food">¿Qué comiste?</label><input id="food" name="food" type="text" maxlength="200" placeholder="Ej: arroz con pollo"></div>
+          <div class="form-field"><label for="moment">Momento de la medición</label><select id="moment" name="moment"><option>En ayunas</option><option>Antes de comer</option><option>Después de comer</option><option>Antes de dormir</option><option>Otro</option></select></div>
+          <div class="form-field"><label for="note">Nota <span class="optional">· opcional</span></label><textarea id="note" name="note" maxlength="1000" placeholder="Algo que quieras recordar…"></textarea></div>
+          <section class="medications-section" aria-labelledby="medications-title">
+            <h2 id="medications-title">💊 Medicamentos</h2>
+            <p class="small muted">Registra únicamente medicamentos que ya tomaste. Esta sección no recomienda dosis.</p>
+            <div id="medication-fields"></div>
+          </section>
+          <p id="form-error" class="error" role="alert" hidden></p>
+          <button id="save-button" class="primary wide" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Guardar resultado</button>
+          <p class="privacy"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Tus registros se guardan en Supabase</p>
+        </form>
+      </section>
+      <section class="card chart-card" data-pages="inicio estadisticas" aria-labelledby="chart-title">
+        <div class="card-head"><div><h2 id="chart-title">Tu glucemia</h2><p class="small muted">Una mirada a tus mediciones</p></div><div class="filters" role="group" aria-label="Período del gráfico"><button type="button" data-period="1" aria-pressed="true">Hoy</button><button type="button" data-period="7" aria-pressed="false">7 días</button><button type="button" data-period="30" aria-pressed="false">30 días</button></div></div>
+        <div class="chart-top"><span>Glucemia · mg/dL</span><span id="chart-count">0 mediciones</span></div>
+        <div id="chart-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div><h3>Aún no hay mediciones</h3><p>Las mediciones de este período aparecerán aquí.</p></div>
+        <div id="chart-content" hidden><div class="chart-scroll"><svg id="chart" class="chart" viewBox="0 0 600 250" aria-label="Gráfico de glucemia. Selecciona un punto para ver sus detalles."></svg></div><div id="chart-detail" class="chart-detail" role="status" aria-live="polite"></div></div>
+      </section>
+      <section class="card range-card" data-pages="inicio estadisticas" aria-labelledby="range-title">
+        <div class="card-head"><h2 id="range-title">Mediciones en rango</h2><span class="small muted">Total guardado</span></div>
+        <div class="range-bar" aria-hidden="true"><span id="bar-low" class="low"></span><span id="bar-normal" class="normal"></span><span id="bar-high" class="high"></span></div>
+        <div class="range-legend">
+          <div class="range-item"><div class="range-label"><span class="swatch" style="background:#eeb54c"></span>Bajas</div><strong id="percent-low">—</strong><small id="label-low"></small></div>
+          <div class="range-item"><div class="range-label"><span class="swatch" style="background:#2fa780"></span>En rango</div><strong id="percent-normal">—</strong><small id="label-normal"></small></div>
+          <div class="range-item"><div class="range-label"><span class="swatch" style="background:#de7788"></span>Altas</div><strong id="percent-high">—</strong><small id="label-high"></small></div>
+        </div><p class="range-note">Rangos de demostración, configurables en el código. Define tus objetivos personales con un profesional de salud.</p>
+      </section>
+      <section class="card full" data-pages="historial" aria-labelledby="history-title" hidden>
+        <div class="card-head"><div><h2 id="history-title">Historial</h2><p id="history-count" class="small muted">0 registros guardados</p></div><button id="export-excel" class="now-button" type="button">📊 Exportar Excel</button></div>
+        <p class="small muted" style="margin-bottom:16px">Exporta todos tus registros de Supabase. Requiere conexión.</p>
+        <p id="export-status" class="small muted" role="status" aria-live="polite" style="margin-bottom:16px" hidden></p>
+        <div id="history-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-drop"/></svg></div><h3>Tu historial comienza aquí</h3><p>Agrega una medición para empezar a llevar tu registro.</p><button type="button" class="primary" data-go-register style="margin-top:18px">Registrar glucemia</button></div>
+        <div id="history-list" class="history-list"></div><div class="history-footer"><button id="delete-all" type="button" class="danger" disabled>Eliminar todos los datos</button></div>
+      </section>
+    </main>
+    <footer class="footer">Registros guardados en Supabase · Sin login. Conserva los datos de este navegador para mantener el acceso automático.</footer>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+  <script>
+    "use strict";
+    // CONFIGURACIÓN: límites de demostración, no recomendaciones médicas.
+    const CONFIG = Object.freeze({ storageKey:"control-glucemia.measurements.v1", range:{low:70,high:180} });
+    const CLOUD = Object.freeze({url:"https://ikbksrbvfvflgodmookv.supabase.co",publishableKey:"sb_publishable_bvjAmM0tVWsZDahcoPiVzg_VhDNvAdD",accessKey:"control-glucemia.cloud-access.v1"});
+    const MOMENTS = ["En ayunas","Antes de comer","Después de comer","Antes de dormir","Otro"];
+    const $ = selector => document.querySelector(selector);
+    const $$ = selector => [...document.querySelectorAll(selector)];
+    const numberFormat = new Intl.NumberFormat("es", {maximumFractionDigits:1});
+    const timeFormat = new Intl.DateTimeFormat("es", {hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+    const dateFormat = new Intl.DateTimeFormat("es", {day:"2-digit",month:"2-digit",year:"numeric"});
+
+    // La clave local original se conserva intacta como respaldo de la importación.
+    function readLegacyRecords() {
+        const raw = localStorage.getItem(CONFIG.storageKey);
+        if (raw === null) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) throw new Error("Formato de almacenamiento inválido.");
+        const ids = new Set();
+        for (const record of parsed) {
+          if (!isValidRecord(record) || ids.has(record.id)) throw new Error("Hay registros que no se pueden interpretar.");
+          ids.add(record.id);
+        }
+        return parsed;
+    }
+    let cloudIdentity=null,cloudIdentityLoading=null;
+    async function getCloudIdentity() {
+      if(cloudIdentity)return cloudIdentity;
+      if(cloudIdentityLoading)return cloudIdentityLoading;
+      cloudIdentityLoading=(async()=>{
+        let token=localStorage.getItem(CLOUD.accessKey);
+        if(token!==null&&!/^[0-9a-f]{64}$/.test(token))throw new Error("La clave de acceso de este navegador no es válida. No se reemplazó ni se borraron registros.");
+        if(!token){token=Array.from(crypto.getRandomValues(new Uint8Array(32)),byte=>byte.toString(16).padStart(2,"0")).join("");localStorage.setItem(CLOUD.accessKey,token);}
+        const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
+        const hash=Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,"0")).join("");
+        cloudIdentity={token,hash};return cloudIdentity;
+      })();
+      try{return await cloudIdentityLoading;}finally{cloudIdentityLoading=null;}
+    }
+    async function cloudRequest(resource,{method="GET",body,prefer}={}) {
+      const identity=await getCloudIdentity(),controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
+      try {
+        const headers={apikey:CLOUD.publishableKey,"x-glucose-key":identity.token,"Content-Type":"application/json"};
+        if(prefer)headers.Prefer=prefer;
+        const response=await fetch(`${CLOUD.url}/rest/v1/${resource}`,{method,headers,body:body===undefined?undefined:JSON.stringify(body),signal:controller.signal,cache:"no-store"});
+        if(!response.ok){const details=await response.json().catch(()=>({}));throw new Error(response.status===401||response.status===403?"Supabase rechazó el acceso. Tus datos locales siguen intactos.":`No se pudo completar la operación en Supabase (${details.code||response.status}).`);}
+        const text=await response.text();return text?JSON.parse(text):null;
+      } catch(error) {
+        if(error.name==="AbortError"||error instanceof TypeError)throw new Error("No se pudo confirmar la operación con Supabase. Revisa tu conexión y vuelve a intentarlo.");
+        throw error;
+      } finally {clearTimeout(timer);}
+    }
+    function cacheCloudRecords(records) {
+      if(!cloudIdentity)return;
+      try{localStorage.setItem(CONFIG.storageKey+".cloud."+cloudIdentity.hash,JSON.stringify(records));}catch{/* Supabase ya confirmó la escritura; la copia local es opcional. */}
+    }
+    function readCloudCache() {
+      try {const raw=cloudIdentity?localStorage.getItem(CONFIG.storageKey+".cloud."+cloudIdentity.hash):null;const records=raw===null?readLegacyRecords():JSON.parse(raw);return Array.isArray(records)?records.filter(isValidRecord):[];}catch{return [];}
+    }
+    async function importLegacyRecords() {
+      const {hash}=await getCloudIdentity();
+      const marker=await cloudRequest(`glucose_imports?select=owner_hash&owner_hash=eq.${hash}`);
+      if(marker.length)return;
+      const records=readLegacyRecords();
+      // Reintentos idempotentes: los IDs existentes nunca se sobrescriben.
+      for(let offset=0;offset<records.length;offset+=200){
+        await cloudRequest("glucose_records?on_conflict=owner_hash,id",{method:"POST",prefer:"resolution=ignore-duplicates,return=minimal",body:records.slice(offset,offset+200).map(record=>({owner_hash:hash,id:record.id,recorded_at:record.createdAt,data:record}))});
+      }
+      await cloudRequest("glucose_imports?on_conflict=owner_hash",{method:"POST",prefer:"resolution=ignore-duplicates,return=minimal",body:{owner_hash:hash}});
+      if(records.length)notify(`✓ ${records.length} registros locales transferidos a Supabase`);
+    }
+    const MeasurementRepository = {
+      async load() {
+        const {hash}=await getCloudIdentity(),records=[];
+        for(let offset=0;;offset+=500){
+          const rows=await cloudRequest(`glucose_records?select=data&owner_hash=eq.${hash}&order=recorded_at.asc,id.asc&offset=${offset}&limit=500`);
+          rows.forEach(row=>{if(!isValidRecord(row.data))throw new Error("Hay un registro de Supabase que no se puede interpretar. No se modificó ningún dato.");records.push(row.data);});
+          if(rows.length<500)break;
+        }
+        cacheCloudRecords(records);return records;
+      },
+      async add(record) {
+        const {hash}=await getCloudIdentity();
+        await cloudRequest("glucose_records?on_conflict=owner_hash,id",{method:"POST",prefer:"resolution=ignore-duplicates,return=minimal",body:{owner_hash:hash,id:record.id,recorded_at:record.createdAt,data:record}});
+      },
+      async remove(id) {
+        const {hash}=await getCloudIdentity();
+        await cloudRequest(`glucose_records?owner_hash=eq.${hash}&id=eq.${encodeURIComponent(id)}`,{method:"DELETE",prefer:"return=minimal"});
+      },
+      async clear() {
+        const {hash}=await getCloudIdentity();
+        await cloudRequest(`glucose_records?owner_hash=eq.${hash}`,{method:"DELETE",prefer:"return=minimal"});
+      }
+    };
+    function isValidRecord(record) {
+      return record && typeof record.id === "string" && record.id.length>0 &&
+        (hasGlucose(record) || (record.glucose == null && hasRecordedMedication(record))) &&
+        (record.food == null || typeof record.food === "string") &&
+        (record.moment == null || typeof record.moment === "string") &&
+        (record.note == null || typeof record.note === "string") &&
+        typeof record.createdAt === "string" && Number.isFinite(Date.parse(record.createdAt));
+    }
+    function hasGlucose(record) { return !!record && Number.isInteger(record.glucose) && record.glucose>0 && record.glucose<=999; }
+    function recordedMedication(record,key) {
+      const saved=record?.medications?.[key];
+      // Solo cantidades explícitamente registradas; nunca usar los valores del formulario.
+      return saved?.taken===true && typeof saved.doseMg==="number" && Number.isFinite(saved.doseMg) && saved.doseMg>0 ? saved : null;
+    }
+    function hasRecordedMedication(record) { return ["metformin","glibenclamide"].some(key=>recordedMedication(record,key)); }
+    const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false };
+
+    // MEDICAMENTOS: equivalencias aritméticas de cantidades ya tomadas.
+    // No se calculan recomendaciones ni se relaciona la cantidad con la glucemia.
+    const MEDICATIONS = Object.freeze([
+      {key:"metformin",name:"Metformina",tabletMg:1000},
+      {key:"glibenclamide",name:"Glibenclamida",tabletMg:5}
+    ]);
+    const TABLET_FRACTIONS = Object.freeze([
+      {value:1,label:"1 comprimido",short:"1 comprimido"},
+      {value:0.5,label:"1/2 comprimido",short:"½ comprimido"},
+      {value:0.25,label:"1/4 comprimido",short:"¼ comprimido"},
+      {value:0.125,label:"1/8 comprimido",short:"⅛ comprimido"}
+    ]);
+    const validMedicationTime = time => typeof time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+    function updateMedicationEquivalent(medication) {
+      const fraction=Number($("#"+medication.key+"-fraction").value);
+      $("#"+medication.key+"-equivalent").textContent=`Equivale a ${medication.tabletMg*fraction} mg`;
+    }
+    function syncMedicationFields(medication,reset=false) {
+      const key=medication.key,taken=$("#"+key+"-yes").checked,details=$("#"+key+"-details"),time=$("#"+key+"-time");
+      details.hidden=!taken; details.disabled=!taken; time.required=taken;
+      if(reset||!taken) { $("#"+key+"-fraction").value="1"; time.value=""; time.removeAttribute("aria-invalid"); }
+      updateMedicationEquivalent(medication);
+    }
+    function resetMedicationFields() {
+      MEDICATIONS.forEach(medication=>{ $("#"+medication.key+"-no").checked=true; syncMedicationFields(medication,true); });
+    }
+    function initializeMedicationFields() {
+      const container=$("#medication-fields");
+      MEDICATIONS.forEach(medication=>{
+        const key=medication.key,card=element("div","medication-card");
+        card.append(element("h3","",medication.name),element("p","small muted",`${medication.tabletMg} mg por comprimido`));
+        const choice=element("fieldset","medication-choice"),toggle=element("div","medication-toggle");
+        choice.append(element("legend","",`¿Tomaste ${medication.name}?`));
+        [["no","No"],["yes","Sí"]].forEach(([value,text])=>{
+          const label=element("label","medication-option"),input=element("input");
+          input.type="radio"; input.name=key+"-taken"; input.id=key+"-"+value; input.value=value;
+          input.defaultChecked=value==="no"; input.checked=value==="no";
+          input.setAttribute("aria-controls",key+"-details");
+          input.addEventListener("change",()=>{syncMedicationFields(medication,true);showFormError("");});
+          label.append(input,element("span","",text)); toggle.append(label);
+        });
+        choice.append(toggle); card.append(choice);
+        const details=element("fieldset","medication-details"); details.id=key+"-details"; details.hidden=true; details.disabled=true;
+        details.append(element("legend","sr-only",`Cantidad y hora de ${medication.name}`));
+        const amountLabel=element("label","","Cantidad tomada"),select=element("select");
+        select.id=key+"-fraction"; select.name=select.id; amountLabel.htmlFor=select.id;
+        select.setAttribute("aria-describedby",key+"-equivalent");
+        TABLET_FRACTIONS.forEach(fraction=>{const option=element("option","",fraction.label);option.value=String(fraction.value);select.append(option);});
+        select.addEventListener("change",()=>updateMedicationEquivalent(medication));
+        const equivalent=element("output","medication-equivalent"); equivalent.id=key+"-equivalent"; equivalent.setAttribute("for",select.id); equivalent.setAttribute("aria-live","polite");
+        const timeLabel=element("label","","Hora"),row=element("div","medication-time-row"),time=element("input");
+        time.type="time"; time.step="60"; time.id=key+"-time"; time.name=time.id; timeLabel.htmlFor=time.id;
+        time.setAttribute("aria-describedby","form-error");
+        time.addEventListener("input",()=>{time.removeAttribute("aria-invalid");showFormError("");});
+        const now=element("button","now-button","Ahora"); now.type="button";
+        now.setAttribute("aria-label",`Usar la hora actual para ${medication.name}`);
+        now.addEventListener("click",()=>{
+          const date=new Date(); time.value=`${String(date.getHours()).padStart(2,"0")}:${String(date.getMinutes()).padStart(2,"0")}`;
+          time.removeAttribute("aria-invalid"); showFormError("");
+        });
+        row.append(time,now); details.append(amountLabel,select,equivalent,timeLabel,row); card.append(details); container.append(card);
+        syncMedicationFields(medication,true);
+      });
+    }
+    function readMedications() {
+      const medications={};
+      for(const medication of MEDICATIONS) {
+        const key=medication.key;
+        // Si está seleccionado No, descartar toda cantidad y hora, incluso si quedaron valores ocultos.
+        if(!$("#"+key+"-yes").checked) { medications[key]={taken:false}; continue; }
+        const tabletFraction=Number($("#"+key+"-fraction").value),time=$("#"+key+"-time");
+        if(!TABLET_FRACTIONS.some(fraction=>fraction.value===tabletFraction)) {
+          $("#"+key+"-fraction").focus(); throw new Error(`Selecciona la cantidad que ya tomaste de ${medication.name}.`);
+        }
+        if(!validMedicationTime(time.value)) {
+          time.setAttribute("aria-invalid","true");time.focus();throw new Error(`Indica la hora en que tomaste ${medication.name}, o pulsa Ahora si fue en este momento.`);
+        }
+        medications[key]={taken:true,tabletFraction,tabletMg:medication.tabletMg,doseMg:tabletFraction*medication.tabletMg,time:time.value};
+      }
+      return medications;
+    }
+    function appendMedicationHistory(parent,record) {
+      // Lectura opcional: no migra, completa ni modifica registros antiguos.
+      const section=element("section","record-medications");
+      section.append(element("h3","","💊 Medicamentos"));
+      let count=0;
+      MEDICATIONS.forEach(medication=>{
+        const saved=recordedMedication(record,medication.key);
+        if(!saved) return;
+        const fraction=TABLET_FRACTIONS.find(item=>item.value===saved.tabletFraction);
+        const item=element("div","record-medication");
+        item.append(element("strong","",medication.name),element("p","",`${fraction?.short||"Fracción no registrada"} · ${saved.doseMg} mg · ${validMedicationTime(saved.time)?saved.time:"Hora no registrada"}`));
+        section.append(item);count++;
+      });
+      if(count) parent.append(section);
+    }
+
+    // CÁLCULOS independientes de la interfaz y del almacenamiento.
+    function classify(value) {
+      if (value < CONFIG.range.low) return {key:"low",label:"Baja",color:"#a96609"};
+      if (value > CONFIG.range.high) return {key:"high",label:"Alta",color:"#bf4357"};
+      return {key:"normal",label:"En rango",color:"#087d61"};
+    }
+    function chronological(records) { return [...records].sort((a,b) => Date.parse(a.createdAt)-Date.parse(b.createdAt)); }
+    function calculateStats(records) {
+      records=records.filter(hasGlucose);
+      if (!records.length) return {average:null,min:null,max:null,count:0};
+      let total=0,min=Infinity,max=-Infinity;
+      for (const record of records) { total+=record.glucose; min=Math.min(min,record.glucose); max=Math.max(max,record.glucose); }
+      return {average:total/records.length,min,max,count:records.length};
+    }
+    function periodRecords(records,days) {
+      const now=new Date(), start=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      start.setDate(start.getDate()-days+1);
+      return chronological(records.filter(record => { const timestamp=Date.parse(record.createdAt); return hasGlucose(record) && timestamp>=start.getTime() && timestamp<=now.getTime(); }));
+    }
+    function rangePercentages(records) {
+      records=records.filter(hasGlucose);
+      const counts=[0,0,0], keys=["low","normal","high"];
+      records.forEach(record=>counts[keys.indexOf(classify(record.glucose).key)]++);
+      if (!records.length) return {counts,percentages:[0,0,0]};
+      const exact=counts.map(count=>count*100/records.length), percentages=exact.map(Math.floor);
+      const order=exact.map((value,index)=>({index,remainder:value-percentages[index]})).sort((a,b)=>b.remainder-a.remainder);
+      const missing=100-percentages.reduce((sum,value)=>sum+value,0);
+      for(let i=0;i<missing;i++) percentages[order[i].index]++;
+      return {counts,percentages};
+    }
+
+    // PRESENTACIÓN: el contenido del usuario siempre se inserta con textContent.
+    function icon(name) {
+      const svg=document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("class","icon"); svg.setAttribute("aria-hidden","true");
+      const use=document.createElementNS(svg.namespaceURI,"use"); use.setAttribute("href","#i-"+name); svg.append(use); return svg;
+    }
+    function element(tag,className,text) { const node=document.createElement(tag); if(className) node.className=className; if(text!==undefined) node.textContent=text; return node; }
+    function svgElement(tag,attributes={},text) { const node=document.createElementNS("http://www.w3.org/2000/svg",tag); Object.entries(attributes).forEach(([key,value])=>node.setAttribute(key,value)); if(text!==undefined) node.textContent=text; return node; }
+    function friendlyDate(iso) { const date=new Date(iso), today=new Date(); const day=date.toDateString()===today.toDateString()?"Hoy":dateFormat.format(date); return `${day}, ${timeFormat.format(date)}`; }
+    let toastTimer;
+    function notify(message) { const toast=$("#toast"); clearTimeout(toastTimer); toast.textContent=message; toast.classList.add("show"); toastTimer=setTimeout(()=>toast.classList.remove("show"),3500); }
+    function showStorageWarning(message) { $("#storage-warning").textContent=message; $("#storage-warning").hidden=false; }
+    function showFormError(message) { $("#form-error").textContent=message; $("#form-error").hidden=!message; }
+    function navigate(page) {
+      if(!["inicio","registrar","historial","estadisticas"].includes(page)) return;
+      state.page=page; document.body.dataset.page=page;
+      $$("[data-nav]").forEach(button=>{ if(button.dataset.nav===page) button.setAttribute("aria-current","page"); else button.removeAttribute("aria-current"); });
+      $$("[data-pages]").forEach(section=>{ section.hidden=!section.dataset.pages.split(" ").includes(page); section.classList.remove("page-enter"); if(!section.hidden){void section.offsetWidth;section.classList.add("page-enter");} });
+      window.scrollTo({top:0,behavior:"instant"}); renderChart();
+    }
+    function renderSummary() {
+      const stats=calculateStats(state.records);
+      $("#average").textContent=stats.count?numberFormat.format(stats.average):"—";
+      $("#minimum").textContent=stats.count?numberFormat.format(stats.min):"—";
+      $("#maximum").textContent=stats.count?numberFormat.format(stats.max):"—";
+      $("#count").textContent=numberFormat.format(stats.count);
+      const latest=chronological(state.records.filter(hasGlucose)).at(-1), value=$("#latest-value");
+      value.replaceChildren(document.createTextNode(latest?`${latest.glucose} `:"— ")); value.append(element("span","","mg/dL"));
+      const badge=$("#latest-badge");
+      if(latest) { const category=classify(latest.glucose); badge.className="badge "+category.key; badge.textContent=category.label; $("#latest-date").textContent=friendlyDate(latest.createdAt); }
+      else { badge.className="badge neutral"; badge.textContent="Sin datos"; $("#latest-date").textContent="Registra tu primera medición"; }
+    }
+    function renderRanges() {
+      const measurements=state.records.filter(hasGlucose),{counts,percentages}=rangePercentages(measurements);
+      ["low","normal","high"].forEach((key,index)=>{ $("#bar-"+key).style.width=measurements.length?`${counts[index]*100/measurements.length}%`:"0%"; $("#percent-"+key).textContent=measurements.length?`${percentages[index]}%`:"—"; $("#percent-"+key).title=`${counts[index]} mediciones`; });
+      $("#label-low").textContent=`< ${CONFIG.range.low} mg/dL`; $("#label-normal").textContent=`${CONFIG.range.low}–${CONFIG.range.high} mg/dL`; $("#label-high").textContent=`> ${CONFIG.range.high} mg/dL`;
+    }
+    function renderHistory() {
+      const records=chronological(state.records).reverse();
+      $("#history-count").textContent=`${records.length} ${records.length===1?"registro guardado":"registros guardados"}`;
+      $("#history-empty").hidden=records.length>0; $("#delete-all").disabled=state.busy||(!records.length&&!state.storageProblem);
+      const fragment=document.createDocumentFragment();
+      records.forEach(record=>{
+        const article=element("article","record"),main=element("div","record-main"),top=element("div","record-top");
+        if(hasGlucose(record)) {
+          const category=classify(record.glucose),value=element("div","record-value",`${record.glucose} `);
+          value.append(element("small","","mg/dL"));top.append(value,element("span","badge "+category.key,category.label));main.append(top);
+          if(record.moment) main.append(element("p","record-moment",record.moment));
+        } else {main.append(element("h3","","Registro de medicamentos"),element("p","small muted","Sin medición de glucemia"));}
+        if(record.food) main.append(element("p","record-food",record.food)); if(record.note) main.append(element("p","record-note",`Nota: ${record.note}`));
+        appendMedicationHistory(main,record);
+        const date=new Date(record.createdAt),time=element("time","",`${dateFormat.format(date)} · ${timeFormat.format(date)}`); time.dateTime=record.createdAt; main.append(time);
+        const remove=element("button","delete-one"); remove.type="button"; remove.disabled=state.busy; remove.setAttribute("aria-label",`Eliminar ${hasGlucose(record)?"medición de "+record.glucose+" mg/dL":"registro de medicamentos"} del ${dateFormat.format(date)} a las ${timeFormat.format(date)}`); remove.append(icon("trash")); remove.addEventListener("click",()=>deleteMeasurement(record.id)); article.append(main,remove); fragment.append(article);
+      }); $("#history-list").replaceChildren(fragment);
+    }
+    // GRÁFICO SVG sin dependencias: admite mouse, toque y teclado.
+    function showChartDetail(record) {
+      const box=$("#chart-detail"),date=new Date(record.createdAt),value=element("strong","",`${record.glucose} mg/dL`); box.replaceChildren(value);
+      box.append(document.createTextNode(` · ${timeFormat.format(date)} · ${dateFormat.format(date)}`),document.createElement("br"),document.createTextNode(`${record.food||"Sin comida registrada"} · ${record.moment}`));
+    }
+    function renderChart() {
+      const records=periodRecords(state.records,state.period); $("#chart-count").textContent=`${records.length} ${records.length===1?"medición":"mediciones"}`; $("#chart-empty").hidden=records.length>0; $("#chart-content").hidden=records.length===0; $("#chart-detail").replaceChildren();
+      const svg=$("#chart"); svg.replaceChildren(); if(!records.length) return;
+      const W=600,H=250,left=47,right=18,top=17,bottom=53,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil(stats.max*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
+      let timeMin=Date.parse(records[0].createdAt),timeMax=Date.parse(records[records.length-1].createdAt);
+      if(timeMin===timeMax) {timeMin-=30*60000;timeMax+=30*60000;}
+      const x=timestamp=>left+((timestamp-timeMin)/(timeMax-timeMin))*plotW;
+      svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5,"aria-hidden":"true"}));
+      for(let i=0;i<=4;i++) { const value=yMax*i/4,lineY=y(value); svg.append(svgElement("line",{x1:left,y1:lineY,x2:W-right,y2:lineY,stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-9,y:lineY+4,"text-anchor":"end"},Math.round(value))); }
+      const tickCount=records.length===1?1:3;
+      for(let i=0;i<tickCount;i++) { const timestamp=tickCount===1?Date.parse(records[0].createdAt):timeMin+(timeMax-timeMin)*i/(tickCount-1),date=new Date(timestamp),position=x(timestamp),anchor=tickCount===1?"middle":i===0?"start":i===tickCount-1?"end":"middle"; svg.append(svgElement("text",{x:position,y:H-31,"text-anchor":anchor},timeFormat.format(date))); if(state.period!==1) svg.append(svgElement("text",{x:position,y:H-14,"text-anchor":anchor},date.toLocaleDateString("es",{day:"2-digit",month:"2-digit"}))); }
+      if(state.period===1) svg.append(svgElement("text",{x:left+plotW/2,y:H-9,"text-anchor":"middle"},"Hora"));
+      const points=records.map(record=>({record,x:x(Date.parse(record.createdAt)),y:y(record.glucose)}));
+      if(points.length>1) svg.append(svgElement("polyline",{points:points.map(point=>`${point.x},${point.y}`).join(" "),fill:"none",stroke:"#2563eb","stroke-width":2.5,"stroke-linejoin":"round","stroke-linecap":"round"}));
+      points.forEach(point=>{
+        const record=point.record,category=classify(record.glucose),description=`${record.glucose} mg/dL, ${friendlyDate(record.createdAt)}, ${record.food||"Sin comida registrada"}, ${record.moment}`,group=svgElement("g",{class:"hit",tabindex:"0",role:"button","aria-label":description,"aria-controls":"chart-detail"});
+        group.append(svgElement("title",{},description),svgElement("circle",{cx:point.x,cy:point.y,r:14,fill:"transparent"}),svgElement("circle",{class:"dot",cx:point.x,cy:point.y,r:5,fill:category.color,stroke:"#fff","stroke-width":2,"pointer-events":"none"}));
+        const show=()=>showChartDetail(record); group.addEventListener("pointerenter",show); group.addEventListener("click",show); group.addEventListener("focus",show); group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}}); svg.append(group);
+      });
+    }
+    function renderAll() { renderSummary();renderRanges();renderHistory();renderChart(); }
+
+    // EXPORTACIÓN EXCEL: lectura independiente y no destructiva del almacenamiento.
+    // SheetJS CE 0.20.3, CDN oficial, cargado solo cuando se pide exportar.
+    // https://docs.sheetjs.com/docs/getting-started/installation/standalone/
+    // La edición gratuita no escribe gráficos nativos, estilos de celdas ni paneles
+    // congelados. Se conservan formatos numéricos, anchos, filtros y cuatro hojas.
+    const SHEETJS_URL="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+    let sheetJSLoading=null,exporting=false;
+    function loadSheetJS() {
+      if(window.XLSX?.utils && window.XLSX?.writeFile) return Promise.resolve(window.XLSX);
+      if(sheetJSLoading) return sheetJSLoading;
+      sheetJSLoading=new Promise((resolve,reject)=>{
+        const script=document.createElement("script");script.src=SHEETJS_URL;script.async=true;script.referrerPolicy="no-referrer";
+        let timer;
+        const failed=()=>{clearTimeout(timer);script.remove();sheetJSLoading=null;reject(new Error("No se pudo cargar la exportación. Conéctate a internet e inténtalo otra vez. Tus registros siguen guardados."));};
+        timer=setTimeout(failed,20000);
+        script.onerror=failed;
+        script.onload=()=>{if(!window.XLSX?.utils){failed();return;}clearTimeout(timer);resolve(window.XLSX);};
+        document.head.append(script);
+      });
+      return sheetJSLoading;
+    }
+    function localDateKey(value) {
+      const date=value instanceof Date?value:new Date(value);
+      return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+    }
+    function excelDate(value) {
+      const date=value instanceof Date?value:new Date(value);
+      // Extraer la fecha LOCAL antes de convertirla a número Excel. No usar el día UTC del registro.
+      return (Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())-Date.UTC(1899,11,30))/86400000;
+    }
+    function excelTime(time) {
+      if(!validMedicationTime(time)) return null;
+      const [hours,minutes]=time.split(":").map(Number);return (hours*60+minutes)/1440;
+    }
+    function localTime(value) {const date=new Date(value);return `${String(date.getHours()).padStart(2,"0")}:${String(date.getMinutes()).padStart(2,"0")}`;}
+    function readExportRecords(sourceRecords) {
+      const raw=sourceRecords===undefined?localStorage.getItem(CONFIG.storageKey):JSON.stringify(sourceRecords);
+      if(raw===null) return {records:[],skipped:0};
+      let parsed;
+      try {parsed=JSON.parse(raw);} catch {throw new Error("Los datos guardados no se pueden leer. No se modificó el almacenamiento.");}
+      if(!Array.isArray(parsed)) throw new Error("El formato de los datos guardados no es válido. No se modificó el almacenamiento.");
+      const records=[],seen=new Set();let skipped=0;
+      const text=value=>typeof value==="string"?value:"";
+      for(const source of parsed) {
+        if(!source||typeof source!=="object"||typeof source.createdAt!=="string"||!Number.isFinite(Date.parse(source.createdAt))) {skipped++;continue;}
+        const medications={};
+        MEDICATIONS.forEach(medication=>{
+          const saved=recordedMedication(source,medication.key);
+          if(!saved) {medications[medication.key]={taken:false};return;}
+          medications[medication.key]={
+            taken:true,doseMg:saved.doseMg,
+            tabletMg:typeof saved.tabletMg==="number"&&Number.isFinite(saved.tabletMg)&&saved.tabletMg>0?saved.tabletMg:null,
+            tabletFraction:TABLET_FRACTIONS.some(item=>item.value===saved.tabletFraction)?saved.tabletFraction:null,
+            time:validMedicationTime(saved.time)?saved.time:""
+          };
+        });
+        const record={glucose:hasGlucose(source)?source.glucose:null,createdAt:source.createdAt,food:text(source.food),moment:text(source.moment)||text(source.measurementContext),note:text(source.note),medications};
+        if(!hasGlucose(record)&&!hasRecordedMedication(record)) {skipped++;continue;}
+        // Un ID identifica el mismo registro. Sin ID se compara el contenido normalizado.
+        const identity=typeof source.id==="string"&&source.id?"id:"+source.id:"data:"+JSON.stringify(record);
+        if(seen.has(identity)) {skipped++;continue;}
+        seen.add(identity);records.push(record);
+      }
+      return {records:chronological(records).reverse(),skipped};
+    }
+    function calculateStatistics(records) {
+      const stats=calculateStats(records),{counts}=rangePercentages(records);
+      return {...stats,low:counts[0],normal:counts[1],high:counts[2],lowPercent:stats.count?counts[0]/stats.count:null,normalPercent:stats.count?counts[1]/stats.count:null,highPercent:stats.count?counts[2]/stats.count:null};
+    }
+    function createExcelTable(headers,rows,widths,formats={}) {
+      const sheet=XLSX.utils.aoa_to_sheet([headers,...rows]);
+      sheet["!cols"]=widths.map((minimum,column)=>({wch:Math.min(75,rows.reduce((width,row)=>typeof row[column]==="string"?Math.max(width,Math.min(75,row[column].length+2)):width,Math.max(minimum,headers[column].length+2)))}));
+      sheet["!rows"]=[{hpt:30},...rows.map(()=>({hpt:22}))];
+      sheet["!autofilter"]={ref:sheet["!ref"]};
+      Object.entries(formats).forEach(([column,format])=>{
+        for(let row=1;row<=rows.length;row++) {const cell=sheet[XLSX.utils.encode_cell({r:row,c:Number(column)})];if(cell?.t==="n") cell.z=format;}
+      });
+      return sheet;
+    }
+    function buildRecordsSheet(records) {
+      const rows=records.map(record=>{
+        const met=recordedMedication(record,"metformin"),gli=recordedMedication(record,"glibenclamide");
+        return [excelDate(record.createdAt),hasGlucose(record)?excelTime(localTime(record.createdAt)):null,record.glucose,
+          hasGlucose(record)?record.moment:"",record.food,met?.doseMg??null,excelTime(met?.time),gli?.doseMg??null,excelTime(gli?.time),record.note];
+      });
+      const sheet=createExcelTable(["Fecha","Hora glucemia","Glucemia (mg/dL)","Momento","Comida","Metformina","Hora Metformina","Glibenclamida","Hora Glibenclamida","Nota"],rows,[14,17,20,24,32,18,20,18,23,45],{0:"dd/mm/yyyy",1:"hh:mm",2:"0",5:'0.###" mg"',6:"hh:mm",7:'0.###" mg"',8:"hh:mm"});
+      sheet.C1.c=[{a:"Control de Glucemia",t:"Las celdas vacías corresponden a registros de medicamentos sin medición de glucemia. No se incluyen en las estadísticas de glucemia."}];
+      return sheet;
+    }
+    function buildDailySummarySheet(records) {
+      const days=new Map();
+      records.filter(hasGlucose).forEach(record=>{const day=localDateKey(record.createdAt);if(!days.has(day))days.set(day,[]);days.get(day).push(record);});
+      const rows=[...days.keys()].sort().reverse().map(day=>{
+        const group=days.get(day),stats=calculateStatistics(group);
+        return [excelDate(group[0].createdAt),stats.count,stats.average,stats.min,stats.max,stats.low,stats.normal,stats.high,stats.normalPercent];
+      });
+      return createExcelTable(["Fecha","Cantidad de mediciones","Promedio (mg/dL)","Mínima (mg/dL)","Máxima (mg/dL)","Bajas","En rango","Altas","% de mediciones en rango"],rows,[14,25,21,20,20,12,14,12,29],{0:"dd/mm/yyyy",1:"0",2:"0.0",3:"0",4:"0",5:"0",6:"0",7:"0",8:"0.0%"});
+    }
+    function medicationEntries(records) {
+      const entries=[];
+      records.forEach(record=>MEDICATIONS.forEach(medication=>{
+        const saved=recordedMedication(record,medication.key);if(!saved)return;
+        entries.push({record,medication,saved,day:localDateKey(record.createdAt),time:validMedicationTime(saved.time)?saved.time:""});
+      }));
+      // Una hora ausente queda vacía y al final de ese día; nunca usar la hora de glucemia como toma.
+      return entries.sort((a,b)=>b.day.localeCompare(a.day)||b.time.localeCompare(a.time)||Date.parse(b.record.createdAt)-Date.parse(a.record.createdAt));
+    }
+    function buildMedicationsSheet(records) {
+      const rows=medicationEntries(records).map(({record,medication,saved})=>[
+        excelDate(record.createdAt),excelTime(saved.time),medication.name,
+        saved.tabletMg?`${saved.tabletMg} mg por comprimido`:"",
+        saved.tabletFraction,saved.doseMg
+      ]);
+      const sheet=createExcelTable(["Fecha","Hora","Medicamento","Presentación","Fracción tomada","Dosis registrada (mg)"],rows,[14,12,22,30,20,24],{0:"dd/mm/yyyy",1:"hh:mm",4:"# ?/?",5:"0.###"});
+      sheet.A1.c=[{a:"Control de Glucemia",t:"Se utiliza la fecha local del registro. La aplicación guarda la hora de toma, pero no una fecha de toma independiente."}];
+      return sheet;
+    }
+    function buildSummarySheet(records,skipped=0) {
+      const ordered=chronological(records),stats=calculateStatistics(records),entries=medicationEntries(records);
+      const rows=[
+        ["CONTROL DE GLUCEMIA"],[],["PERÍODO ANALIZADO"],
+        ["Fecha inicial",excelDate(ordered[0].createdAt)],["Fecha final",excelDate(ordered.at(-1).createdAt)],[],
+        ["MEDICIONES DE GLUCEMIA"],["Cantidad total de mediciones",stats.count],
+        ["Promedio general (mg/dL)",stats.average],["Glucemia mínima (mg/dL)",stats.min],["Glucemia máxima (mg/dL)",stats.max],[],
+        ["Cantidad de mediciones bajas",stats.low],["Cantidad de mediciones en rango",stats.normal],["Cantidad de mediciones altas",stats.high],
+        ["% de mediciones bajas",stats.lowPercent],["% de mediciones en rango",stats.normalPercent],["% de mediciones altas",stats.highPercent],[],
+        ["MEDICAMENTOS REGISTRADOS"],
+        ["Cantidad de tomas registradas de Metformina",entries.filter(entry=>entry.medication.key==="metformin").length],
+        ["Cantidad de tomas registradas de Glibenclamida",entries.filter(entry=>entry.medication.key==="glibenclamide").length],[],
+        ["CRITERIOS DEL RESUMEN"],["Bajas",`< ${CONFIG.range.low} mg/dL`],["En rango",`${CONFIG.range.low}–${CONFIG.range.high} mg/dL`],["Altas",`> ${CONFIG.range.high} mg/dL`],
+        ["Registros totales exportados",records.length],["Registros sin medición de glucemia",records.filter(record=>!hasGlucose(record)).length],
+        ["Entradas corruptas o duplicadas omitidas",skipped],[],
+        ["Mediciones manuales: porcentajes de mediciones, no duración."],
+        ["Los registros sin glucemia no afectan promedios, mínimos, máximos ni porcentajes."],
+        ["Las tomas describen solo lo registrado; no evalúan la dosis."],
+        ["Fechas y horas locales: iguales al historial al momento de exportar."],
+        ["La fecha de cada toma es la fecha del registro; una hora no registrada se deja vacía."]
+      ];
+      const sheet=XLSX.utils.aoa_to_sheet(rows);
+      sheet["!cols"]=[{wch:51},{wch:47}];
+      sheet["!merges"]=[0,2,6,19,23,31,32,33,34,35].map(row=>({s:{r:row,c:0},e:{r:row,c:1}}));
+      sheet["!rows"]=rows.map((row,index)=>({hpt:[0,2,6,19,23].includes(index)?30:22}));
+      ["B4","B5"].forEach(address=>{sheet[address].z="dd/mm/yyyy";});
+      ["B9"].forEach(address=>{if(sheet[address])sheet[address].z="0.0";});
+      ["B16","B17","B18"].forEach(address=>{if(sheet[address])sheet[address].z="0.0%";});
+      return sheet;
+    }
+    async function exportToExcel() {
+      if(exporting||state.busy)return;
+      const button=$("#export-excel"),status=$("#export-status");status.hidden=false;
+      try {
+        exporting=true;button.disabled=true;button.textContent="Preparando Excel…";status.textContent="Consultando todos tus registros de Supabase…";
+        const {records,skipped}=readExportRecords(await MeasurementRepository.load());
+        if(!records.length){status.textContent="No hay registros para exportar.";notify(status.textContent);return;}
+        status.textContent="Preparando todos tus registros…";
+        await loadSheetJS();
+        const workbook=XLSX.utils.book_new();
+        workbook.Props={Title:"Control de Glucemia",Subject:"Registros personales de glucemia y medicamentos",Author:"Control de Glucemia",CreatedDate:new Date()};
+        XLSX.utils.book_append_sheet(workbook,buildRecordsSheet(records),"Registros");
+        XLSX.utils.book_append_sheet(workbook,buildDailySummarySheet(records),"Resumen diario");
+        XLSX.utils.book_append_sheet(workbook,buildMedicationsSheet(records),"Medicamentos");
+        XLSX.utils.book_append_sheet(workbook,buildSummarySheet(records,skipped),"Resumen");
+        XLSX.writeFile(workbook,`Control_Glucemia_${localDateKey(new Date())}.xlsx`,{bookType:"xlsx",compression:true,cellStyles:true});
+        status.textContent=`Excel generado con ${records.length} ${records.length===1?"registro":"registros"}.${skipped?` Se omitieron ${skipped} entradas corruptas o duplicadas sin modificar los datos guardados.`:""}`;
+        notify("✓ Excel generado correctamente");
+      } catch(error) {status.textContent=error.message||"No se pudo generar el Excel. Tus datos siguen guardados.";}
+      finally {exporting=false;button.disabled=false;button.textContent="📊 Exportar Excel";}
+    }
+
+    // ACCIONES: confirmar persistencia antes de actualizar o limpiar el formulario.
+    function createId() { if(globalThis.crypto?.randomUUID) return crypto.randomUUID(); return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`; }
+    function updateBusy(busy) { state.busy=busy; $("#save-button").disabled=busy||state.storageProblem; $("#delete-all").disabled=busy||state.storageProblem||!state.records.length; $("#cloud-refresh").disabled=busy; $("#export-excel").disabled=busy||exporting; $$(".delete-one").forEach(button=>{button.disabled=busy||state.storageProblem;}); }
+    let pendingSave=null;
+    async function saveMeasurement(event) {
+      event.preventDefault(); if(state.busy||state.storageProblem) return; showFormError("");
+      const raw=$("#glucose").value.trim(),glucose=raw===""?null:Number(raw);
+      if(raw!==""&&(!/^\d{1,3}$/.test(raw)||!hasGlucose({glucose}))) { showFormError("Ingresa una glucemia válida: un número entero entre 1 y 999 mg/dL."); $("#glucose").setAttribute("aria-invalid","true"); $("#glucose").focus(); return; }
+      $("#glucose").removeAttribute("aria-invalid");
+      let medications;
+      try { medications=readMedications(); } catch(error) { showFormError(error.message); return; }
+      if(glucose===null&&!hasRecordedMedication({medications})) {showFormError("Ingresa una glucemia o registra al menos un medicamento que ya tomaste.");$("#glucose").focus();return;}
+      const fields={glucose,food:$("#food").value.trim(),moment:glucose===null?"":$("#moment").value,note:$("#note").value.trim(),medications};
+      const signature=JSON.stringify(fields);
+      if(!pendingSave||pendingSave.signature!==signature)pendingSave={signature,record:{id:createId(),...fields,createdAt:new Date().toISOString()}};
+      const record=pendingSave.record;
+      updateBusy(true);
+      $("#cloud-status").textContent="Guardando en Supabase…";
+      try { await MeasurementRepository.add(record); state.records=[...state.records.filter(item=>item.id!==record.id),record]; cacheCloudRecords(state.records); pendingSave=null; $("#measurement-form").reset(); resetMedicationFields(); $("#storage-warning").hidden=true; renderAll(); $("#cloud-status").textContent="✓ Guardado en Supabase"; notify(glucose===null?"✓ Medicamentos guardados en Supabase":"✓ Medición guardada en Supabase"); }
+      catch(error) { showFormError(error.message+" El formulario conserva tus datos."); $("#cloud-status").textContent="Guardado sin confirmar · Puedes reintentar"; }
+      finally { updateBusy(false); }
+    }
+    async function deleteMeasurement(id) {
+      if(state.busy) return; const record=state.records.find(item=>item.id===id); if(!window.confirm(hasGlucose(record)?"¿Seguro que quieres eliminar esta medición?":"¿Seguro que quieres eliminar este registro de medicamentos?")) return; updateBusy(true);
+      try { await MeasurementRepository.remove(id); state.records=state.records.filter(record=>record.id!==id); cacheCloudRecords(state.records);renderAll(); notify("Registro eliminado de Supabase"); }
+      catch(error) { notify("No se pudo eliminar la medición. Inténtalo nuevamente."); } finally {updateBusy(false);}
+    }
+    async function deleteAll() {
+      if(state.busy) return; if(!window.confirm("¿Seguro que quieres eliminar todos tus registros de Supabase? Esta acción no se puede deshacer.")) return; updateBusy(true);
+      try { await MeasurementRepository.clear(); state.records=[];cacheCloudRecords([]);state.storageProblem=false; $("#storage-warning").hidden=true; renderAll(); notify("Todos tus registros fueron eliminados de Supabase"); }
+      catch(error) { notify("No se pudieron eliminar los datos. Revisa el almacenamiento del navegador."); } finally {updateBusy(false);}
+    }
+    let refreshing=false;
+    async function loadMeasurements() {
+      if(refreshing||state.busy||exporting)return;
+      refreshing=true;updateBusy(true);$("#cloud-status").textContent="Sincronizando con Supabase…";
+      try { await importLegacyRecords();state.records=await MeasurementRepository.load(); state.storageProblem=false; $("#storage-warning").hidden=true; $("#cloud-status").textContent="✓ Conectado a Supabase"; }
+      catch(error) { state.records=readCloudCache();state.storageProblem=true;$("#cloud-status").textContent="Sin sincronizar · Copia local de consulta";showStorageWarning(error.message+" Mostramos la última copia disponible. Pulsa Actualizar para volver a conectar."); }
+      refreshing=false;
+      renderAll(); updateBusy(false);
+    }
+    $("#measurement-form").addEventListener("submit",saveMeasurement); $("#delete-all").addEventListener("click",deleteAll);
+    $("#export-excel").addEventListener("click",exportToExcel);
+    $("#cloud-refresh").addEventListener("click",loadMeasurements);
+    window.addEventListener("online",loadMeasurements);
+    $$("[data-nav]").forEach(button=>button.addEventListener("click",()=>navigate(button.dataset.nav))); $("[data-go-register]").addEventListener("click",()=>navigate("registrar"));
+    $$("[data-period]").forEach(button=>button.addEventListener("click",()=>{state.period=Number(button.dataset.period);$$("[data-period]").forEach(item=>item.setAttribute("aria-pressed",String(item===button)));renderChart();}));
+    $("#glucose").addEventListener("beforeinput",event=>{if(event.data&&/[^0-9]/.test(event.data)) event.preventDefault();});
+    $("#glucose").addEventListener("paste",event=>{const pasted=event.clipboardData?.getData("text")??"";if(!/^\d{1,3}$/.test(pasted.trim())) event.preventDefault();});
+    $("#glucose").addEventListener("input",event=>{if(!/^\d{0,3}$/.test(event.target.value)) event.target.value="";event.target.removeAttribute("aria-invalid");showFormError("");});
+    window.addEventListener("storage",event=>{if(event.key===CLOUD.accessKey){cloudIdentity=null;state.records=[];renderAll();}if(event.key?.startsWith(CONFIG.storageKey)||event.key===CLOUD.accessKey||event.key===null) loadMeasurements();});
+    document.addEventListener("visibilitychange",()=>{if(!document.hidden){renderSummary();renderChart();loadMeasurements();}});
+    setInterval(()=>{if(!document.hidden){renderSummary();renderChart();}},60000);
+    initializeMedicationFields();
+    loadMeasurements();
+  </script>
+</body>
+</html>
