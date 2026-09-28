@@ -163,6 +163,15 @@
     #go-meal { margin-bottom:16px; }
     #calendar-timeline { margin-top:16px; }
     .clock-date { font-size:13px; }
+    /* Gráfico responsive: los períodos largos usan un lienzo horizontal más ancho
+       para que las mediciones no queden amontonadas. */
+    .chart-scroll { -webkit-overflow-scrolling:touch; scrollbar-width:thin; }
+    .chart-card .filters { flex-wrap:nowrap; }
+    @media (max-width:760px) {
+      .chart-card .card-head { display:block; }
+      .chart-card .filters { width:100%; margin-top:14px; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:4px; }
+      .chart-card .filters button { padding:8px 4px; white-space:nowrap; font-size:.74rem; }
+    }
   </style>
 </head>
 <body data-page="inicio">
@@ -612,7 +621,14 @@
       const visible=records.length>0||visibleEvents.length>0;
       q("chart-empty").hidden=visible;q("chart-content").hidden=!visible;q("chart-detail").replaceChildren();
       const svg=q("chart");svg.replaceChildren();if(!visible)return;
-      const W=Math.max(260,Math.min(1100,svg.clientWidth||600)),H=270,left=42,right=14,top=42,bottom=60,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
+      // En 7 y 30 días damos espacio físico real al eje temporal. En pantallas
+      // estrechas el contenedor hace scroll horizontal en vez de comprimir puntos.
+      const spanDays=(bounds.end-bounds.start)/86400000;
+      const minTimelineWidth=spanDays>=29?1320:spanDays>=6?760:260;
+      const availableWidth=svg.parentElement?.clientWidth||svg.clientWidth||600;
+      const W=Math.max(minTimelineWidth,Math.min(1100,availableWidth)),H=270,left=42,right=14,top=42,bottom=60,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
+      svg.style.width=W+"px";
+      svg.style.maxWidth="none";
       svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
       // La escala incluye TODO el período y nunca depende del interruptor de medicamentos.
       const timeMin=bounds.start,timeMax=Math.max(bounds.end,bounds.start+1),x=timestamp=>left+(timestamp-timeMin)/(timeMax-timeMin)*plotW;
