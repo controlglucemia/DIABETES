@@ -47,6 +47,17 @@
     .range-legend { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; } .range-item strong { display:block; font-size:1.65rem; letter-spacing:-.035em; margin:3px 0; } .range-label { display:flex; align-items:center; gap:6px; font-size:.8rem; color:var(--muted); } .swatch { width:8px; height:8px; border-radius:50%; flex-shrink:0; } .range-item small { color:var(--muted); font-size:.75rem; } .range-note { margin-top:18px; border-top:1px solid var(--line); padding-top:14px; color:var(--muted); font-size:.75rem; line-height:1.65; }
     .history-list { display:grid; gap:12px; } .record { display:flex; gap:16px; justify-content:space-between; padding:19px; border:1px solid var(--line); border-radius:17px; background:#fff; } .record-main { min-width:0; } .record-top { display:flex; flex-wrap:wrap; align-items:center; gap:10px; } .record-value { font-size:1.45rem; font-weight:700; letter-spacing:-.035em; } .record-value small { font-size:.8rem; font-weight:500; letter-spacing:0; color:var(--muted); } .record-moment { font-size:.875rem; font-weight:600; margin-top:3px; } .record-food,.record-note { font-size:.875rem; color:var(--muted); margin-top:7px; overflow-wrap:anywhere; white-space:pre-wrap; } .record time { display:block; margin-top:11px; color:var(--muted); font-size:.8rem; }
     .delete-one { width:42px; height:42px; flex-shrink:0; border:0; background:#f7f9fc; border-radius:12px; display:grid; place-items:center; color:#78859a; } .delete-one:hover { color:var(--high); background:var(--high-soft); } .delete-one .icon { width:19px; height:19px; }
+    .record-actions { display:flex; gap:8px; align-items:flex-start; flex-shrink:0; }
+    .edit-one { width:42px; height:42px; flex-shrink:0; border:0; background:#f0f5ff; border-radius:12px; display:grid; place-items:center; color:var(--blue); }
+    .edit-one:hover { background:#dfeaff; color:var(--blue-dark); }
+    .edit-one .icon { width:19px; height:19px; }
+    .edit-dialog { width:min(560px,calc(100% - 28px)); max-height:90vh; overflow:auto; border:0; border-radius:22px; padding:0; box-shadow:0 24px 70px #142f5140; color:var(--text); }
+    .edit-dialog::backdrop { background:#10233b66; backdrop-filter:blur(2px); }
+    .edit-dialog-inner { padding:24px; }
+    .edit-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px; }
+    .edit-close { border:0; background:#f2f5f9; border-radius:10px; width:40px; height:40px; font-size:1.35rem; color:var(--muted); }
+    .edit-actions { display:flex; gap:10px; margin-top:18px; }
+    .edit-actions button { flex:1; }
     .danger { border:1px solid #efced5; background:#fff; color:var(--high); border-radius:12px; min-height:46px; padding:10px 16px; font-size:.875rem; font-weight:600; } .danger:hover { background:var(--high-soft); } .history-footer { display:flex; justify-content:flex-end; margin-top:22px; }
     .footer { text-align:center; color:var(--muted); font-size:.75rem; margin-top:28px; } .toast { position:fixed; z-index:30; left:50%; bottom:28px; transform:translate(-50%,20px); padding:14px 20px; background:#143e34; color:#fff; border-radius:14px; box-shadow:0 10px 30px #173d3430; opacity:0; pointer-events:none; transition:opacity .2s,transform .2s; width:max-content; max-width:calc(100% - 32px); font-size:.875rem; text-align:center; } .toast.show { opacity:1; transform:translate(-50%,0); }
     .storage-warning { border:1px solid #ecd49a; background:#fff8e6; color:#795819; padding:14px 18px; border-radius:14px; margin-bottom:20px; font-size:.875rem; }
@@ -174,6 +185,7 @@
     <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
     <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></symbol>
   </svg>
   <div class="app">
     <header class="header">
@@ -285,11 +297,31 @@
         <p class="small muted" style="margin-bottom:16px">Exporta todos tus registros de Supabase. Requiere conexión.</p>
         <p id="export-status" class="small muted" role="status" aria-live="polite" style="margin-bottom:16px" hidden></p>
         <div id="history-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-drop"/></svg></div><h3>Tu historial comienza aquí</h3><p>Agrega una medición para empezar a llevar tu registro.</p><button type="button" class="primary" data-go-register style="margin-top:18px">Registrar glucemia</button></div>
-        <div id="history-list" class="history-list"></div><div class="history-footer"><button id="delete-all" type="button" class="danger" disabled>Eliminar todos los datos</button></div>
+        <div id="history-list" class="history-list"></div>
       </section>
     </main>
     <footer class="footer">Registros guardados en Supabase · Sin login. Conserva los datos de este navegador para mantener el acceso automático.</footer>
   </div>
+  <dialog id="edit-dialog" class="edit-dialog">
+    <div class="edit-dialog-inner">
+      <div class="edit-dialog-head"><h2>✏️ Editar medición</h2><button id="edit-close" class="edit-close" type="button" aria-label="Cerrar">×</button></div>
+      <form id="edit-form" novalidate>
+        <div id="edit-datetime"></div>
+        <div class="glucose-wrap"><label for="edit-glucose">Glucemia</label><input id="edit-glucose" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="3" required><div class="unit">mg/dL</div></div>
+        <div class="form-field"><label for="edit-moment">Momento de la medición</label><select id="edit-moment"></select></div>
+        <div class="form-field"><label for="edit-note">Nota <span class="optional">· opcional</span></label><textarea id="edit-note" maxlength="1000"></textarea></div>
+        <section class="pressure-section">
+          <h3 class="eyebrow section-label">Presión arterial (opcional)</h3>
+          <div class="pressure-fields">
+            <div class="form-field"><label for="edit-systolic">Presión alta (sistólica)</label><input id="edit-systolic" type="number" min="1" max="350" step="1"><span class="small muted">mmHg</span></div>
+            <div class="form-field"><label for="edit-diastolic">Presión baja (diastólica)</label><input id="edit-diastolic" type="number" min="1" max="250" step="1"><span class="small muted">mmHg</span></div>
+          </div>
+        </section>
+        <p id="edit-error" class="error" role="alert" hidden></p>
+        <div class="edit-actions"><button id="edit-cancel" class="now-button" type="button">Cancelar</button><button id="edit-save" class="primary" type="submit">Guardar cambios</button></div>
+      </form>
+    </div>
+  </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <script>
     "use strict";
@@ -380,6 +412,10 @@
       async add(record) {
         const {hash}=await getCloudIdentity();
         await cloudRequest("glucose_records?on_conflict=owner_hash,id",{method:"POST",prefer:"resolution=ignore-duplicates,return=minimal",body:{owner_hash:hash,id:record.id,recorded_at:record.createdAt,data:record}});
+      },
+      async update(record) {
+        const {hash}=await getCloudIdentity();
+        await cloudRequest(`glucose_records?owner_hash=eq.${hash}&id=eq.${encodeURIComponent(record.id)}`,{method:"PATCH",prefer:"return=minimal",body:{recorded_at:record.createdAt,data:record}});
       },
       async remove(id) {
         const {hash}=await getCloudIdentity();
@@ -576,7 +612,7 @@
     function renderHistory() {
       const events=timelineEvents(state.records),ordered=[...events.filter(e=>e.timestamp!==null).reverse(),...events.filter(e=>e.timestamp===null)];
       $("#history-count").textContent=`${state.records.length} registros guardados · ${events.length} eventos`;
-      $("#history-empty").hidden=events.length>0;$("#delete-all").disabled=state.busy||state.storageProblem||!state.records.length;
+      $("#history-empty").hidden=events.length>0;
       const fragment=document.createDocumentFragment();
       for(const event of ordered){
         const record=event.record,article=element("article","record"+(event.type==="meal"?" record-meal":"")),main=element("div","record-main");article.dataset.eventType=event.type;article.dataset.recordId=record.id;if(event.timestamp!==null)article.dataset.timestamp=event.timestamp;
@@ -591,8 +627,12 @@
         const date=event.timestamp??Date.parse(record.createdAt),time=element("time","",`${dateFormat.format(date)} · ${event.timestamp===null?"Hora no registrada o ambigua":localTime(date)}`);time.dateTime=new Date(date).toISOString();main.append(time);
         const linked=(hasGlucose(record)?1:0)+MEDICATIONS.filter(m=>recordedMedication(record,m.key)).length;
         if(linked>1)main.append(element("p","small muted","Evento de un registro compartido. Eliminar borra ese registro y sus eventos asociados."));
-        const remove=element("button","delete-one");remove.type="button";remove.disabled=state.busy||state.storageProblem;remove.setAttribute("aria-label",`Eliminar registro de ${temporalTitle(event)} del ${dateFormat.format(date)}`);remove.append(icon("trash"));remove.addEventListener("click",()=>deleteMeasurement(record.id));
-        article.append(main);if(event.type==="glucose")appendRecordStatus(article,record);article.append(remove);fragment.append(article);
+        const actions=element("div","record-actions");
+        if(event.type==="glucose"){
+          const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar medición de ${record.glucose} mg/dL`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMeasurement(record.id));actions.append(edit);
+        }
+        const remove=element("button","delete-one");remove.type="button";remove.disabled=state.busy||state.storageProblem;remove.setAttribute("aria-label",`Eliminar registro de ${temporalTitle(event)} del ${dateFormat.format(date)}`);remove.append(icon("trash"));remove.addEventListener("click",()=>deleteMeasurement(record.id));actions.append(remove);
+        article.append(main);if(event.type==="glucose")appendRecordStatus(article,record);article.append(actions);fragment.append(article);
       }
       $("#history-list").replaceChildren(fragment);
     }
@@ -861,7 +901,7 @@
 
     // ACCIONES: confirmar persistencia antes de actualizar o limpiar el formulario.
     function createId() { if(globalThis.crypto?.randomUUID) return crypto.randomUUID(); return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`; }
-    function updateBusy(busy) { state.busy=busy; $("#meal-save").disabled=busy||state.storageProblem; $("#medication-save").disabled=busy||state.storageProblem; $("#save-button").disabled=busy||state.storageProblem; $("#delete-all").disabled=busy||state.storageProblem||!state.records.length; $("#cloud-refresh").disabled=busy; $("#export-excel").disabled=busy||exporting; $$(".delete-one").forEach(button=>{button.disabled=busy||state.storageProblem;}); }
+    function updateBusy(busy) { state.busy=busy; $("#meal-save").disabled=busy||state.storageProblem; $("#medication-save").disabled=busy||state.storageProblem; $("#save-button").disabled=busy||state.storageProblem; $("#edit-save").disabled=busy||state.storageProblem; $("#cloud-refresh").disabled=busy; $("#export-excel").disabled=busy||exporting; $$(".delete-one,.edit-one").forEach(button=>{button.disabled=busy||state.storageProblem;}); }
     let pendingSave=null;
     async function saveMeasurement(event) {
       event.preventDefault(); if(state.busy||state.storageProblem) return; showFormError("");
@@ -881,15 +921,51 @@
       catch(error) { showFormError(error.message+" El formulario conserva tus datos."); $("#cloud-status").textContent="Guardado sin confirmar · Puedes reintentar"; }
       finally { updateBusy(false); }
     }
+    let editingRecordId=null;
+    function openEditMeasurement(id) {
+      const record=state.records.find(item=>item.id===id);
+      if(!record||!hasGlucose(record))return;
+      editingRecordId=id;
+      $("#edit-glucose").value=String(record.glucose);
+      $("#edit-moment").value=MOMENTS.includes(record.moment)?record.moment:"Otro";
+      $("#edit-note").value=record.note||"";
+      $("#edit-systolic").value=Number.isFinite(record.systolic)?record.systolic:"";
+      $("#edit-diastolic").value=Number.isFinite(record.diastolic)?record.diastolic:"";
+      $("#edit-date").value=localDateKey(record.createdAt);
+      $("#edit-time").value=localTime(record.createdAt);
+      updateDateOccurrence("edit");
+      $("#edit-error").hidden=true;
+      $("#edit-dialog").showModal();
+    }
+    function closeEditMeasurement(){ editingRecordId=null; if($("#edit-dialog").open)$("#edit-dialog").close(); }
+    async function saveEditedMeasurement(event) {
+      event.preventDefault(); if(state.busy||state.storageProblem||!editingRecordId)return;
+      const original=state.records.find(item=>item.id===editingRecordId);if(!original)return closeEditMeasurement();
+      const raw=$("#edit-glucose").value.trim(),glucose=Number(raw),errorBox=$("#edit-error");errorBox.hidden=true;
+      if(!/^\d{1,3}$/.test(raw)||!hasGlucose({glucose})) {errorBox.textContent="Ingresa una glucemia válida entre 1 y 999 mg/dL.";errorBox.hidden=false;$("#edit-glucose").focus();return;}
+      const sysRaw=$("#edit-systolic").value.trim(),diaRaw=$("#edit-diastolic").value.trim();
+      if((sysRaw==="")!==(diaRaw==="")) {errorBox.textContent="Completa ambos valores de presión arterial o deja ambos vacíos.";errorBox.hidden=false;return;}
+      let createdAt;
+      try{createdAt=readDateFields("edit","de la medición");}catch(error){errorBox.textContent=error.message;errorBox.hidden=false;return;}
+      const updated={...original,glucose,createdAt,moment:$("#edit-moment").value,note:$("#edit-note").value.trim()};
+      if(sysRaw!==""){
+        const systolic=Number(sysRaw),diastolic=Number(diaRaw);
+        if(!Number.isInteger(systolic)||systolic<1||systolic>350||!Number.isInteger(diastolic)||diastolic<1||diastolic>250){errorBox.textContent="Revisa los valores de presión arterial.";errorBox.hidden=false;return;}
+        updated.systolic=systolic;updated.diastolic=diastolic;
+      }else{delete updated.systolic;delete updated.diastolic;}
+      updateBusy(true);$("#cloud-status").textContent="Guardando cambios en Supabase…";
+      try{
+        await MeasurementRepository.update(updated);
+        state.records=state.records.map(item=>item.id===updated.id?updated:item);cacheCloudRecords(state.records);
+        closeEditMeasurement();renderAll();$("#cloud-status").textContent="✓ Cambios guardados en Supabase";notify("✓ Medición actualizada");
+      }catch(error){errorBox.textContent=error.message+" No se modificó la copia mostrada.";errorBox.hidden=false;$("#cloud-status").textContent="Edición sin confirmar · Reintenta";}
+      finally{updateBusy(false);}
+    }
+
     async function deleteMeasurement(id) {
       if(state.busy) return; const record=state.records.find(item=>item.id===id); if(!window.confirm(isMeal(record)?"¿Seguro que quieres eliminar esta comida?":hasGlucose(record)?"¿Seguro que quieres eliminar esta medición y los medicamentos asociados, si existen?":"¿Seguro que quieres eliminar este registro de medicamentos?")) return; updateBusy(true);
       try { await MeasurementRepository.remove(id); state.records=state.records.filter(record=>record.id!==id); cacheCloudRecords(state.records);renderAll(); notify("Registro eliminado de Supabase"); }
       catch(error) { notify("No se pudo eliminar la medición. Inténtalo nuevamente."); } finally {updateBusy(false);}
-    }
-    async function deleteAll() {
-      if(state.busy) return; if(!window.confirm("¿Seguro que quieres eliminar todos tus registros de Supabase? Esta acción no se puede deshacer.")) return; updateBusy(true);
-      try { await MeasurementRepository.clear(); state.records=[];cacheCloudRecords([]);state.storageProblem=false; $("#storage-warning").hidden=true; renderAll(); notify("Todos tus registros fueron eliminados de Supabase"); }
-      catch(error) { notify("No se pudieron eliminar los datos. Revisa el almacenamiento del navegador."); } finally {updateBusy(false);}
     }
     let refreshing=false;
     async function loadMeasurements() {
@@ -900,7 +976,14 @@
       refreshing=false;
       renderAll(); updateBusy(false);
     }
-    $("#measurement-form").addEventListener("submit",saveMeasurement); $("#delete-all").addEventListener("click",deleteAll);
+    $("#measurement-form").addEventListener("submit",saveMeasurement);
+    $("#edit-datetime").innerHTML=dateFieldsHTML("edit","de la medición");
+    MOMENTS.forEach(moment=>{const option=element("option","",moment);option.value=moment;$("#edit-moment").append(option);});
+    watchDateFields("edit");
+    $("#edit-form").addEventListener("submit",saveEditedMeasurement);
+    $("#edit-close").addEventListener("click",closeEditMeasurement);
+    $("#edit-cancel").addEventListener("click",closeEditMeasurement);
+    $("#edit-dialog").addEventListener("click",event=>{if(event.target===$("#edit-dialog"))closeEditMeasurement();});
     $("#export-excel").addEventListener("click",exportToExcel);
     $("#cloud-refresh").addEventListener("click",loadMeasurements);
     window.addEventListener("online",loadMeasurements);
