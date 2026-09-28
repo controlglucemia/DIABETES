@@ -194,9 +194,13 @@
       if(cloudIdentity)return cloudIdentity;
       if(cloudIdentityLoading)return cloudIdentityLoading;
       cloudIdentityLoading=(async()=>{
-        let token=localStorage.getItem(CLOUD.accessKey);
-        if(token!==null&&!/^[0-9a-f]{64}$/.test(token))throw new Error("La clave de acceso de este navegador no es válida. No se reemplazó ni se borraron registros.");
-        if(!token){token=Array.from(crypto.getRandomValues(new Uint8Array(32)),byte=>byte.toString(16).padStart(2,"0")).join("");localStorage.setItem(CLOUD.accessKey,token);}
+        // Acceso familiar compartido: la clave viaja en el fragmento #family=...
+        // El fragmento no se envía a GitHub Pages. Se guarda localmente solo por comodidad.
+        const hashParams=new URLSearchParams(location.hash.replace(/^#/,""));
+        let token=hashParams.get("family") || localStorage.getItem(CLOUD.accessKey);
+        if(token!==null&&!/^[0-9a-f]{64}$/.test(token))throw new Error("El enlace familiar no contiene una clave válida.");
+        if(!token) token="c3a3f9a68f520fbe288a1cbc607932b87b96c37b3ccfac4effafe3e531580a65";
+        localStorage.setItem(CLOUD.accessKey,token);
         const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(token));
         const hash=Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,"0")).join("");
         cloudIdentity={token,hash};return cloudIdentity;
@@ -707,6 +711,7 @@
     document.addEventListener("visibilitychange",()=>{if(!document.hidden){renderSummary();renderChart();loadMeasurements();}});
     setInterval(()=>{if(!document.hidden){renderSummary();renderChart();}},60000);
     initializeMedicationFields();
+    if(!location.hash.includes("family=")) history.replaceState(null,"",location.pathname+location.search+"#family=c3a3f9a68f520fbe288a1cbc607932b87b96c37b3ccfac4effafe3e531580a65");
     loadMeasurements();
   </script>
 </body>
