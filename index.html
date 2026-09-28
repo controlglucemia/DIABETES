@@ -643,10 +643,10 @@
     }
     function renderChart() {
       const now=Date.now();
-      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h",compactLongPeriod:state.period===7||state.period===30,period:state.period});
+      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h",compactLongPeriod:state.period===7||state.period===30});
     }
     // Un único renderizador para el gráfico general y el del día seleccionado.
-    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,period=null}) {
+    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false}) {
       const q=id=>document.getElementById(prefix+id),{events,unresolved}=collectChartEvents(state.records,bounds);
       const visibleEvents=events.filter(event=>event.type==="meal"?showMeals:showMedications);
       q("show-meals").setAttribute("aria-checked",String(showMeals));q("meals-switch-label").textContent=showMeals?"ON":"OFF";
@@ -678,25 +678,19 @@
       const x=timestamp=>compactLongPeriod?compactX(timestamp):left+(timestamp-timeMin)/(timeMax-timeMin)*plotW;
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5,"aria-hidden":"true"}));
       for(let i=0;i<=4;i++){const value=yMax*i/4,lineY=y(value);svg.append(svgElement("line",{x1:left,y1:lineY,x2:W-right,y2:lineY,stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-7,y:lineY+4,"text-anchor":"end"},Math.round(value)));}
-      // Eje X: en Hoy y Últimas 24 horas mostramos TODAS las horas.
-      // Los puntos y eventos conservan su minuto exacto; solo las etiquetas del eje se redondean a la hora.
-      if(!prefix&&(period===1||period==="24h")) {
-        const hourMs=3600000;
-        const firstHour=Math.ceil(timeMin/hourMs)*hourMs;
-        for(let timestamp=firstHour;timestamp<=timeMax;timestamp+=hourMs) {
-          const position=x(timestamp),date=new Date(timestamp);
-          svg.append(svgElement("line",{x1:position,y1:top,x2:position,y2:top+plotH,stroke:"#edf1f6","stroke-width":1,"aria-hidden":"true"}));
-          const label=svgElement("text",{x:position,y:H-22,"text-anchor":"middle","font-size":"9.5",fill:"#60738d"},localTime(timestamp).slice(0,2));
-          svg.append(label);
+      const tickCount=W<450?3:5;
+      for(let i=0;i<tickCount;i++) {
+        let timestamp,position;
+        if(compactLongPeriod&&anchorTimes.length){
+          const index=Math.round((anchorTimes.length-1)*i/(tickCount-1));
+          timestamp=anchorTimes[index]; position=left+i/(tickCount-1)*plotW;
+        } else {
+          const rawTimestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1);
+          timestamp=i>0&&i<tickCount-1?Math.round(rawTimestamp/60000)*60000:rawTimestamp; position=x(timestamp);
         }
-        svg.append(svgElement("text",{x:left-3,y:H-22,"text-anchor":"end","font-size":"9.5",fill:"#60738d"},"h"));
-      } else {
-        const tickCount=compactLongPeriod?5:records.length===1?1:5;
-        for(let i=0;i<tickCount;i++) {
-          const timestamp=tickCount===1?Date.parse(records[0].createdAt):timeMin+(timeMax-timeMin)*i/(tickCount-1),date=new Date(timestamp),position=x(timestamp),anchor=tickCount===1?"middle":i===0?"start":i===tickCount-1?"end":"middle";
-          svg.append(svgElement("text",{x:position,y:H-31,"text-anchor":anchor},compactLongPeriod?date.toLocaleDateString("es",{day:"2-digit",month:"2-digit"}):timeFormat.format(date)));
-          if(!compactLongPeriod&&period!==1)svg.append(svgElement("text",{x:position,y:H-14,"text-anchor":anchor},date.toLocaleDateString("es",{day:"2-digit",month:"2-digit"})));
-        }
+        const anchor=i===0?"start":i===tickCount-1?"end":"middle";
+        if(!compactLongPeriod)svg.append(svgElement("text",{x:position,y:H-32,"text-anchor":anchor},localTime(timestamp)));
+        svg.append(svgElement("text",{x:position,y:H-14,"text-anchor":anchor},new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timestamp)));
       }
       if(showDayBoundary) {
         const nextDay=shiftDay(localDateKey(timeMin),1),midnight=startOfChileDay(nextDay);
