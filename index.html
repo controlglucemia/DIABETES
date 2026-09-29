@@ -714,7 +714,7 @@
     }
     function renderChart() {
       const now=Date.now();
-      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h"||state.period==="72h",compactLongPeriod:state.period===7||state.period===30,showFastingRange:state.showFastingRange});
+      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h"||state.period==="72h",compactLongPeriod:state.period===7||state.period===30,showFastingRange:state.showFastingRange,fitData:state.period===1||state.period===7||state.period===30});
     }
     // Un único renderizador para el gráfico general y el del día seleccionado.
     // Distribuir texto por sus dimensiones reales, sin cambiar posiciones de los datos.
@@ -845,7 +845,7 @@
       return {select:timestamp=>selectPosition(scale.timestampToX(timestamp))};
     }
 
-    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,showFastingRange=false}) {
+    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,showFastingRange=false,fitData=false}) {
       const q=id=>document.getElementById(prefix+id),{events,unresolved}=collectChartEvents(state.records,bounds);
       const visibleEvents=events.filter(event=>event.type==="meal"?showMeals:showMedications);
       q("show-meals").setAttribute("aria-checked",String(showMeals));q("meals-switch-label").textContent=showMeals?"ON":"OFF";
@@ -859,8 +859,17 @@
       const W=Math.max(180,svg.clientWidth||600),H=300,left=42,right=showFastingRange&&!prefix?82:14,top=42,bottom=90,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
       svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
       // Una sola escala proporcional para los datos y su inversa interactiva.
-      const timeMin=bounds.start,timeMax=Math.max(bounds.end,bounds.start+1);
       const anchorTimes=records.map(record=>Date.parse(record.createdAt)).sort((a,b)=>a-b);
+      // Ajustar solo el encuadre: todos los instantes conservan su distancia temporal.
+      // Incluir eventos ocultos estabiliza la escala al alternar filtros.
+      const dataTimes=[...anchorTimes,...events.map(event=>event.timestamp)].filter(Number.isFinite);
+      let timeMin=bounds.start,timeMax=Math.max(bounds.end,bounds.start+1);
+      if(fitData&&dataTimes.length){
+        const first=Math.min(...dataTimes),last=Math.max(...dataTimes),padding=Math.max(first===last?1800000:300000,(last-first)*.04);
+        timeMin=Math.max(bounds.start,first-padding);timeMax=Math.min(bounds.end,last+padding);
+        if(timeMax<=timeMin)timeMax=timeMin+1;
+        q("chart-period-label").textContent+=` · Vista ajustada a registros: ${dateFormat.format(timeMin)} ${localTime(timeMin)} → ${dateFormat.format(timeMax)} ${localTime(timeMax)}`;
+      }
       const scale=createChartTimeScale(timeMin,timeMax,left,plotW),x=scale.timestampToX;
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5,"aria-hidden":"true"}));
       if(showFastingRange&&!prefix){
@@ -942,7 +951,7 @@
           const group=svgElement("g",{class:"event-marker "+(meal?"meal-marker":"medication-marker"),tabindex:"0",role:"button","aria-label":description,"aria-controls":prefix+"chart-detail","data-event-time":event.timestamp});
           group.append(svgElement("title",{},description),svgElement("line",{x1:px,x2:px,y1:top-22,y2:H-bottom,stroke:"transparent","stroke-width":22,"pointer-events":"stroke"}),svgElement("line",{class:"event-line",x1:px,x2:px,y1:top-5,y2:H-bottom,stroke:color,"stroke-width":1.2,"stroke-dasharray":meal?"2 4":"5 3",opacity:events.length>40?0.32:0.8,"pointer-events":"none"}));
           // Todas las líneas conservan su hora exacta. Solo se espacia el texto decorativo.
-          if(px-lastIcon[event.type]>=22){
+          if(px-lastIcon[event.type]>=(meal?26:70)){
             if(meal){
               group.append(svgElement("text",{x:px,y:top-2,"text-anchor":"middle","aria-hidden":"true","pointer-events":"none"},eventIcon));
             }else{
@@ -950,8 +959,7 @@
               const medKeys=new Set(sameTimeMeds.map(candidate=>candidate.medication?.key));
               const medLabel=medKeys.has("metformin")&&medKeys.has("glibenclamide")?"M+G":medKeys.has("metformin")?"M":medKeys.has("glibenclamide")?"G":"";
               group.append(
-                svgElement("text",{x:px-4,y:top-20,"text-anchor":"end","aria-hidden":"true","pointer-events":"none"},eventIcon),
-                svgElement("text",{x:px+2,y:top-20,"text-anchor":"start","font-size":"9","font-weight":"700",fill:"#8056a8","aria-hidden":"true","pointer-events":"none"},medLabel)
+                svgElement("text",{x:Math.max(left+30,Math.min(W-right-30,px)),y:top-20,"text-anchor":"middle","font-size":"9","font-weight":"700",fill:"#8056a8","aria-hidden":"true","pointer-events":"none"},`${eventIcon} ${medLabel}`)
               );
             }
             lastIcon[event.type]=px;
@@ -975,12 +983,23 @@
         group.append(
           svgElement("title",{},description),
           svgElement("circle",{cx:point.x,cy:point.y,r:14,fill:"transparent"}),
-          svgElement("text",{x:point.x,y:labelY,"text-anchor":"middle","font-size":"12","font-weight":"700",fill:category.color,stroke:"#fff","stroke-width":"3","paint-order":"stroke","stroke-linejoin":"round","pointer-events":"none","aria-hidden":"true"},String(record.glucose)),
+          svgElement("text",{class:"chart-value-label",x:point.x,y:labelY,"text-anchor":"middle","font-size":"12","font-weight":"700",fill:category.color,stroke:"#fff","stroke-width":"3","paint-order":"stroke","stroke-linejoin":"round","pointer-events":"none","aria-hidden":"true"},String(record.glucose)),
           svgElement("circle",{class:"dot",cx:point.x,cy:point.y,r:5,fill:category.color,stroke:"#fff","stroke-width":2,"pointer-events":"none"})
         );
         interactiveNodes.push({node:group,event:{type:"glucose",timestamp:Date.parse(record.createdAt),record}});
         const show=()=>prefix?showChartDetail(record,prefix+"chart-detail"):interaction?.select(Date.parse(record.createdAt));if(prefix)group.addEventListener("pointerenter",show);group.addEventListener("click",show);group.addEventListener("focus",show);group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});svg.append(group);
       });
+      if(!prefix){
+        // Omitir solo rótulos que chocan; cada punto sigue accesible al cursor o al foco.
+        const occupied=[];let omitted=0;
+        for(const label of svg.querySelectorAll(".chart-value-label")){
+          const box=label.getBBox(),pad=4;
+          const collision=occupied.some(other=>box.x<other.x+other.width+pad&&box.x+box.width+pad>other.x&&box.y<other.y+other.height+pad&&box.y+box.height+pad>other.y);
+          const hitsPoint=points.some(point=>Math.abs(point.x-Number(label.getAttribute("x")))>.01&&point.x>=box.x-5&&point.x<=box.x+box.width+5&&point.y>=box.y-5&&point.y<=box.y+box.height+5);
+          if(collision||hitsPoint){label.remove();omitted++;}else occupied.push(box);
+        }
+        if(omitted)q("chart-events-note").textContent+=` · ${omitted} valores se consultan al pasar el cursor o tocar, para evitar superposiciones.`;
+      }
       if(!prefix)interaction=attachChartInteraction({svg,detail:q("chart-detail"),scale,nodes:interactiveNodes,left,top,plotW,plotH,W,H});
     }
 
