@@ -684,19 +684,38 @@
       const x=timestamp=>compactLongPeriod?compactX(timestamp):left+(timestamp-timeMin)/(timeMax-timeMin)*plotW;
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5,"aria-hidden":"true"}));
       for(let i=0;i<=4;i++){const value=yMax*i/4,lineY=y(value);svg.append(svgElement("line",{x1:left,y1:lineY,x2:W-right,y2:lineY,stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-7,y:lineY+4,"text-anchor":"end"},Math.round(value)));}
-      const tickCount=W<450?3:5;
-      for(let i=0;i<tickCount;i++) {
-        let timestamp,position;
-        if(compactLongPeriod&&anchorTimes.length){
-          const index=Math.round((anchorTimes.length-1)*i/(tickCount-1));
-          timestamp=anchorTimes[index]; position=left+i/(tickCount-1)*plotW;
-        } else {
-          const rawTimestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1);
-          timestamp=i>0&&i<tickCount-1?Math.round(rawTimestamp/60000)*60000:rawTimestamp; position=x(timestamp);
+      // Eje X: en Hoy / 24 h cada medición muestra su hora exacta en su posición temporal.
+      // En 7 / 30 días se conserva el eje compacto por fechas.
+      if(!compactLongPeriod&&anchorTimes.length){
+        const axisItems=anchorTimes.map(timestamp=>({timestamp,position:x(timestamp)}));
+        axisItems.forEach((item,index)=>{
+          const previous=axisItems[index-1],next=axisItems[index+1];
+          const tooCloseLeft=previous&&item.position-previous.position<34;
+          const tooCloseRight=next&&next.position-item.position<34;
+          // Si dos mediciones están demasiado juntas, alternamos levemente la altura
+          // para mantener ambas horas legibles sin mover su posición real en X.
+          const row=(tooCloseLeft||tooCloseRight)?index%2:0;
+          const anchor=item.position<left+22?"start":item.position>W-right-22?"end":"middle";
+          svg.append(svgElement("line",{x1:item.position,x2:item.position,y1:H-bottom,y2:H-bottom+5,stroke:"#c7d1df","stroke-width":"1","aria-hidden":"true"}));
+          svg.append(svgElement("text",{x:item.position,y:H-31+row*14,"text-anchor":anchor,"font-size":"11","font-weight":"600"},localTime(item.timestamp)));
+        });
+        const firstDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMin);
+        const lastDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMax);
+        svg.append(svgElement("text",{x:left,y:H-10,"text-anchor":"start","font-size":"10"},firstDay));
+        if(lastDay!==firstDay)svg.append(svgElement("text",{x:W-right,y:H-10,"text-anchor":"end","font-size":"10"},lastDay));
+      }else{
+        const tickCount=W<450?3:5;
+        for(let i=0;i<tickCount;i++) {
+          let timestamp,position;
+          if(anchorTimes.length){
+            const index=Math.round((anchorTimes.length-1)*i/(tickCount-1));
+            timestamp=anchorTimes[index]; position=left+i/(tickCount-1)*plotW;
+          } else {
+            timestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1); position=x(timestamp);
+          }
+          const anchor=i===0?"start":i===tickCount-1?"end":"middle";
+          svg.append(svgElement("text",{x:position,y:H-14,"text-anchor":anchor},new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timestamp)));
         }
-        const anchor=i===0?"start":i===tickCount-1?"end":"middle";
-        if(!compactLongPeriod)svg.append(svgElement("text",{x:position,y:H-32,"text-anchor":anchor},localTime(timestamp)));
-        svg.append(svgElement("text",{x:position,y:H-14,"text-anchor":anchor},new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timestamp)));
       }
       if(showDayBoundary) {
         const nextDay=shiftDay(localDateKey(timeMin),1),midnight=startOfChileDay(nextDay);
