@@ -712,10 +712,9 @@
           const row=(tooCloseLeft||tooCloseRight)?index%2:0;
           const anchor=item.position<left+22?"start":item.position>W-right-22?"end":"middle";
           const hasMedication=item.types.includes("medication"),hasMeal=item.types.includes("meal");
-          const marker=hasMedication&&hasMeal?"💊🍽️ ":hasMedication?"💊 ":hasMeal?"🍽️ ":"";
           const tickColor=hasMedication?"#8056a8":hasMeal?"#b77421":"#c7d1df";
           svg.append(svgElement("line",{x1:item.position,x2:item.position,y1:H-bottom,y2:H-bottom+5,stroke:tickColor,"stroke-width":"1","aria-hidden":"true"}));
-          svg.append(svgElement("text",{x:item.position,y:H-31+row*14,"text-anchor":anchor,"font-size":"10","font-weight":"600"},marker+localTime(item.timestamp)));
+          svg.append(svgElement("text",{x:item.position,y:H-31+row*14,"text-anchor":anchor,"font-size":"10","font-weight":"600"},localTime(item.timestamp)));
         });
         const firstDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMin);
         const lastDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMax);
