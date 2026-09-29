@@ -1177,22 +1177,6 @@
     $("#edit-cancel").addEventListener("click",closeEditMeasurement);
     $("#edit-dialog").addEventListener("click",event=>{if(event.target===$("#edit-dialog"))closeEditMeasurement();});
 
-    $("#edit-meal-datetime").innerHTML=dateFieldsHTML("edit-meal","de la comida");
-    MEAL_TYPES.forEach(type=>{const option=element("option","",type);option.value=type;$("#edit-meal-type").append(option);});
-    watchDateFields("edit-meal");
-    $("#edit-meal-form").addEventListener("submit",saveEditedMeal);
-    $("#edit-meal-close").addEventListener("click",closeEditMeal);
-    $("#edit-meal-cancel").addEventListener("click",closeEditMeal);
-    $("#edit-meal-dialog").addEventListener("click",event=>{if(event.target===$("#edit-meal-dialog"))closeEditMeal();});
-
-    $("#edit-medication-datetime").innerHTML=dateFieldsHTML("edit-medication","del medicamento");
-    TABLET_FRACTIONS.forEach(fraction=>{const option=element("option","",fraction.label);option.value=String(fraction.value);$("#edit-medication-fraction").append(option);});
-    watchDateFields("edit-medication");
-    $("#edit-medication-fraction").addEventListener("change",updateEditMedicationEquivalent);
-    $("#edit-medication-form").addEventListener("submit",saveEditedMedication);
-    $("#edit-medication-close").addEventListener("click",closeEditMedication);
-    $("#edit-medication-cancel").addEventListener("click",closeEditMedication);
-    $("#edit-medication-dialog").addEventListener("click",event=>{if(event.target===$("#edit-medication-dialog"))closeEditMedication();});
 
     $("#export-excel").addEventListener("click",exportToExcel);
     $("#cloud-refresh").addEventListener("click",loadMeasurements);
@@ -1519,6 +1503,25 @@
         $("#fasting-switch-label").textContent=state.showFastingRange?"ON":"OFF";
         renderChart();
       });
+
+      // Editores de comidas y medicamentos: se inicializan aquí porque MEAL_TYPES
+      // y las utilidades temporales ya están disponibles.
+      $("#edit-meal-datetime").innerHTML=dateFieldsHTML("edit-meal","de la comida");
+      MEAL_TYPES.forEach(type=>{const option=element("option","",type);option.value=type;$("#edit-meal-type").append(option);});
+      watchDateFields("edit-meal");
+      $("#edit-meal-form").addEventListener("submit",saveEditedMeal);
+      $("#edit-meal-close").addEventListener("click",closeEditMeal);
+      $("#edit-meal-cancel").addEventListener("click",closeEditMeal);
+      $("#edit-meal-dialog").addEventListener("click",event=>{if(event.target===$("#edit-meal-dialog"))closeEditMeal();});
+
+      $("#edit-medication-datetime").innerHTML=dateFieldsHTML("edit-medication","del medicamento");
+      TABLET_FRACTIONS.forEach(fraction=>{const option=element("option","",fraction.label);option.value=String(fraction.value);$("#edit-medication-fraction").append(option);});
+      watchDateFields("edit-medication");
+      $("#edit-medication-fraction").addEventListener("change",updateEditMedicationEquivalent);
+      $("#edit-medication-form").addEventListener("submit",saveEditedMedication);
+      $("#edit-medication-close").addEventListener("click",closeEditMedication);
+      $("#edit-medication-cancel").addEventListener("click",closeEditMedication);
+      $("#edit-medication-dialog").addEventListener("click",event=>{if(event.target===$("#edit-medication-dialog"))closeEditMedication();});
     }
 
     initializeEventForms();
