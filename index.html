@@ -174,8 +174,9 @@
     .chart-options .now-button { min-height:40px;padding:7px 10px;font-size:.78rem; }
     @media(max-width:760px) {
       .chart-options { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:10px 0 8px; }
-      .chart-options .now-button { width:100%;min-width:0;min-height:36px;padding:6px 7px;font-size:.72rem;line-height:1.15;white-space:nowrap; }
-      .chart-options strong { margin-left:3px; }
+      .chart-options .now-button { width:100%;min-width:0;min-height:34px;padding:5px 5px;font-size:.68rem;line-height:1.1;white-space:nowrap; }
+      .chart-options strong { margin-left:2px; }
+      .chart-card .chart { height:245px; }
     }
     #calendar-timeline { margin-top:16px; }
     .clock-date { font-size:13px; }
@@ -703,18 +704,25 @@
           }
         });
 
+        // En pantallas angostas repartimos automáticamente las horas cercanas
+        // en hasta 3 filas. En escritorio se conserva una sola fila salvo colisiones.
+        const mobileAxis=W<500,rowLastX=[-Infinity,-Infinity,-Infinity];
         mergedAxisItems.forEach((item,index)=>{
-          const previous=mergedAxisItems[index-1],next=mergedAxisItems[index+1];
-          const tooCloseLeft=previous&&item.position-previous.position<34;
-          const tooCloseRight=next&&next.position-item.position<34;
-          // Si dos marcas están demasiado juntas, alternamos levemente la altura
-          // para mantener las horas legibles sin mover su posición real en X.
-          const row=(tooCloseLeft||tooCloseRight)?index%2:0;
-          const anchor=item.position<left+22?"start":item.position>W-right-22?"end":"middle";
+          let row=0;
+          const minGap=mobileAxis?54:38;
+          if(mobileAxis){
+            row=rowLastX.findIndex(lastX=>item.position-lastX>=minGap);
+            if(row<0)row=index%3;
+            rowLastX[row]=item.position;
+          }else{
+            const previous=mergedAxisItems[index-1];
+            if(previous&&item.position-previous.position<minGap)row=index%2;
+          }
+          const anchor=item.position<left+24?"start":item.position>W-right-24?"end":"middle";
           const hasMedication=item.types.includes("medication"),hasMeal=item.types.includes("meal");
           const tickColor=hasMedication?"#8056a8":hasMeal?"#b77421":"#c7d1df";
           svg.append(svgElement("line",{x1:item.position,x2:item.position,y1:H-bottom,y2:H-bottom+5,stroke:tickColor,"stroke-width":"1","aria-hidden":"true"}));
-          svg.append(svgElement("text",{x:item.position,y:H-31+row*14,"text-anchor":anchor,"font-size":"10","font-weight":"600"},localTime(item.timestamp)));
+          svg.append(svgElement("text",{x:item.position,y:H-36+row*14,"text-anchor":anchor,"font-size":mobileAxis?"9":"10","font-weight":"600"},localTime(item.timestamp)));
         });
         const firstDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMin);
         const lastDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMax);
