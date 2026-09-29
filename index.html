@@ -730,14 +730,18 @@
           // Todas las líneas conservan su hora exacta. Solo se espacia el texto decorativo.
           if(px-lastIcon[event.type]>=22){
             if(meal){
-              group.append(svgElement("text",{x:px,y:top-2,"text-anchor":"middle","aria-hidden":"true","pointer-events":"none"},eventIcon));
+              group.append(
+                svgElement("text",{x:px,y:top-7,"text-anchor":"middle","aria-hidden":"true","pointer-events":"none"},eventIcon),
+                svgElement("text",{x:px,y:top+5,"text-anchor":"middle","font-size":"9","font-weight":"700",fill:"#b77421","aria-hidden":"true","pointer-events":"none"},localTime(event.timestamp))
+              );
             }else{
               const sameTimeMeds=visibleEvents.filter(candidate=>candidate.type==="medication"&&Math.abs(candidate.timestamp-event.timestamp)<60000);
               const medKeys=new Set(sameTimeMeds.map(candidate=>candidate.medication?.key));
               const medLabel=medKeys.has("metformin")&&medKeys.has("glibenclamide")?"M+G":medKeys.has("metformin")?"M":medKeys.has("glibenclamide")?"G":"";
               group.append(
-                svgElement("text",{x:px-4,y:top-20,"text-anchor":"end","aria-hidden":"true","pointer-events":"none"},eventIcon),
-                svgElement("text",{x:px+2,y:top-20,"text-anchor":"start","font-size":"9","font-weight":"700",fill:"#8056a8","aria-hidden":"true","pointer-events":"none"},medLabel)
+                svgElement("text",{x:px-4,y:top-25,"text-anchor":"end","aria-hidden":"true","pointer-events":"none"},eventIcon),
+                svgElement("text",{x:px+2,y:top-25,"text-anchor":"start","font-size":"9","font-weight":"700",fill:"#8056a8","aria-hidden":"true","pointer-events":"none"},medLabel),
+                svgElement("text",{x:px,y:top-12,"text-anchor":"middle","font-size":"9","font-weight":"600",fill:"#62738a","aria-hidden":"true","pointer-events":"none"},localTime(event.timestamp))
               );
             }
             lastIcon[event.type]=px;
