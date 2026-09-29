@@ -187,6 +187,16 @@
     .chart-help { margin-top:10px;color:var(--muted);font-size:.8rem; }
     .chart-help summary { cursor:pointer;padding:9px 0;min-height:40px; }
     .chart-help p { margin:5px 0 10px; }
+
+    #chart { touch-action:pan-y; }
+    #chart-content .chart-scroll { position:relative; }
+    .chart-crosshair { stroke:#7c8798;stroke-width:1;stroke-dasharray:2 3;opacity:.8;pointer-events:none; }
+    .chart-tooltip { position:absolute;z-index:3;max-width:290px;box-sizing:border-box;background:#172b46;color:white;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.35;pointer-events:none;box-shadow:0 3px 12px #14294426;overflow:hidden; }
+    .chart-tooltip .event-detail { padding:5px 0 0;margin:5px 0 0;border-top:1px solid #ffffff40; }
+    .chart-tooltip p { margin:2px 0;overflow-wrap:anywhere;color:inherit;font-size:12px; }
+    .chart-tooltip strong { color:inherit;font-size:12px; }
+    .chart .is-preview .dot,.chart .is-selected .dot { stroke:#132c59;stroke-width:4;r:7; }
+    .chart .is-preview .event-line,.chart .is-selected .event-line { stroke-width:3;opacity:1; }
   </style>
 </head>
 <body data-page="inicio">
@@ -735,6 +745,106 @@
       for(const node of $$(".chart-scroll"))if(!observedChartContainers.has(node)){observedChartContainers.set(node,node.clientWidth);chartSizeObserver.observe(node);}
     }
 
+    function createChartTimeScale(start,end,left,width) {
+      const span=Math.max(1,end-start);
+      return {start,end,timestampToX:timestamp=>left+(timestamp-start)/span*width,
+        xToTimestamp:position=>start+Math.max(0,Math.min(1,(position-left)/width))*span};
+    }
+    function appendChartEvent(parent,event,withTime) {
+      const item=appendTemporalDetail(parent,event,withTime),record=event.record;
+      if(event.type==="glucose"){
+        const context=record.moment||record.measurementContext;
+        if(context)item.append(element("p","",context));
+        if(record.food)item.append(element("p","",record.food));
+        if(record.systolic&&record.diastolic)item.append(element("p","",`Presión: ${record.systolic}/${record.diastolic} mmHg`));
+        if(record.note)item.append(element("p","",`Nota: ${record.note}`));
+      }else if(event.type==="medication"){
+        const fraction=TABLET_FRACTIONS.find(item=>item.value===event.saved.tabletFraction);
+        if(fraction)item.append(element("p","",fraction.short));
+      }
+    }
+    function attachChartInteraction({svg,detail,scale,nodes,left,top,plotW,plotH,W,H}) {
+      const controller=new AbortController(),options={signal:controller.signal},host=svg.parentElement;
+      const line=svgElement("line",{class:"chart-crosshair",x1:left,x2:left,y1:top,y2:top+plotH,visibility:"hidden","aria-hidden":"true"});
+      const layer=svgElement("rect",{class:"chart-interaction-layer",x:left,y:top,width:plotW,height:plotH,fill:"transparent","pointer-events":"all","aria-hidden":"true"});
+      svg.append(line,layer);
+      const tooltip=element("div","chart-tooltip");tooltip.hidden=true;tooltip.setAttribute("aria-hidden","true");host.append(tooltip);
+      const events=nodes.map((item,index)=>({...item,index,x:scale.timestampToX(item.event.timestamp)})).sort((a,b)=>a.x-b.x);
+      let frame=0,pending=null,activePointer=null,down=null,dragged=false,lastKey=null;
+      const crossesDays=localDateKey(scale.start)!==localDateKey(scale.end);
+      const timeLabel=timestamp=>`${crossesDays?dateFormat.format(timestamp)+" · ":""}${localTime(timestamp)}`;
+      const pixelsPerUnit=()=>Math.hypot(svg.getScreenCTM().a,svg.getScreenCTM().b);
+      const groupAt=position=>{
+        const tolerance=12/pixelsPerUnit();let nearest=null,distance=Infinity;
+        for(const item of events){const delta=Math.abs(item.x-position);if(delta<distance){nearest=item;distance=delta;}}
+        return nearest&&distance<=tolerance?{x:nearest.x,timestamp:nearest.event.timestamp,items:events.filter(item=>Math.abs(item.x-nearest.x)<=tolerance)}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
+      };
+      const highlight=(items,name)=>{const selected=new Set(items.map(item=>item.node));for(const {node} of events)node.classList.toggle(name,selected.has(node));};
+      const hide=()=>{if(frame)cancelAnimationFrame(frame);frame=0;pending=null;line.setAttribute("visibility","hidden");tooltip.hidden=true;highlight([],"is-preview");};
+      const paint=(position,pointerY)=>{
+        const group=groupAt(position);line.setAttribute("x1",group.x);line.setAttribute("x2",group.x);line.setAttribute("visibility","visible");
+        highlight(group.items,"is-preview");
+        const key=group.items.length?group.items.map(item=>item.index).join(",")+":"+group.timestamp:timeLabel(group.timestamp);
+        if(key!==lastKey){
+          tooltip.replaceChildren(element("strong","",timeLabel(group.timestamp)));
+          group.items.forEach(item=>appendChartEvent(tooltip,item.event,item.event.timestamp!==group.timestamp));
+          lastKey=key;
+        }
+        tooltip.hidden=false;
+        const bounds=svg.getBoundingClientRect(),hostBounds=host.getBoundingClientRect();
+        tooltip.style.maxWidth=Math.max(1,bounds.width-8)+"px";tooltip.style.maxHeight=Math.max(1,bounds.height-8)+"px";
+        // Fit long groups inside the chart. Their full details remain available by tap/click.
+        const oldHint=tooltip.querySelector(".chart-tooltip-hint");oldHint?.remove();
+        if(tooltip.scrollHeight>bounds.height-8){const hint=element("p","chart-tooltip-hint","Toca para ver todos los detalles debajo del gráfico.");tooltip.prepend(hint);}
+        const tip=tooltip.getBoundingClientRect(),sx=group.x/W*bounds.width,sy=pointerY/H*bounds.height;
+        const tx=sx+14+tip.width>bounds.width-4?sx-tip.width-14:sx+14;
+        tooltip.style.left=(bounds.left-hostBounds.left+Math.max(4,Math.min(bounds.width-tip.width-4,tx)))+"px";
+        tooltip.style.top=(bounds.top-hostBounds.top+Math.max(4,Math.min(bounds.height-tip.height-4,sy-tip.height-12)))+"px";
+      };
+      const localPoint=event=>new DOMPoint(event.clientX,event.clientY).matrixTransform(svg.getScreenCTM().inverse());
+      const queue=event=>{
+        if(event.pointerType!=="mouse"&&activePointer!==event.pointerId)return;
+        const point=localPoint(event);
+        if(point.x<left||point.x>left+plotW||point.y<top||point.y>top+plotH){hide();return;}
+        pending=point;if(!frame)frame=requestAnimationFrame(()=>{frame=0;const next=pending;pending=null;if(next)paint(next.x,next.y);});
+      };
+      const selectPosition=position=>{
+        const group=groupAt(position);highlight(group.items,"is-selected");detail.replaceChildren();
+        group.items.forEach(item=>appendChartEvent(detail,item.event,true));
+      };
+      svg.addEventListener("pointerenter",queue,options);
+      svg.addEventListener("pointermove",event=>{
+        if(down&&Math.hypot(event.clientX-down.x,event.clientY-down.y)>6)dragged=true;
+        queue(event);
+      },options);
+      svg.addEventListener("pointerdown",event=>{
+        if(!event.isPrimary||event.button!==0)return;
+        activePointer=event.pointerId;down={x:event.clientX,y:event.clientY};dragged=false;
+        const p=localPoint(event);
+        if(event.pointerType!=="mouse"&&p.x>=left&&p.x<=left+plotW&&p.y>=top&&p.y<=top+plotH)svg.setPointerCapture(event.pointerId);
+        queue(event);
+      },options);
+      svg.addEventListener("pointerup",event=>{
+        if(activePointer!==event.pointerId)return;
+        const point=localPoint(event);
+        if(event.pointerType!=="mouse"&&!dragged&&point.x>=left&&point.x<=left+plotW&&point.y>=top&&point.y<=top+plotH)selectPosition(point.x);
+        activePointer=null;down=null;if(svg.hasPointerCapture(event.pointerId))svg.releasePointerCapture(event.pointerId);
+        if(event.pointerType!=="mouse")hide();
+      },options);
+      svg.addEventListener("pointercancel",()=>{activePointer=null;down=null;dragged=true;hide();},options);
+      svg.addEventListener("pointerleave",hide,options);
+      layer.addEventListener("click",event=>{if(!dragged)selectPosition(localPoint(event).x);},options);
+      // The transparent layer leaves the existing keyboard-focusable SVG nodes intact.
+      svg.addEventListener("keydown",event=>{
+        if(event.key==="Escape"){hide();return;}
+        if(event.key!=="ArrowLeft"&&event.key!=="ArrowRight")return;
+        const index=events.findIndex(item=>item.node===document.activeElement);if(index<0)return;
+        event.preventDefault();events[Math.max(0,Math.min(events.length-1,index+(event.key==="ArrowRight"?1:-1)))].node.focus();
+      },options);
+      svg.chartInteractionCleanup=()=>{hide();controller.abort();tooltip.remove();delete svg.chartInteractionCleanup;};
+      return {select:timestamp=>selectPosition(scale.timestampToX(timestamp))};
+    }
+
     function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,showFastingRange=false}) {
       const q=id=>document.getElementById(prefix+id),{events,unresolved}=collectChartEvents(state.records,bounds);
       const visibleEvents=events.filter(event=>event.type==="meal"?showMeals:showMedications);
@@ -745,26 +855,13 @@
       q("chart-events-note").textContent=[showMedications?`${events.filter(e=>e.type==="medication").length} tomas con hora${unresolved?` · ${unresolved} sin hora inequívoca`:""}`:"",showMeals?`${events.filter(e=>e.type==="meal").length} comidas`:""].filter(Boolean).join(" · ");
       const visible=records.length>0||visibleEvents.length>0;
       q("chart-empty").hidden=visible;q("chart-content").hidden=!visible;q("chart-detail").replaceChildren();
-      const svg=q("chart");observeChartSizes();svg.replaceChildren();if(!visible)return;
+      const svg=q("chart");svg.chartInteractionCleanup?.();observeChartSizes();svg.replaceChildren();if(!visible)return;
       const W=Math.max(180,svg.clientWidth||600),H=300,left=42,right=showFastingRange&&!prefix?82:14,top=42,bottom=90,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
       svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
-      // Hoy y 24 h conservan una escala temporal real. En 7/30 días usamos una escala
-      // cronológica compacta basada en las mediciones para evitar grandes zonas vacías.
+      // Una sola escala proporcional para los datos y su inversa interactiva.
       const timeMin=bounds.start,timeMax=Math.max(bounds.end,bounds.start+1);
       const anchorTimes=records.map(record=>Date.parse(record.createdAt)).sort((a,b)=>a-b);
-      const compactX=timestamp=>{
-        if(anchorTimes.length<2)return left+plotW/2;
-        if(timestamp<=anchorTimes[0])return left;
-        if(timestamp>=anchorTimes.at(-1))return W-right;
-        let hi=anchorTimes.findIndex(value=>value>=timestamp),lo=Math.max(0,hi-1);
-        if(anchorTimes[hi]===timestamp){
-          const first=anchorTimes.indexOf(anchorTimes[hi]),last=anchorTimes.lastIndexOf(anchorTimes[hi]);
-          return left+((first+last)/2)/(anchorTimes.length-1)*plotW;
-        }
-        const span=Math.max(1,anchorTimes[hi]-anchorTimes[lo]),fraction=(timestamp-anchorTimes[lo])/span;
-        return left+(lo+fraction)/(anchorTimes.length-1)*plotW;
-      };
-      const x=timestamp=>compactLongPeriod?compactX(timestamp):left+(timestamp-timeMin)/(timeMax-timeMin)*plotW;
+      const scale=createChartTimeScale(timeMin,timeMax,left,plotW),x=scale.timestampToX;
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5,"aria-hidden":"true"}));
       if(showFastingRange&&!prefix){
         const fastingTop=y(130),fastingBottom=y(80);
@@ -780,7 +877,7 @@
       }
       for(let i=0;i<=4;i++){const value=yMax*i/4,lineY=y(value);svg.append(svgElement("line",{x1:left,y1:lineY,x2:W-right,y2:lineY,stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-7,y:lineY+4,"text-anchor":"end"},Math.round(value)));}
       // Eje X: en Hoy / 24 h muestra la hora exacta de mediciones, comidas y medicamentos.
-      // Cada marca conserva su posición temporal real. En 7 / 30 días se conserva el eje compacto por fechas.
+      // Cada marca conserva su posición temporal real. En 7 / 30 días se muestran fechas sobre la misma escala real.
       if(!compactLongPeriod&&timeMax-timeMin>86400000){
         // En 72 horas se rotulan los días, conservando la escala temporal real.
         // El primer día puede haber comenzado antes del límite visible del intervalo.
@@ -826,14 +923,7 @@
         const tickCount=Math.max(2,Math.min(5,Math.floor(plotW/80)));
         const dateItems=[];
         for(let i=0;i<tickCount;i++) {
-          let timestamp,position;
-          if(anchorTimes.length){
-            const index=Math.round((anchorTimes.length-1)*i/(tickCount-1));
-            timestamp=anchorTimes[index]; position=left+i/(tickCount-1)*plotW;
-          } else {
-            timestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1); position=x(timestamp);
-          }
-          const anchor=i===0?"start":i===tickCount-1?"end":"middle";
+          const timestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1),position=x(timestamp);
           dateItems.push({position,timestamp,text:new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timestamp)});
         }
         drawChartAxisLabels(svg,dateItems,{left,right:W-right,baseline:H-bottom+23,rows:1});
@@ -844,6 +934,7 @@
           const boundary=svgElement("line",{x1:x(midnight),x2:x(midnight),y1:top,y2:H-bottom,stroke:"#96a3b6","stroke-dasharray":"2 6"});boundary.append(svgElement("title",{},`Cambio de día: ${day}`));svg.append(boundary);
         }
       }
+      let interaction;const interactiveNodes=[];
       if(visibleEvents.length) {
         const lastIcon={meal:-Infinity,medication:-Infinity};
         visibleEvents.forEach((event,index)=>{
@@ -865,7 +956,9 @@
             }
             lastIcon[event.type]=px;
           }
+          interactiveNodes.push({node:group,event});
           const show=()=>{
+            if(!prefix){interaction?.select(event.timestamp);return;}
             const box=q("chart-detail");box.replaceChildren();
             visibleEvents.filter(candidate=>Math.abs(x(candidate.timestamp)-px)<=12).forEach(candidate=>{
               appendTemporalDetail(box,candidate);
@@ -885,8 +978,10 @@
           svgElement("text",{x:point.x,y:labelY,"text-anchor":"middle","font-size":"12","font-weight":"700",fill:category.color,stroke:"#fff","stroke-width":"3","paint-order":"stroke","stroke-linejoin":"round","pointer-events":"none","aria-hidden":"true"},String(record.glucose)),
           svgElement("circle",{class:"dot",cx:point.x,cy:point.y,r:5,fill:category.color,stroke:"#fff","stroke-width":2,"pointer-events":"none"})
         );
-        const show=()=>showChartDetail(record,prefix+"chart-detail");group.addEventListener("pointerenter",show);group.addEventListener("click",show);group.addEventListener("focus",show);group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});svg.append(group);
+        interactiveNodes.push({node:group,event:{type:"glucose",timestamp:Date.parse(record.createdAt),record}});
+        const show=()=>prefix?showChartDetail(record,prefix+"chart-detail"):interaction?.select(Date.parse(record.createdAt));if(prefix)group.addEventListener("pointerenter",show);group.addEventListener("click",show);group.addEventListener("focus",show);group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});svg.append(group);
       });
+      if(!prefix)interaction=attachChartInteraction({svg,detail:q("chart-detail"),scale,nodes:interactiveNodes,left,top,plotW,plotH,W,H});
     }
 
     function renderAll() { renderSummary();renderRanges();renderHistory();renderChart();renderCalendar(); }
