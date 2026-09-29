@@ -173,8 +173,8 @@
     .chart-options { display:flex;gap:8px;flex-wrap:wrap; }
     .chart-options .now-button { min-height:40px;padding:7px 10px;font-size:.78rem; }
     @media(max-width:760px) {
-      .chart-options { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:10px 0 8px; }
-      .chart-options .now-button { width:100%;min-width:0;min-height:34px;padding:5px 5px;font-size:.68rem;line-height:1.1;white-space:nowrap; }
+      .chart-options { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:10px 0 8px; }
+      .chart-options .now-button { width:100%;min-width:0;min-height:34px;padding:5px 3px;font-size:.60rem;line-height:1.1;white-space:nowrap; }
       .chart-options strong { margin-left:2px; }
       .chart-card .chart { height:245px; }
     }
@@ -274,7 +274,7 @@
         <div class="chart-top"><span>Glucemia · mg/dL</span><span id="chart-count">0 mediciones</span></div>
         <div id="chart-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div><h3>Aún no hay mediciones</h3><p>Las mediciones de este período aparecerán aquí.</p></div>
         <div id="chart-content" hidden><div class="chart-scroll"><svg id="chart" class="chart" viewBox="0 0 600 250" aria-label="Gráfico de glucemia. Selecciona un punto para ver sus detalles."></svg></div><div id="chart-detail" class="chart-detail" role="status" aria-live="polite"></div></div>
-        <div class="chart-options"><button id="show-medications" type="button" class="now-button" role="switch" aria-checked="true">💊 Mostrar medicamentos <strong id="medications-switch-label">ON</strong></button><button id="show-meals" type="button" class="now-button" role="switch" aria-checked="true">🍽️ Mostrar comidas <strong id="meals-switch-label">ON</strong></button></div>
+        <div class="chart-options"><button id="show-medications" type="button" class="now-button" role="switch" aria-checked="true">💊 Mostrar medicamentos <strong id="medications-switch-label">ON</strong></button><button id="show-meals" type="button" class="now-button" role="switch" aria-checked="true">🍽️ Mostrar comidas <strong id="meals-switch-label">ON</strong></button><button id="show-fasting-range" type="button" class="now-button" role="switch" aria-checked="false">Ayuno 80–130 <strong id="fasting-switch-label">OFF</strong></button></div>
         <p id="chart-period-label" class="small muted"></p>
         <p id="chart-events-note" class="small muted"></p>
         <p class="range-note">Los marcadores indican cuándo se registraron comidas y medicamentos y no demuestran que hayan causado cambios en la glucosa.</p>
@@ -448,7 +448,7 @@
       return saved?.taken===true && typeof saved.doseMg==="number" && Number.isFinite(saved.doseMg) && saved.doseMg>0 ? saved : null;
     }
     function hasRecordedMedication(record) { return ["metformin","glibenclamide"].some(key=>recordedMedication(record,key)); }
-    const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showMeals:true, calendarShowMeals:true };
+    const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showMeals:true, calendarShowMeals:true, showFastingRange:false };
 
     // MEDICAMENTOS: equivalencias aritméticas de cantidades ya tomadas.
     // No se calculan recomendaciones ni se relaciona la cantidad con la glucemia.
@@ -650,10 +650,10 @@
     }
     function renderChart() {
       const now=Date.now();
-      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h",compactLongPeriod:state.period===7||state.period===30});
+      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h",compactLongPeriod:state.period===7||state.period===30,showFastingRange:state.showFastingRange});
     }
     // Un único renderizador para el gráfico general y el del día seleccionado.
-    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false}) {
+    function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,showFastingRange=false}) {
       const q=id=>document.getElementById(prefix+id),{events,unresolved}=collectChartEvents(state.records,bounds);
       const visibleEvents=events.filter(event=>event.type==="meal"?showMeals:showMedications);
       q("show-meals").setAttribute("aria-checked",String(showMeals));q("meals-switch-label").textContent=showMeals?"ON":"OFF";
@@ -684,6 +684,17 @@
       };
       const x=timestamp=>compactLongPeriod?compactX(timestamp):left+(timestamp-timeMin)/(timeMax-timeMin)*plotW;
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5,"aria-hidden":"true"}));
+      if(showFastingRange&&!prefix){
+        const fastingTop=y(130),fastingBottom=y(80);
+        svg.append(svgElement("rect",{x:left,y:fastingTop,width:plotW,height:fastingBottom-fastingTop,fill:"#2563eb",opacity:".07","pointer-events":"none","aria-hidden":"true"}));
+        [80,130].forEach(value=>{
+          const py=y(value);
+          svg.append(
+            svgElement("line",{x1:left,x2:W-right,y1:py,y2:py,stroke:"#2563eb","stroke-width":"1.5","stroke-dasharray":"6 4",opacity:".8","pointer-events":"none","aria-hidden":"true"}),
+            svgElement("text",{x:W-right-4,y:py-5,"text-anchor":"end","font-size":"9","font-weight":"700",fill:"#2563eb","pointer-events":"none","aria-hidden":"true"},`${value} ayuno`)
+          );
+        });
+      }
       for(let i=0;i<=4;i++){const value=yMax*i/4,lineY=y(value);svg.append(svgElement("line",{x1:left,y1:lineY,x2:W-right,y2:lineY,stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-7,y:lineY+4,"text-anchor":"end"},Math.round(value)));}
       // Eje X: en Hoy / 24 h muestra la hora exacta de mediciones, comidas y medicamentos.
       // Cada marca conserva su posición temporal real. En 7 / 30 días se conserva el eje compacto por fechas.
@@ -1366,6 +1377,12 @@
       $("#medication-form").addEventListener("submit",saveMedication);
       $("#meal-now").addEventListener("click",()=>setDateNow("meal"));$("#measurement-now").addEventListener("click",()=>setDateNow("measurement"));
       $("#show-meals").addEventListener("click",()=>{state.showMeals=!state.showMeals;renderChart();});
+      $("#show-fasting-range").addEventListener("click",()=>{
+        state.showFastingRange=!state.showFastingRange;
+        $("#show-fasting-range").setAttribute("aria-checked",String(state.showFastingRange));
+        $("#fasting-switch-label").textContent=state.showFastingRange?"ON":"OFF";
+        renderChart();
+      });
     }
 
     initializeEventForms();
