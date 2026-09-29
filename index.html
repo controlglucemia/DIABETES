@@ -180,6 +180,13 @@
     }
     #calendar-timeline { margin-top:16px; }
     .clock-date { font-size:13px; }
+    body[data-page="inicio"] .chart-card { grid-column:1/-1; }
+    .history-date-group { display:grid;gap:12px;min-width:0; }
+    .history-date-group+.history-date-group { margin-top:16px; }
+    .history-date-title { padding:10px 2px 6px;border-bottom:1px solid var(--line);font-size:.95rem;font-weight:650;color:var(--muted); }
+    .chart-help { margin-top:10px;color:var(--muted);font-size:.8rem; }
+    .chart-help summary { cursor:pointer;padding:9px 0;min-height:40px; }
+    .chart-help p { margin:5px 0 10px; }
   </style>
 </head>
 <body data-page="inicio">
@@ -198,7 +205,6 @@
     <header class="header">
       <div class="brand" aria-hidden="true"><svg class="icon"><use href="#i-drop"/></svg></div>
       <div><h1>Control de Glucemia</h1><p>Registra y controla tus mediciones</p></div>
-      <span class="local-label"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Guardado en Supabase</span>
     </header>
     <nav class="nav" aria-label="Navegación principal">
       <button type="button" data-nav="inicio" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Inicio</span></button>
@@ -222,7 +228,7 @@
           </dl>
         </div><p class="scope-note">Resumen de todas tus mediciones guardadas.</p>
       </section>
-      <section class="card register-card" data-pages="inicio registrar" aria-labelledby="register-title">
+      <section class="card register-card" data-pages="registrar" aria-labelledby="register-title" hidden>
         <div class="card-head"><div class="heading-icon"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><h2 id="register-title">Registrar glucemia</h2></div></div>
         <form id="measurement-form" novalidate>
           <div id="measurement-datetime"></div><button id="measurement-now" type="button" class="now-button" style="margin-bottom:16px">Usar fecha y hora actuales</button>
@@ -239,7 +245,6 @@
           </section>
           <p id="form-error" class="error" role="alert" hidden></p>
           <button id="save-button" class="primary wide" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Guardar resultado</button>
-          <p class="privacy"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg> Tus registros se guardan en Supabase</p>
         </form>
       </section>
       <section id="meal-register" class="card meal-register-card" data-pages="registrar" aria-labelledby="meal-title" hidden>
@@ -256,7 +261,7 @@
         </form>
       </section>
 
-      <section id="medication-register" class="card medication-register-card" data-pages="registrar" aria-labelledby="medication-register-title">
+      <section id="medication-register" class="card medication-register-card" data-pages="registrar" aria-labelledby="medication-register-title" hidden>
         <div class="card-head"><h2 id="medication-register-title">💊 Registrar medicamentos</h2></div>
         <p class="small muted" style="margin-bottom:16px">Registra medicamentos que ya tomaste de forma independiente, sin necesidad de registrar glucemia.</p>
         <form id="medication-form" novalidate>
@@ -270,15 +275,15 @@
       </section>
 
       <section class="card chart-card" data-pages="inicio estadisticas" aria-labelledby="chart-title">
-        <div class="card-head"><div><h2 id="chart-title">Tu glucemia</h2><p class="small muted">Una mirada a tus mediciones</p></div><div class="filters" role="group" aria-label="Período del gráfico"><button type="button" data-period="1" aria-pressed="true">Hoy</button><button type="button" data-period="24h" aria-pressed="false">Últimas 24 horas</button><button type="button" data-period="7" aria-pressed="false">7 días</button><button type="button" data-period="30" aria-pressed="false">30 días</button></div></div>
+        <div class="card-head"><div><h2 id="chart-title">Tu glucemia</h2><p class="small muted">Una mirada a tus mediciones</p></div><div class="filters" role="group" aria-label="Período del gráfico"><button type="button" data-period="1" aria-pressed="true">Hoy</button><button type="button" data-period="24h" aria-pressed="false">Últimas 24 horas</button><button type="button" data-period="72h" aria-pressed="false">Últimas 72 horas</button><button type="button" data-period="7" aria-pressed="false">7 días</button><button type="button" data-period="30" aria-pressed="false">30 días</button></div></div>
         <div class="chart-top"><span>Glucemia · mg/dL</span><span id="chart-count">0 mediciones</span></div>
         <div id="chart-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div><h3>Aún no hay mediciones</h3><p>Las mediciones de este período aparecerán aquí.</p></div>
         <div id="chart-content" hidden><div class="chart-scroll"><svg id="chart" class="chart" viewBox="0 0 600 250" aria-label="Gráfico de glucemia. Selecciona un punto para ver sus detalles."></svg></div><div id="chart-detail" class="chart-detail" role="status" aria-live="polite"></div></div>
         <div class="chart-options"><button id="show-medications" type="button" class="now-button" role="switch" aria-checked="true">💊 Mostrar medicamentos <strong id="medications-switch-label">ON</strong></button><button id="show-meals" type="button" class="now-button" role="switch" aria-checked="true">🍽️ Mostrar comidas <strong id="meals-switch-label">ON</strong></button><button id="show-fasting-range" type="button" class="now-button" role="switch" aria-checked="false">Ayuno 80–130 <strong id="fasting-switch-label">OFF</strong></button></div>
         <p id="chart-period-label" class="small muted"></p>
         <p id="chart-events-note" class="small muted"></p>
-        <p class="range-note">Los marcadores indican cuándo se registraron comidas y medicamentos y no demuestran que hayan causado cambios en la glucosa.</p>
-        <p class="small muted">Horas de Chile (America/Santiago). Las tomas nuevas tienen fecha y hora propias. Para tomas antiguas sin fecha se usa la fecha del registro y la hora guardada. Las horas ausentes o ambiguas por cambio de horario se conservan en el historial, sin inventar un marcador.</p>
+        <p class="range-note">💊 y 🍽️ indican eventos registrados y no implican que hayan causado cambios en la glucosa.</p>
+        <details class="chart-help"><summary>Más información sobre las horas</summary><p class="small muted">Horas de Chile (America/Santiago). Las tomas nuevas tienen fecha y hora propias. Para tomas antiguas sin fecha se usa la fecha del registro y la hora guardada. Las horas ausentes o ambiguas por cambio de horario se conservan en el historial, sin inventar un marcador.</p></details>
       </section>
       <section class="card full calendar-card" data-pages="calendario" aria-labelledby="calendar-title" hidden>
         <div class="card-head"><h2 id="calendar-title">Calendario</h2><button type="button" id="calendar-today" class="now-button">Hoy</button></div>
@@ -290,7 +295,7 @@
         <p class="small muted">Resumen visual de registros, no diagnóstico. Verde: al menos 80% en rango y ninguna baja. Rojo: alguna baja o al menos 50% fuera de rango. Amarillo: los demás días con mediciones.</p>
         <section id="calendar-detail" class="calendar-detail" aria-labelledby="calendar-day-title"></section>
       </section>
-      <section class="card range-card" data-pages="inicio estadisticas" aria-labelledby="range-title">
+      <section class="card range-card" data-pages="estadisticas" hidden aria-labelledby="range-title">
         <div class="card-head"><h2 id="range-title">Mediciones en rango</h2><span class="small muted">Total guardado</span></div>
         <div class="range-bar" aria-hidden="true"><span id="bar-low" class="low"></span><span id="bar-normal" class="normal"></span><span id="bar-high" class="high"></span></div>
         <div class="range-legend">
@@ -301,13 +306,13 @@
       </section>
       <section class="card full" data-pages="historial" aria-labelledby="history-title" hidden>
         <div class="card-head"><div><h2 id="history-title">Historial</h2><p id="history-count" class="small muted">0 registros guardados</p></div><button id="export-excel" class="now-button" type="button">📊 Exportar Excel</button></div>
-        <p class="small muted" style="margin-bottom:16px">Exporta todos tus registros de Supabase. Requiere conexión.</p>
+        <p class="small muted" style="margin-bottom:16px">Exporta todos tus registros. Requiere conexión.</p>
         <p id="export-status" class="small muted" role="status" aria-live="polite" style="margin-bottom:16px" hidden></p>
         <div id="history-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-drop"/></svg></div><h3>Tu historial comienza aquí</h3><p>Agrega una medición para empezar a llevar tu registro.</p><button type="button" class="primary" data-go-register style="margin-top:18px">Registrar glucemia</button></div>
         <div id="history-list" class="history-list"></div>
       </section>
     </main>
-    <footer class="footer">Registros guardados en Supabase · Sin login. Conserva los datos de este navegador para mantener el acceso automático.</footer>
+    <footer class="footer">Sin login. Conserva los datos de este navegador para mantener el acceso automático.</footer>
   </div>
   <dialog id="edit-dialog" class="edit-dialog">
     <div class="edit-dialog-inner">
@@ -647,11 +652,24 @@
       ["low","normal","high"].forEach((key,index)=>{ $("#bar-"+key).style.width=measurements.length?`${counts[index]*100/measurements.length}%`:"0%"; $("#percent-"+key).textContent=measurements.length?`${percentages[index]}%`:"—"; $("#percent-"+key).title=`${counts[index]} mediciones`; });
       $("#label-low").textContent=`< ${CONFIG.range.low} mg/dL`; $("#label-normal").textContent=`${CONFIG.range.low}–${CONFIG.range.high} mg/dL`; $("#label-high").textContent=`> ${CONFIG.range.high} mg/dL`;
     }
+    function groupEventsByChileDate(events) {
+      const groups=new Map();
+      for(const event of events){const day=localDateKey(event.timestamp??event.record.createdAt);if(!groups.has(day))groups.set(day,[]);groups.get(day).push(event);}
+      return [...groups.entries()].sort(([a],[b])=>b.localeCompare(a)).map(([day,entries])=>({day,events:[...entries.filter(e=>e.timestamp!==null).sort((a,b)=>b.timestamp-a.timestamp),...entries.filter(e=>e.timestamp===null)]}));
+    }
+    function historyDateTitle(day) {
+      const options={timeZone:CHILE_ZONE,day:"numeric",month:"long"};
+      if(day.slice(0,4)!==localDateKey(Date.now()).slice(0,4))options.year="numeric";
+      return new Intl.DateTimeFormat("es",options).format(calendarDate(day));
+    }
     function renderHistory() {
-      const events=timelineEvents(state.records),ordered=[...events.filter(e=>e.timestamp!==null).reverse(),...events.filter(e=>e.timestamp===null)];
+      const events=timelineEvents(state.records),groups=groupEventsByChileDate(events);
       $("#history-count").textContent=`${state.records.length} registros guardados · ${events.length} eventos`;
       $("#history-empty").hidden=events.length>0;
       const fragment=document.createDocumentFragment();
+      for(const {day,events:ordered} of groups){
+        const section=element("section","history-date-group"),heading=element("h3","history-date-title",historyDateTitle(day)),list=element("div","history-list");
+        section.dataset.date=day;heading.id="history-day-"+day;section.setAttribute("aria-labelledby",heading.id);section.append(heading,list);fragment.append(section);
       for(const event of ordered){
         const record=event.record,article=element("article","record"+(event.type==="meal"?" record-meal":"")),main=element("div","record-main");article.dataset.eventType=event.type;article.dataset.recordId=record.id;if(event.timestamp!==null)article.dataset.timestamp=event.timestamp;
         if(event.type==="glucose"){
@@ -662,7 +680,7 @@
           appendTemporalDetail(main,event,false);
           if(event.type==="medication"&&!hasGlucose(record)){if(record.food)main.append(element("p","record-food",record.food));appendPressure(main,record);if(record.note)main.append(element("p","record-note",`Nota: ${record.note}`));}
         }
-        const date=event.timestamp??Date.parse(record.createdAt),time=element("time","",`${dateFormat.format(date)} · ${event.timestamp===null?"Hora no registrada o ambigua":localTime(date)}`);time.dateTime=new Date(date).toISOString();main.append(time);
+        const date=event.timestamp??Date.parse(record.createdAt),time=element("time","",`${event.timestamp===null?"Hora no registrada o ambigua":localTime(date)}`);time.dateTime=new Date(date).toISOString();time.title=dateFormat.format(date);main.append(time);
         const linked=(hasGlucose(record)?1:0)+MEDICATIONS.filter(m=>recordedMedication(record,m.key)).length;
         if(linked>1)main.append(element("p","small muted","Evento de un registro compartido. Eliminar borra ese registro y sus eventos asociados."));
         const actions=element("div","record-actions");
@@ -674,7 +692,8 @@
           const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar ${event.medication.name}`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMedication(record.id,event.medication.key));actions.append(edit);
         }
         const remove=element("button","delete-one");remove.type="button";remove.disabled=state.busy||state.storageProblem;remove.setAttribute("aria-label",`Eliminar registro de ${temporalTitle(event)} del ${dateFormat.format(date)}`);remove.append(icon("trash"));remove.addEventListener("click",()=>deleteMeasurement(record.id));actions.append(remove);
-        article.append(main);if(event.type==="glucose")appendRecordStatus(article,record);article.append(actions);fragment.append(article);
+        article.append(main);if(event.type==="glucose")appendRecordStatus(article,record);article.append(actions);list.append(article);
+      }
       }
       $("#history-list").replaceChildren(fragment);
     }
@@ -685,9 +704,37 @@
     }
     function renderChart() {
       const now=Date.now();
-      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h",compactLongPeriod:state.period===7||state.period===30,showFastingRange:state.showFastingRange});
+      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h"||state.period==="72h",compactLongPeriod:state.period===7||state.period===30,showFastingRange:state.showFastingRange});
     }
     // Un único renderizador para el gráfico general y el del día seleccionado.
+    // Distribuir texto por sus dimensiones reales, sin cambiar posiciones de los datos.
+    function drawChartAxisLabels(svg,items,{left,right,baseline,rows=3,rowHeight=19}) {
+      const occupied=Array.from({length:rows},()=>[]),seen=new Set();let hidden=0;
+      for(const item of items){
+        const identity=`${item.position.toFixed(3)}|${item.text}`;if(seen.has(identity))continue;seen.add(identity);
+        const label=svgElement("text",{class:"chart-axis-label",x:0,y:baseline,"text-anchor":"start",style:"font-size:12px;font-weight:600", "data-axis-time":item.timestamp},item.text);
+        svg.append(label);
+        const width=Math.max(label.getComputedTextLength(),item.text.length*6.8),start=Math.max(left,Math.min(right-width,item.position-width/2)),end=start+width;
+        const row=width<=right-left?occupied.findIndex(intervals=>intervals.every(interval=>end+10<=interval.start||start>=interval.end+10)):-1;
+        if(row<0){label.remove();hidden++;continue;}
+        occupied[row].push({start,end});label.setAttribute("x",start);label.setAttribute("y",baseline+row*rowHeight);
+        label.append(svgElement("title",{},`${dateFormat.format(item.timestamp)} ${localTime(item.timestamp)}`));
+        if(Math.abs(start+width/2-item.position)>2)svg.insertBefore(svgElement("line",{class:"chart-axis-leader",x1:item.position,x2:start+width/2,y1:baseline-15+row*rowHeight,y2:baseline-11+row*rowHeight,stroke:"#b9c5d4","stroke-width":.7,"aria-hidden":"true"}),label);
+      }
+      return hidden;
+    }
+    const observedChartContainers=new Map();
+    const chartSizeObserver=typeof ResizeObserver==="function"?new ResizeObserver(entries=>{
+      let changed=false;
+      for(const entry of entries){const width=entry.contentRect.width,previous=observedChartContainers.get(entry.target);observedChartContainers.set(entry.target,width);if(width>0&&Math.abs(width-(previous??width))>1)changed=true;}
+      if(changed){clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>{renderChart();renderCalendarChart();},100);}
+    }):null;
+    function observeChartSizes() {
+      if(!chartSizeObserver)return;
+      for(const node of observedChartContainers.keys())if(!node.isConnected){chartSizeObserver.unobserve(node);observedChartContainers.delete(node);}
+      for(const node of $$(".chart-scroll"))if(!observedChartContainers.has(node)){observedChartContainers.set(node,node.clientWidth);chartSizeObserver.observe(node);}
+    }
+
     function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,showFastingRange=false}) {
       const q=id=>document.getElementById(prefix+id),{events,unresolved}=collectChartEvents(state.records,bounds);
       const visibleEvents=events.filter(event=>event.type==="meal"?showMeals:showMedications);
@@ -698,9 +745,9 @@
       q("chart-events-note").textContent=[showMedications?`${events.filter(e=>e.type==="medication").length} tomas con hora${unresolved?` · ${unresolved} sin hora inequívoca`:""}`:"",showMeals?`${events.filter(e=>e.type==="meal").length} comidas`:""].filter(Boolean).join(" · ");
       const visible=records.length>0||visibleEvents.length>0;
       q("chart-empty").hidden=visible;q("chart-content").hidden=!visible;q("chart-detail").replaceChildren();
-      const svg=q("chart");svg.replaceChildren();if(!visible)return;
-      const W=Math.max(260,Math.min(1100,svg.clientWidth||600)),H=270,left=42,right=14,top=42,bottom=60,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
-      svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
+      const svg=q("chart");observeChartSizes();svg.replaceChildren();if(!visible)return;
+      const W=Math.max(180,svg.clientWidth||600),H=300,left=42,right=showFastingRange&&!prefix?82:14,top=42,bottom=90,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
+      svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
       // Hoy y 24 h conservan una escala temporal real. En 7/30 días usamos una escala
       // cronológica compacta basada en las mediciones para evitar grandes zonas vacías.
       const timeMin=bounds.start,timeMax=Math.max(bounds.end,bounds.start+1);
@@ -723,17 +770,29 @@
         const fastingTop=y(130),fastingBottom=y(80);
         svg.append(svgElement("rect",{x:left,y:fastingTop,width:plotW,height:fastingBottom-fastingTop,fill:"#2563eb",opacity:".07","pointer-events":"none","aria-hidden":"true"}));
         [80,130].forEach(value=>{
-          const py=y(value);
+          const py=y(value),labelCenter=(fastingTop+fastingBottom)/2,labelY=value===130?Math.min(py,labelCenter-9):Math.max(py,labelCenter+9);
           svg.append(
             svgElement("line",{x1:left,x2:W-right,y1:py,y2:py,stroke:"#2563eb","stroke-width":"1.5","stroke-dasharray":"6 4",opacity:".8","pointer-events":"none","aria-hidden":"true"}),
-            svgElement("text",{x:W-right-4,y:py-5,"text-anchor":"end","font-size":"9","font-weight":"700",fill:"#2563eb","pointer-events":"none","aria-hidden":"true"},`${value} ayuno`)
+            svgElement("path",{d:`M ${W-right} ${py} L ${W-right+5} ${py} L ${W-right+9} ${labelY}`,fill:"none",stroke:"#2563eb","stroke-width":1,"pointer-events":"none","aria-hidden":"true"}),
+            svgElement("text",{class:"fasting-axis-label",x:W-right+13,y:labelY+4,"text-anchor":"start",style:"font-size:11px;font-weight:700;fill:#2563eb","pointer-events":"none","aria-hidden":"true"},`${value} ayuno`)
           );
         });
       }
       for(let i=0;i<=4;i++){const value=yMax*i/4,lineY=y(value);svg.append(svgElement("line",{x1:left,y1:lineY,x2:W-right,y2:lineY,stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-7,y:lineY+4,"text-anchor":"end"},Math.round(value)));}
       // Eje X: en Hoy / 24 h muestra la hora exacta de mediciones, comidas y medicamentos.
       // Cada marca conserva su posición temporal real. En 7 / 30 días se conserva el eje compacto por fechas.
-      if(!compactLongPeriod&&(anchorTimes.length||visibleEvents.length)){
+      if(!compactLongPeriod&&timeMax-timeMin>86400000){
+        // En 72 horas se rotulan los días, conservando la escala temporal real.
+        // El primer día puede haber comenzado antes del límite visible del intervalo.
+        const dayItems=[],dayFormat=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"numeric",month:"numeric"});
+        for(let day=localDateKey(timeMin);day<=localDateKey(timeMax);day=shiftDay(day,1)){
+          const timestamp=Math.max(timeMin,startOfChileDay(day));
+          if(timestamp>timeMax)break;
+          const position=x(timestamp);dayItems.push({position,timestamp,text:dayFormat.format(timestamp)});
+          svg.append(svgElement("line",{class:"chart-axis-tick",x1:position,x2:position,y1:H-bottom,y2:H-bottom+5,stroke:"#c7d1df","stroke-width":1,"aria-hidden":"true"}));
+        }
+        drawChartAxisLabels(svg,dayItems,{left,right:W-right,baseline:H-bottom+23,rows:2});
+      }else if(!compactLongPeriod&&(anchorTimes.length||visibleEvents.length)){
         const axisItems=[
           ...anchorTimes.map(timestamp=>({timestamp,position:x(timestamp),type:"glucose"})),
           ...visibleEvents.map(event=>({timestamp:event.timestamp,position:x(event.timestamp),type:event.type}))
@@ -750,32 +809,22 @@
           }
         });
 
-        // En pantallas angostas repartimos automáticamente las horas cercanas
-        // en hasta 3 filas. En escritorio se conserva una sola fila salvo colisiones.
-        const mobileAxis=W<500,rowLastX=[-Infinity,-Infinity,-Infinity];
-        mergedAxisItems.forEach((item,index)=>{
-          let row=0;
-          const minGap=mobileAxis?54:38;
-          if(mobileAxis){
-            row=rowLastX.findIndex(lastX=>item.position-lastX>=minGap);
-            if(row<0)row=index%3;
-            rowLastX[row]=item.position;
-          }else{
-            const previous=mergedAxisItems[index-1];
-            if(previous&&item.position-previous.position<minGap)row=index%2;
-          }
-          const anchor=item.position<left+24?"start":item.position>W-right-24?"end":"middle";
-          const hasMedication=item.types.includes("medication"),hasMeal=item.types.includes("meal");
-          const tickColor=hasMedication?"#8056a8":hasMeal?"#b77421":"#c7d1df";
-          svg.append(svgElement("line",{x1:item.position,x2:item.position,y1:H-bottom,y2:H-bottom+5,stroke:tickColor,"stroke-width":"1","aria-hidden":"true"}));
-          svg.append(svgElement("text",{x:item.position,y:H-36+row*14,"text-anchor":anchor,"font-size":mobileAxis?"9":"10","font-weight":"600"},localTime(item.timestamp)));
+        // Tres filas con medición real de cada etiqueta. Si no cabe, solo se omite
+        // su texto del eje: el punto, su marca temporal y su detalle siguen presentes.
+        mergedAxisItems.forEach(item=>{
+          const color=item.types.includes("medication")?"#8056a8":item.types.includes("meal")?"#b77421":"#c7d1df";
+          const tick=svgElement("line",{class:"chart-axis-tick",x1:item.position,x2:item.position,y1:H-bottom,y2:H-bottom+5,stroke:color,"stroke-width":1,"aria-hidden":"true"});
+          tick.append(svgElement("title",{},`${dateFormat.format(item.timestamp)} ${localTime(item.timestamp)}`));svg.append(tick);
         });
+        const omitted=drawChartAxisLabels(svg,mergedAxisItems.map(item=>({...item,text:(timeMax-timeMin>86400000?new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(item.timestamp)+" ":"")+localTime(item.timestamp)})),{left,right:W-right,baseline:H-bottom+23});
+        if(omitted)q("chart-events-note").textContent+=`${q("chart-events-note").textContent?" · ":""}Algunas horas se omiten del eje para evitar superposiciones. Toca los puntos o marcadores para consultar cada hora exacta.`;
         const firstDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMin);
         const lastDay=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timeMax);
-        svg.append(svgElement("text",{x:left,y:H-10,"text-anchor":"start","font-size":"10"},firstDay));
-        if(lastDay!==firstDay)svg.append(svgElement("text",{x:W-right,y:H-10,"text-anchor":"end","font-size":"10"},lastDay));
+        svg.append(svgElement("text",{class:"chart-axis-date",x:left,y:H-8,"text-anchor":"start",style:"font-size:11px"},firstDay));
+        if(lastDay!==firstDay)svg.append(svgElement("text",{class:"chart-axis-date",x:W-right,y:H-8,"text-anchor":"end",style:"font-size:11px"},lastDay));
       }else{
-        const tickCount=W<450?3:5;
+        const tickCount=Math.max(2,Math.min(5,Math.floor(plotW/80)));
+        const dateItems=[];
         for(let i=0;i<tickCount;i++) {
           let timestamp,position;
           if(anchorTimes.length){
@@ -785,12 +834,15 @@
             timestamp=timeMin+(timeMax-timeMin)*i/(tickCount-1); position=x(timestamp);
           }
           const anchor=i===0?"start":i===tickCount-1?"end":"middle";
-          svg.append(svgElement("text",{x:position,y:H-14,"text-anchor":anchor},new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timestamp)));
+          dateItems.push({position,timestamp,text:new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,day:"2-digit",month:"2-digit"}).format(timestamp)});
         }
+        drawChartAxisLabels(svg,dateItems,{left,right:W-right,baseline:H-bottom+23,rows:1});
       }
       if(showDayBoundary) {
-        const nextDay=shiftDay(localDateKey(timeMin),1),midnight=startOfChileDay(nextDay);
-        if(midnight<timeMax)svg.append(svgElement("line",{x1:x(midnight),x2:x(midnight),y1:top,y2:H-bottom,stroke:"#96a3b6","stroke-dasharray":"2 6"}),svgElement("text",{x:Math.max(left+4,Math.min(W-right-4,x(midnight))),y:H-bottom+13,"text-anchor":x(midnight)>W/2?"end":"start"},`↳ ${nextDay.slice(8)}/${nextDay.slice(5,7)}`));
+        for(let day=shiftDay(localDateKey(timeMin),1);day<=localDateKey(timeMax);day=shiftDay(day,1)){
+          const midnight=startOfChileDay(day);if(midnight>=timeMax)break;
+          const boundary=svgElement("line",{x1:x(midnight),x2:x(midnight),y1:top,y2:H-bottom,stroke:"#96a3b6","stroke-dasharray":"2 6"});boundary.append(svgElement("title",{},`Cambio de día: ${day}`));svg.append(boundary);
+        }
       }
       if(visibleEvents.length) {
         const lastIcon={meal:-Infinity,medication:-Infinity};
@@ -1182,7 +1234,7 @@
     $("#cloud-refresh").addEventListener("click",loadMeasurements);
     window.addEventListener("online",loadMeasurements);
     $$("[data-nav]").forEach(button=>button.addEventListener("click",()=>navigate(button.dataset.nav))); $("[data-go-register]").addEventListener("click",()=>navigate("registrar"));
-    $$("[data-period]").forEach(button=>button.addEventListener("click",()=>{state.period=button.dataset.period==="24h"?"24h":Number(button.dataset.period);$$("[data-period]").forEach(item=>item.setAttribute("aria-pressed",String(item===button)));renderChart();}));
+    $$("[data-period]").forEach(button=>button.addEventListener("click",()=>{state.period=["24h","72h"].includes(button.dataset.period)?button.dataset.period:Number(button.dataset.period);$$("[data-period]").forEach(item=>item.setAttribute("aria-pressed",String(item===button)));renderChart();}));
     $("#glucose").addEventListener("beforeinput",event=>{if(event.data&&/[^0-9]/.test(event.data)) event.preventDefault();});
     $("#glucose").addEventListener("paste",event=>{const pasted=event.clipboardData?.getData("text")??"";if(!/^\d{1,3}$/.test(pasted.trim())) event.preventDefault();});
     $("#glucose").addEventListener("input",event=>{if(!/^\d{0,3}$/.test(event.target.value)) event.target.value="";event.target.removeAttribute("aria-invalid");showFormError("");});
@@ -1213,7 +1265,7 @@
     }
     function periodBounds(period,now=Date.now()) {
       const end=Number(now);
-      return {start:period==="24h"?end-86400000:startOfChileDay(shiftDay(localDateKey(end),1-Number(period))),end};
+      return {start:period==="72h"?end-72*3600000:period==="24h"?end-86400000:startOfChileDay(shiftDay(localDateKey(end),1-Number(period))),end};
     }
     // Cada tipo futuro de evento puede producir {type,timestamp,...}; todos usan el mismo eje X.
     function collectChartEvents(records,bounds) {
