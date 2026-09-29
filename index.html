@@ -329,6 +329,37 @@
       </form>
     </div>
   </dialog>
+  <dialog id="edit-meal-dialog" class="edit-dialog">
+    <div class="edit-dialog-inner">
+      <div class="edit-dialog-head"><h2>✏️ Editar comida</h2><button id="edit-meal-close" class="edit-close" type="button" aria-label="Cerrar">×</button></div>
+      <form id="edit-meal-form" novalidate>
+        <div class="form-field"><label for="edit-meal-type">Tipo de comida</label><select id="edit-meal-type" required></select></div>
+        <div class="form-field"><label for="edit-meal-food">¿Qué comiste?</label><textarea id="edit-meal-food" maxlength="1000" required></textarea></div>
+        <div class="form-field"><label for="edit-meal-note">Nota <span class="optional">· opcional</span></label><textarea id="edit-meal-note" maxlength="1000"></textarea></div>
+        <div id="edit-meal-datetime"></div>
+        <p id="edit-meal-error" class="error" role="alert" hidden></p>
+        <div class="edit-actions"><button id="edit-meal-cancel" class="now-button" type="button">Cancelar</button><button id="edit-meal-save" class="primary" type="submit">Guardar cambios</button></div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="edit-medication-dialog" class="edit-dialog">
+    <div class="edit-dialog-inner">
+      <div class="edit-dialog-head"><h2>✏️ Editar medicamento</h2><button id="edit-medication-close" class="edit-close" type="button" aria-label="Cerrar">×</button></div>
+      <form id="edit-medication-form" novalidate>
+        <p id="edit-medication-name" style="font-weight:700;margin:0 0 16px"></p>
+        <div class="form-field">
+          <label for="edit-medication-fraction">Cantidad tomada</label>
+          <select id="edit-medication-fraction" required></select>
+          <span id="edit-medication-equivalent" class="medication-equivalent"></span>
+        </div>
+        <div id="edit-medication-datetime"></div>
+        <p id="edit-medication-error" class="error" role="alert" hidden></p>
+        <div class="edit-actions"><button id="edit-medication-cancel" class="now-button" type="button">Cancelar</button><button id="edit-medication-save" class="primary" type="submit">Guardar cambios</button></div>
+      </form>
+    </div>
+  </dialog>
+
   <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   <script>
     "use strict";
@@ -637,6 +668,10 @@
         const actions=element("div","record-actions");
         if(event.type==="glucose"){
           const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar medición de ${record.glucose} mg/dL`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMeasurement(record.id));actions.append(edit);
+        }else if(event.type==="meal"){
+          const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar comida ${record.mealType}`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMeal(record.id));actions.append(edit);
+        }else if(event.type==="medication"){
+          const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar ${event.medication.name}`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMedication(record.id,event.medication.key));actions.append(edit);
         }
         const remove=element("button","delete-one");remove.type="button";remove.disabled=state.busy||state.storageProblem;remove.setAttribute("aria-label",`Eliminar registro de ${temporalTitle(event)} del ${dateFormat.format(date)}`);remove.append(icon("trash"));remove.addEventListener("click",()=>deleteMeasurement(record.id));actions.append(remove);
         article.append(main);if(event.type==="glucose")appendRecordStatus(article,record);article.append(actions);fragment.append(article);
@@ -975,7 +1010,7 @@
 
     // ACCIONES: confirmar persistencia antes de actualizar o limpiar el formulario.
     function createId() { if(globalThis.crypto?.randomUUID) return crypto.randomUUID(); return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`; }
-    function updateBusy(busy) { state.busy=busy; $("#meal-save").disabled=busy||state.storageProblem; $("#medication-save").disabled=busy||state.storageProblem; $("#save-button").disabled=busy||state.storageProblem; $("#edit-save").disabled=busy||state.storageProblem; $("#cloud-refresh").disabled=busy; $("#export-excel").disabled=busy||exporting; $$(".delete-one,.edit-one").forEach(button=>{button.disabled=busy||state.storageProblem;}); }
+    function updateBusy(busy) { state.busy=busy; $("#meal-save").disabled=busy||state.storageProblem; $("#medication-save").disabled=busy||state.storageProblem; $("#save-button").disabled=busy||state.storageProblem; $("#edit-save").disabled=busy||state.storageProblem; $("#edit-meal-save").disabled=busy||state.storageProblem; $("#edit-medication-save").disabled=busy||state.storageProblem; $("#cloud-refresh").disabled=busy; $("#export-excel").disabled=busy||exporting; $$(".delete-one,.edit-one").forEach(button=>{button.disabled=busy||state.storageProblem;}); }
     let pendingSave=null;
     async function saveMeasurement(event) {
       event.preventDefault(); if(state.busy||state.storageProblem) return; showFormError("");
@@ -1036,6 +1071,89 @@
       finally{updateBusy(false);}
     }
 
+
+    let editingMealId=null;
+    function openEditMeal(id){
+      const record=state.records.find(item=>item.id===id);
+      if(!record||!isMeal(record))return;
+      editingMealId=id;
+      $("#edit-meal-type").value=record.mealType;
+      $("#edit-meal-food").value=record.food||"";
+      $("#edit-meal-note").value=record.note||"";
+      $("#edit-meal-date").value=localDateKey(record.createdAt);
+      $("#edit-meal-time").value=localTime(record.createdAt);
+      updateDateOccurrence("edit-meal");
+      $("#edit-meal-error").hidden=true;
+      $("#edit-meal-dialog").showModal();
+    }
+    function closeEditMeal(){editingMealId=null;if($("#edit-meal-dialog").open)$("#edit-meal-dialog").close();}
+    async function saveEditedMeal(event){
+      event.preventDefault();if(state.busy||state.storageProblem||!editingMealId)return;
+      const original=state.records.find(item=>item.id===editingMealId),errorBox=$("#edit-meal-error");errorBox.hidden=true;
+      if(!original)return closeEditMeal();
+      try{
+        const mealType=$("#edit-meal-type").value,food=$("#edit-meal-food").value.trim(),note=$("#edit-meal-note").value.trim();
+        if(!MEAL_TYPES.includes(mealType))throw new Error("Selecciona el tipo de comida.");
+        if(!food){$("#edit-meal-food").focus();throw new Error("Describe qué comiste.");}
+        if(food.length>1000||note.length>1000)throw new Error("La descripción y la nota admiten hasta 1000 caracteres cada una.");
+        const createdAt=readDateFields("edit-meal","de la comida");
+        const updated={...original,type:"meal",mealType,food,note,createdAt,glucose:null};
+        updateBusy(true);$("#cloud-status").textContent="Guardando cambios de la comida en Supabase…";
+        try{
+          await MeasurementRepository.update(updated);
+          state.records=state.records.map(item=>item.id===updated.id?updated:item);cacheCloudRecords(state.records);
+          closeEditMeal();renderAll();$("#cloud-status").textContent="✓ Cambios guardados en Supabase";notify("✓ Comida actualizada");
+        }catch(error){errorBox.textContent=error.message+" No se modificó la copia mostrada.";errorBox.hidden=false;$("#cloud-status").textContent="Edición sin confirmar · Reintenta";}
+        finally{updateBusy(false);}
+      }catch(error){errorBox.textContent=error.message;errorBox.hidden=false;}
+    }
+
+    let editingMedication=null;
+    function updateEditMedicationEquivalent(){
+      if(!editingMedication)return;
+      const medication=MEDICATIONS.find(item=>item.key===editingMedication.key),fraction=Number($("#edit-medication-fraction").value);
+      $("#edit-medication-equivalent").textContent=medication&&Number.isFinite(fraction)?`Equivale a ${medication.tabletMg*fraction} mg`:"";
+    }
+    function openEditMedication(id,key){
+      const record=state.records.find(item=>item.id===id),medication=MEDICATIONS.find(item=>item.key===key),saved=recordedMedication(record,key);
+      if(!record||!medication||!saved)return;
+      editingMedication={id,key};
+      $("#edit-medication-name").textContent=`💊 ${medication.name} · ${medication.tabletMg} mg por comprimido`;
+      const inferredFraction=TABLET_FRACTIONS.some(item=>item.value===saved.tabletFraction)?saved.tabletFraction:saved.doseMg/medication.tabletMg;
+      $("#edit-medication-fraction").value=String(inferredFraction);
+      const timestamp=medicationTimestamp(record,saved)??Date.parse(record.createdAt);
+      $("#edit-medication-date").value=localDateKey(timestamp);
+      $("#edit-medication-time").value=localTime(timestamp);
+      updateDateOccurrence("edit-medication");updateEditMedicationEquivalent();
+      $("#edit-medication-error").hidden=true;
+      $("#edit-medication-dialog").showModal();
+    }
+    function closeEditMedication(){editingMedication=null;if($("#edit-medication-dialog").open)$("#edit-medication-dialog").close();}
+    async function saveEditedMedication(event){
+      event.preventDefault();if(state.busy||state.storageProblem||!editingMedication)return;
+      const {id,key}=editingMedication,original=state.records.find(item=>item.id===id),medication=MEDICATIONS.find(item=>item.key===key),errorBox=$("#edit-medication-error");errorBox.hidden=true;
+      if(!original||!medication)return closeEditMedication();
+      try{
+        const tabletFraction=Number($("#edit-medication-fraction").value);
+        if(!TABLET_FRACTIONS.some(item=>item.value===tabletFraction))throw new Error("Selecciona una cantidad válida.");
+        const recordedAt=readDateFields("edit-medication","del medicamento"),time=localTime(recordedAt);
+        const medications={...(original.medications||{}),[key]:{taken:true,tabletFraction,tabletMg:medication.tabletMg,doseMg:tabletFraction*medication.tabletMg,time,recordedAt}};
+        let updated={...original,medications};
+        // En un registro exclusivamente de medicamentos, mantener createdAt alineado con la toma más temprana.
+        if(!hasGlucose(updated)&&!isMeal(updated)){
+          const instants=MEDICATIONS.map(item=>recordedMedication(updated,item.key)?.recordedAt).filter(validInstant).sort((a,b)=>Date.parse(a)-Date.parse(b));
+          if(instants.length)updated.createdAt=instants[0];
+        }
+        updateBusy(true);$("#cloud-status").textContent="Guardando cambios del medicamento en Supabase…";
+        try{
+          await MeasurementRepository.update(updated);
+          state.records=state.records.map(item=>item.id===updated.id?updated:item);cacheCloudRecords(state.records);
+          closeEditMedication();renderAll();$("#cloud-status").textContent="✓ Cambios guardados en Supabase";notify(`✓ ${medication.name} actualizado`);
+        }catch(error){errorBox.textContent=error.message+" No se modificó la copia mostrada.";errorBox.hidden=false;$("#cloud-status").textContent="Edición sin confirmar · Reintenta";}
+        finally{updateBusy(false);}
+      }catch(error){errorBox.textContent=error.message;errorBox.hidden=false;}
+    }
+
     async function deleteMeasurement(id) {
       if(state.busy) return; const record=state.records.find(item=>item.id===id); if(!window.confirm(isMeal(record)?"¿Seguro que quieres eliminar esta comida?":hasGlucose(record)?"¿Seguro que quieres eliminar esta medición y los medicamentos asociados, si existen?":"¿Seguro que quieres eliminar este registro de medicamentos?")) return; updateBusy(true);
       try { await MeasurementRepository.remove(id); state.records=state.records.filter(record=>record.id!==id); cacheCloudRecords(state.records);renderAll(); notify("Registro eliminado de Supabase"); }
@@ -1058,6 +1176,24 @@
     $("#edit-close").addEventListener("click",closeEditMeasurement);
     $("#edit-cancel").addEventListener("click",closeEditMeasurement);
     $("#edit-dialog").addEventListener("click",event=>{if(event.target===$("#edit-dialog"))closeEditMeasurement();});
+
+    $("#edit-meal-datetime").innerHTML=dateFieldsHTML("edit-meal","de la comida");
+    MEAL_TYPES.forEach(type=>{const option=element("option","",type);option.value=type;$("#edit-meal-type").append(option);});
+    watchDateFields("edit-meal");
+    $("#edit-meal-form").addEventListener("submit",saveEditedMeal);
+    $("#edit-meal-close").addEventListener("click",closeEditMeal);
+    $("#edit-meal-cancel").addEventListener("click",closeEditMeal);
+    $("#edit-meal-dialog").addEventListener("click",event=>{if(event.target===$("#edit-meal-dialog"))closeEditMeal();});
+
+    $("#edit-medication-datetime").innerHTML=dateFieldsHTML("edit-medication","del medicamento");
+    TABLET_FRACTIONS.forEach(fraction=>{const option=element("option","",fraction.label);option.value=String(fraction.value);$("#edit-medication-fraction").append(option);});
+    watchDateFields("edit-medication");
+    $("#edit-medication-fraction").addEventListener("change",updateEditMedicationEquivalent);
+    $("#edit-medication-form").addEventListener("submit",saveEditedMedication);
+    $("#edit-medication-close").addEventListener("click",closeEditMedication);
+    $("#edit-medication-cancel").addEventListener("click",closeEditMedication);
+    $("#edit-medication-dialog").addEventListener("click",event=>{if(event.target===$("#edit-medication-dialog"))closeEditMedication();});
+
     $("#export-excel").addEventListener("click",exportToExcel);
     $("#cloud-refresh").addEventListener("click",loadMeasurements);
     window.addEventListener("online",loadMeasurements);
