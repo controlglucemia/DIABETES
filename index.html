@@ -197,6 +197,26 @@
     .chart-tooltip strong { color:inherit;font-size:12px; }
     .chart .is-preview .dot,.chart .is-selected .dot { stroke:#132c59;stroke-width:4;r:7; }
     .chart .is-preview .event-line,.chart .is-selected .event-line { stroke-width:3;opacity:1; }
+
+    /* Comparador de días: estilos limitados a sus elementos. */
+    .comparison-panel { margin:0 0 18px;padding:16px;border:1px solid var(--line);border-radius:16px;background:#fafbfd; }
+    .comparison-panel h3 { margin-bottom:12px; }
+    .comparison-dates { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px; }
+    .comparison-date { display:flex;align-items:end;gap:8px;min-width:0; }
+    .comparison-date>div { flex:1;min-width:0; }
+    .comparison-date input { min-width:0;max-width:100%; }
+    .comparison-actions { display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px; }
+    .comparison-legend { display:flex;flex-wrap:wrap;gap:8px 16px;margin:12px 0 18px;font-size:.8rem; }
+    .comparison-key { display:inline-flex;align-items:center;gap:6px; }
+    .comparison-swatch { display:inline-block;width:24px;height:4px;flex-shrink:0;border-radius:3px; }
+    .comparison-summary { margin-top:20px;min-width:0; }
+    .comparison-table-wrap { max-width:100%;overflow-x:auto;margin:12px 0;border:1px solid var(--line);border-radius:12px; }
+    .comparison-table { border-collapse:separate;border-spacing:0;width:100%;font-size:.8rem; }
+    .comparison-table th,.comparison-table td { padding:10px 12px;border-bottom:1px solid var(--line);text-align:center;min-width:108px; }
+    .comparison-table th:first-child { position:sticky;left:0;background:#f5f8fc;text-align:left;min-width:150px;max-width:190px;z-index:1; }
+    .comparison-table thead th { background:#f5f8fc; }
+    .comparison-table tr:last-child>* { border-bottom:0; }
+    @media(max-width:480px) { .comparison-dates { grid-template-columns:minmax(0,1fr); } .comparison-panel { padding:12px; } .comparison-actions>button { flex:1 1 150px; } .comparison-table th:first-child { min-width:125px;max-width:135px; } }
   </style>
 </head>
 <body data-page="inicio">
@@ -285,13 +305,24 @@
       </section>
 
       <section class="card chart-card" data-pages="inicio estadisticas" aria-labelledby="chart-title">
-        <div class="card-head"><div><h2 id="chart-title">Tu glucemia</h2><p class="small muted">Una mirada a tus mediciones</p></div><div class="filters" role="group" aria-label="Período del gráfico"><button type="button" data-period="1" aria-pressed="true">Hoy</button><button type="button" data-period="24h" aria-pressed="false">Últimas 24 horas</button><button type="button" data-period="72h" aria-pressed="false">Últimas 72 horas</button><button type="button" data-period="7" aria-pressed="false">7 días</button><button type="button" data-period="30" aria-pressed="false">30 días</button></div></div>
+        <div class="card-head"><div><h2 id="chart-title">Tu glucemia</h2><p class="small muted">Una mirada a tus mediciones</p></div><div class="filters" role="group" aria-label="Período del gráfico"><button type="button" data-period="1" aria-pressed="true">Hoy</button><button type="button" data-period="24h" aria-pressed="false">Últimas 24 horas</button><button type="button" data-period="48h" aria-pressed="false">Últimas 48 horas</button><button type="button" data-period="72h" aria-pressed="false">Últimas 72 horas</button><button type="button" data-period="7" aria-pressed="false">7 días</button><button type="button" data-period="30" aria-pressed="false">30 días</button><button id="compare-days" type="button" aria-pressed="false" aria-expanded="false" aria-controls="comparison-panel">Comparar días</button></div></div>
+        <section id="comparison-panel" class="comparison-panel" aria-labelledby="comparison-title" hidden>
+          <h3 id="comparison-title">Comparar días</h3>
+          <form id="comparison-form" novalidate>
+            <div id="comparison-dates" class="comparison-dates"></div>
+            <div class="comparison-actions"><button id="comparison-add" type="button" class="now-button">+ Agregar otro día</button><span id="comparison-limit" class="small muted" hidden>Máximo 7 días</span></div>
+            <p id="comparison-error" class="error" role="alert" hidden></p>
+            <div class="comparison-actions"><button id="comparison-apply" type="submit" class="primary">Comparar</button><button id="comparison-connectors" type="button" class="now-button" role="switch" aria-checked="false" hidden>Líneas de conexión <strong id="comparison-connectors-label">OFF</strong></button><button id="comparison-exit" type="button" class="now-button">Salir de comparación</button></div>
+          </form>
+        </section>
+        <div id="comparison-legend" class="comparison-legend" aria-label="Fechas comparadas" hidden></div>
         <div class="chart-top"><span>Glucemia · mg/dL</span><span id="chart-count">0 mediciones</span></div>
         <div id="chart-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div><h3>Aún no hay mediciones</h3><p>Las mediciones de este período aparecerán aquí.</p></div>
         <div id="chart-content" hidden><div class="chart-scroll"><svg id="chart" class="chart" viewBox="0 0 600 250" aria-label="Gráfico de glucemia. Selecciona un punto para ver sus detalles."></svg></div><div id="chart-detail" class="chart-detail" role="status" aria-live="polite"></div></div>
         <div class="chart-options"><button id="show-medications" type="button" class="now-button" role="switch" aria-checked="true">💊 Mostrar medicamentos <strong id="medications-switch-label">ON</strong></button><button id="show-meals" type="button" class="now-button" role="switch" aria-checked="true">🍽️ Mostrar comidas <strong id="meals-switch-label">ON</strong></button><button id="show-fasting-range" type="button" class="now-button" role="switch" aria-checked="false">Ayuno 80–130 <strong id="fasting-switch-label">OFF</strong></button></div>
         <p id="chart-period-label" class="small muted"></p>
         <p id="chart-events-note" class="small muted"></p>
+        <section id="comparison-summary" class="comparison-summary" aria-label="Resumen comparativo" hidden></section>
         <p class="range-note">💊 y 🍽️ indican eventos registrados y no implican que hayan causado cambios en la glucosa.</p>
         <details class="chart-help"><summary>Más información sobre las horas</summary><p class="small muted">Horas de Chile (America/Santiago). Las tomas nuevas tienen fecha y hora propias. Para tomas antiguas sin fecha se usa la fecha del registro y la hora guardada. Las horas ausentes o ambiguas por cambio de horario se conservan en el historial, sin inventar un marcador.</p></details>
       </section>
@@ -495,6 +526,9 @@
     }
     function hasRecordedMedication(record) { return ["metformin","glibenclamide"].some(key=>recordedMedication(record,key)); }
     const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showMeals:true, calendarShowMeals:true, showFastingRange:false };
+
+    state.comparisonMode=false;
+    const comparisonState={showConnectors:false,open:false,draft:[],days:[],previous:null,colors:["#2563eb","#b34b16","#087d61","#8b46bd","#bd3563","#127e93","#6b6320"]};
 
     // MEDICAMENTOS: equivalencias aritméticas de cantidades ya tomadas.
     // No se calculan recomendaciones ni se relaciona la cantidad con la glucemia.
@@ -713,8 +747,9 @@
       box.append(document.createTextNode(` · ${timeFormat.format(date)} · ${dateFormat.format(date)}`),document.createElement("br"),document.createTextNode(`${record.food||"Sin comida registrada"} · ${record.moment||record.measurementContext||"Sin contexto registrado"}`));
     }
     function renderChart() {
+      if(state.comparisonMode){renderComparisonChart();return;}
       const now=Date.now();
-      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:state.period==="24h"||state.period==="72h",compactLongPeriod:state.period===7||state.period===30,showFastingRange:state.showFastingRange,fitData:state.period===1||state.period===7||state.period===30});
+      renderTimeChart({bounds:periodBounds(state.period,now),records:periodRecords(state.records,state.period,now),showMedications:state.showMedications,showMeals:state.showMeals,showDayBoundary:["24h","48h","72h"].includes(state.period),compactLongPeriod:state.period===7||state.period===30,showFastingRange:state.showFastingRange,fitData:state.period===1||state.period===7||state.period===30});
     }
     // Un único renderizador para el gráfico general y el del día seleccionado.
     // Distribuir texto por sus dimensiones reales, sin cambiar posiciones de los datos.
@@ -947,7 +982,7 @@
       if(visibleEvents.length) {
         const lastIcon={meal:-Infinity,medication:-Infinity};
         visibleEvents.forEach((event,index)=>{
-          const px=x(event.timestamp),meal=event.type==="meal",color=meal?"#b77421":"#8056a8",eventIcon=meal?"🍽️":"💊",description=`${temporalTitle(event)}, ${dateFormat.format(event.timestamp)}, ${localTime(event.timestamp)}`;
+          const px=x(event.timestamp),meal=event.type==="meal",color=meal?"#b77421":"#8056a8",eventIcon=meal?getMealEmoji(event.record.mealType):"💊",description=`${temporalTitle(event)}, ${dateFormat.format(event.timestamp)}, ${localTime(event.timestamp)}`;
           const group=svgElement("g",{class:"event-marker "+(meal?"meal-marker":"medication-marker"),tabindex:"0",role:"button","aria-label":description,"aria-controls":prefix+"chart-detail","data-event-time":event.timestamp});
           group.append(svgElement("title",{},description),svgElement("line",{x1:px,x2:px,y1:top-22,y2:H-bottom,stroke:"transparent","stroke-width":22,"pointer-events":"stroke"}),svgElement("line",{class:"event-line",x1:px,x2:px,y1:top-5,y2:H-bottom,stroke:color,"stroke-width":1.2,"stroke-dasharray":meal?"2 4":"5 3",opacity:events.length>40?0.32:0.8,"pointer-events":"none"}));
           // Todas las líneas conservan su hora exacta. Solo se espacia el texto decorativo.
@@ -1348,7 +1383,7 @@
     $("#cloud-refresh").addEventListener("click",loadMeasurements);
     window.addEventListener("online",loadMeasurements);
     $$("[data-nav]").forEach(button=>button.addEventListener("click",()=>navigate(button.dataset.nav))); $("[data-go-register]").addEventListener("click",()=>navigate("registrar"));
-    $$("[data-period]").forEach(button=>button.addEventListener("click",()=>{state.period=["24h","72h"].includes(button.dataset.period)?button.dataset.period:Number(button.dataset.period);$$("[data-period]").forEach(item=>item.setAttribute("aria-pressed",String(item===button)));renderChart();}));
+    $$("[data-period]").forEach(button=>button.addEventListener("click",()=>{if(comparisonState.open)exitDayComparison(false);state.period=["24h","48h","72h"].includes(button.dataset.period)?button.dataset.period:Number(button.dataset.period);$$("[data-period]").forEach(item=>item.setAttribute("aria-pressed",String(item===button)));renderChart();}));
     $("#glucose").addEventListener("beforeinput",event=>{if(event.data&&/[^0-9]/.test(event.data)) event.preventDefault();});
     $("#glucose").addEventListener("paste",event=>{const pasted=event.clipboardData?.getData("text")??"";if(!/^\d{1,3}$/.test(pasted.trim())) event.preventDefault();});
     $("#glucose").addEventListener("input",event=>{if(!/^\d{0,3}$/.test(event.target.value)) event.target.value="";event.target.removeAttribute("aria-invalid");showFormError("");});
@@ -1379,7 +1414,7 @@
     }
     function periodBounds(period,now=Date.now()) {
       const end=Number(now);
-      return {start:period==="72h"?end-72*3600000:period==="24h"?end-86400000:startOfChileDay(shiftDay(localDateKey(end),1-Number(period))),end};
+      return {start:period==="48h"?end-48*3600000:period==="72h"?end-72*3600000:period==="24h"?end-86400000:startOfChileDay(shiftDay(localDateKey(end),1-Number(period))),end};
     }
     // Cada tipo futuro de evento puede producir {type,timestamp,...}; todos usan el mismo eje X.
     function collectChartEvents(records,bounds) {
@@ -1507,7 +1542,7 @@
         const description=`${localTime(entry.timestamp)} · ${temporalTitle(entry)}`;
         const group=svgElement("g",{class:"clock-point "+(isGlucose?"clock-glucose":entry.type==="meal"?"clock-meal":"clock-medication"),role:"button",tabindex:"0","aria-label":description,"aria-controls":"calendar-clock-detail","data-timestamp":entry.timestamp});
         group.append(svgElement("title",{},description),svgElement("circle",{cx:p.x,cy:p.y,r:18,fill:"transparent"}),svgElement("circle",{class:"clock-dot",cx:p.x,cy:p.y,r:isGlucose?8:12,fill:isGlucose?colors[category.key]:entry.type==="meal"?"#fff1da":"#f1eafa",stroke:isGlucose?category.color:entry.type==="meal"?"#b77421":"#8056a8","stroke-width":2,"pointer-events":"none"}));
-        if(!isGlucose)group.append(svgElement("text",{x:p.x,y:p.y+5,"text-anchor":"middle","font-size":15,"pointer-events":"none","aria-hidden":"true"},entry.type==="meal"?"🍽️":"💊"));
+        if(!isGlucose)group.append(svgElement("text",{x:p.x,y:p.y+5,"text-anchor":"middle","font-size":15,"pointer-events":"none","aria-hidden":"true"},entry.type==="meal"?getMealEmoji(entry.record.mealType):"💊"));
         const show=()=>{
           detail.replaceChildren();
           const nearby=entries.filter(other=>{const distance=Math.abs(other.angle-entry.angle);return other.type===entry.type&&Math.min(distance,Math.PI*2-distance)<=0.18;});
@@ -1569,8 +1604,19 @@
     }
     function setDateNow(prefix) {$("#"+prefix+"-date").value=localDateKey(Date.now());$("#"+prefix+"-time").value=localTime(Date.now());updateDateOccurrence(prefix);}
     function watchDateFields(prefix) {for(const part of ["date","time"])$("#"+prefix+"-"+part).addEventListener("input",()=>updateDateOccurrence(prefix));}
+    // Representación visual únicamente; no cambia los tipos guardados.
+    function getMealEmoji(mealType) {
+      switch(mealType){
+        case "Desayuno": return "☕";
+        case "Snack": case "Colación": return "🍎";
+        case "Almuerzo": return "🍽️";
+        case "Once": return "🥪";
+        case "Cena": return "🌙";
+        case "Otro": default: return "🍴";
+      }
+    }
     function temporalTitle(event) {
-      if(event.type==="meal")return `🍽️ ${event.record.mealType}`;
+      if(event.type==="meal")return `${getMealEmoji(event.record.mealType)} ${event.record.mealType}`;
       if(event.type==="medication")return `💊 ${event.medication.name} · ${doseFormat.format(event.saved.doseMg)} mg`;
       return `🩸 ${event.record.glucose} mg/dL · ${classify(event.record.glucose).label}`;
     }
@@ -1690,6 +1736,182 @@
       $("#edit-medication-dialog").addEventListener("click",event=>{if(event.target===$("#edit-medication-dialog"))closeEditMedication();});
     }
 
+    // Comparador aislado: solo lee los registros ya cargados.
+    function comparisonMinutes(timestamp) {
+      const parts=chileParts(timestamp);return Number(parts.hour)*60+Number(parts.minute)+Number(parts.second)/60;
+    }
+    function comparisonDayStats(records) {
+      const measurements=records.filter(hasGlucose),stats=calculateStats(measurements);
+      const fasting=measurements.filter(record=>(record.moment||record.measurementContext)==="En ayunas");
+      return {...stats,low:measurements.filter(r=>r.glucose<70).length,normal:measurements.filter(r=>r.glucose>=70&&r.glucose<=180).length,high:measurements.filter(r=>r.glucose>180).length,
+        fasting:calculateStats(fasting),fastingNormal:fasting.filter(r=>r.glucose>=80&&r.glucose<=130).length};
+    }
+    function comparisonDateLabel(day) {return dateFormat.format(calendarDate(day));}
+    function comparisonError(message) {const box=$("#comparison-error");box.textContent=message;box.hidden=!message;}
+    function renderComparisonSelectors() {
+      const box=$("#comparison-dates");box.replaceChildren();
+      comparisonState.draft.forEach((day,index)=>{
+        const row=element("div","comparison-date"),field=element("div"),label=element("label","",`Día ${index+1}`),input=element("input");
+        input.type="date";input.id=`comparison-date-${index}`;input.value=day;input.required=true;label.htmlFor=input.id;
+        input.setAttribute("aria-describedby","comparison-error");
+        input.addEventListener("change",()=>{
+          if(input.value&&comparisonState.draft.some((other,i)=>i!==index&&other===input.value)){
+            input.value=comparisonState.draft[index];comparisonError("Selecciona fechas diferentes: ese día ya está agregado.");return;
+          }
+          comparisonState.draft[index]=input.value;comparisonError("");
+        });
+        const remove=element("button","now-button","Quitar");remove.type="button";remove.disabled=comparisonState.draft.length<=2;remove.setAttribute("aria-label",`Quitar día ${index+1}`);
+        remove.addEventListener("click",()=>{if(comparisonState.draft.length<=2)return;comparisonState.draft.splice(index,1);renderComparisonSelectors();comparisonError("");$("#comparison-add").focus();});
+        field.append(label,input);row.append(field,remove);box.append(row);
+      });
+      $("#comparison-add").disabled=comparisonState.draft.length>=7;$("#comparison-limit").hidden=comparisonState.draft.length<7;
+    }
+    function openDayComparison() {
+      if(comparisonState.open){$("#comparison-date-0").focus();return;}
+      comparisonState.open=true;comparisonState.showConnectors=false;
+      comparisonState.previous={period:state.period,showMeals:state.showMeals,showMedications:state.showMedications,showFastingRange:state.showFastingRange};
+      if(!comparisonState.draft.length){
+        const days=[...new Set(timelineEvents(state.records).filter(e=>Number.isFinite(e.timestamp)).map(e=>localDateKey(e.timestamp)))].sort().reverse();
+        const first=days[0]||localDateKey(Date.now());comparisonState.draft=[first,days[1]||shiftDay(first,-1)];
+      }
+      $("#comparison-panel").hidden=false;$("#compare-days").setAttribute("aria-expanded","true");
+      comparisonError("");renderComparisonSelectors();$("#comparison-date-0").focus();
+    }
+    function applyDayComparison(event) {
+      event.preventDefault();const days=comparisonState.draft;
+      if(days.length<2||days.length>7){comparisonError("Selecciona entre 2 y 7 días.");return;}
+      if(days.some(day=>!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day+"T12:00:00Z")))){comparisonError("Completa todas las fechas antes de comparar.");return;}
+      if(new Set(days).size!==days.length){comparisonError("Selecciona fechas diferentes, sin repetir días.");return;}
+      comparisonState.days=[...days];state.comparisonMode=true;comparisonError("");
+      $("#compare-days").setAttribute("aria-pressed","true");$$("[data-period]").forEach(button=>button.setAttribute("aria-pressed","false"));renderChart();
+    }
+    function exitDayComparison(redraw=true) {
+      if(!comparisonState.open)return;
+      state.comparisonMode=false;comparisonState.open=false;comparisonState.showConnectors=false;$("#comparison-connectors").hidden=true;
+      Object.assign(state,comparisonState.previous);comparisonState.previous=null;
+      $("#comparison-panel").hidden=true;$("#comparison-legend").hidden=true;$("#comparison-summary").hidden=true;
+      $("#compare-days").setAttribute("aria-expanded","false");$("#compare-days").setAttribute("aria-pressed","false");
+      $$("[data-period]").forEach(button=>button.setAttribute("aria-pressed",String(button.dataset.period===String(state.period))));
+      $("#show-fasting-range").setAttribute("aria-checked",String(state.showFastingRange));$("#fasting-switch-label").textContent=state.showFastingRange?"ON":"OFF";
+      if(redraw){renderChart();$("#compare-days").focus();}
+    }
+    function renderComparisonSummary(groups) {
+      const box=$("#comparison-summary");box.hidden=false;box.replaceChildren(element("h3","","Resumen por día"));
+      const wrapper=element("div","comparison-table-wrap");wrapper.tabIndex=0;wrapper.setAttribute("role","region");wrapper.setAttribute("aria-label","Resumen comparativo. Desplaza horizontalmente para ver todos los días.");
+      const table=element("table","comparison-table"),caption=element("caption","sr-only","Comparación de mediciones puntuales por fecha"),head=element("thead"),header=element("tr"),metric=element("th","","Medida");metric.scope="col";header.append(metric);
+      const stats=groups.map(group=>comparisonDayStats(group.records));
+      groups.forEach((group,i)=>{const th=element("th","",comparisonDateLabel(group.day));th.scope="col";th.style.borderTop=`4px solid ${comparisonState.colors[i]}`;header.append(th);});head.append(header);table.append(caption,head);
+      const rows=[
+        ["Registros",s=>s.count?`${s.count} ${s.count===1?"medición":"mediciones"}`:"Sin mediciones de glucemia"],
+        ["Promedio · mg/dL",s=>s.average],["Mínima · mg/dL",s=>s.min],["Máxima · mg/dL",s=>s.max],["Número de mediciones",s=>s.count],
+        ["Cantidad <70 mg/dL",s=>s.low],["Cantidad 70–180 mg/dL",s=>s.normal],["Cantidad >180 mg/dL",s=>s.high],
+        ["% de mediciones 70–180",s=>s.count?numberFormat.format(100*s.normal/s.count)+"%":null],
+        ["Promedio en ayunas · mg/dL",s=>s.fasting.average],["Mediciones en ayunas",s=>s.fasting.count],
+        ["En ayunas 80–130 mg/dL",s=>s.fastingNormal],["% de mediciones en ayunas 80–130",s=>s.fasting.count?numberFormat.format(100*s.fastingNormal/s.fasting.count)+"%":null]
+      ];
+      const body=element("tbody");rows.forEach(([title,value])=>{const row=element("tr"),label=element("th","",title);label.scope="row";row.append(label);stats.forEach(stat=>{const v=value(stat);row.append(element("td","",v==null?"—":typeof v==="number"?numberFormat.format(v):v));});body.append(row);});
+      table.append(body);wrapper.append(table);box.append(wrapper,element("p","small muted","Porcentajes de mediciones puntuales. Ayuno incluye únicamente registros marcados «En ayunas»."));
+    }
+    function renderComparisonChart() {
+      $("#comparison-connectors").hidden=false;
+      $("#comparison-connectors").setAttribute("aria-checked",String(comparisonState.showConnectors));
+      $("#comparison-connectors-label").textContent=comparisonState.showConnectors?"ON":"OFF";
+      const svg=$("#chart"),detail=$("#chart-detail");svg.chartInteractionCleanup?.();svg.replaceChildren();detail.replaceChildren();observeChartSizes();
+      $("#chart-empty").hidden=true;$("#chart-content").hidden=false;
+      for(const [key,value] of [["medications",state.showMedications],["meals",state.showMeals]]){$("#show-"+key).setAttribute("aria-checked",String(value));$("#"+key+"-switch-label").textContent=value?"ON":"OFF";}
+      const allEvents=timelineEvents(state.records),groups=comparisonState.days.map(day=>({day,records:state.records.filter(r=>hasGlucose(r)&&localDateKey(r.createdAt)===day),events:allEvents.filter(e=>Number.isFinite(e.timestamp)&&localDateKey(e.timestamp)===day&&(e.type==="glucose"||e.type==="meal"&&state.showMeals||e.type==="medication"&&state.showMedications))}));
+      const legend=$("#comparison-legend");legend.hidden=false;legend.replaceChildren();
+      groups.forEach((group,i)=>{const item=element("span","comparison-key"),sample=element("span","comparison-swatch");sample.style.background=comparisonState.colors[i];item.append(sample,document.createTextNode(`${i+1}. ${comparisonDateLabel(group.day)}${group.records.length?"":" · Sin mediciones de glucemia"}`));legend.append(item);});
+      const count=groups.reduce((n,g)=>n+g.records.length,0);$("#chart-count").textContent=`${count} mediciones · ${groups.length} días`;
+      $("#chart-period-label").textContent="Comparación por hora de Chile · 00:00–24:00 · Cada color identifica una fecha";
+      const unresolved=allEvents.filter(e=>e.type==="medication"&&e.timestamp===null&&comparisonState.days.includes(localDateKey(e.record.createdAt))).length;
+      $("#chart-events-note").textContent="Toca o enfoca un punto para consultar sus datos. Los eventos próximos se muestran juntos con su fecha."+(state.showMedications&&unresolved?` ${unresolved} tomas sin hora inequívoca permanecen en el historial.`:"");
+      const W=Math.max(180,svg.clientWidth||600),left=42,right=14,top=30,plotW=W-left-right,plotH=200,axisY=top+plotH;
+      const hasLanes=state.showMeals||state.showMedications,H=axisY+52+(hasLanes?groups.length*76:0);
+      const max=groups.reduce((m,g)=>Math.max(m,calculateStats(g.records).max||0),200),yMax=Math.ceil(max*1.12/50)*50;
+      const x=timestamp=>left+comparisonMinutes(timestamp)/1440*plotW,y=value=>top+plotH-value/yMax*plotH;
+      svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Comparación de días, de 00:00 a 24:00. Cada línea representa una fecha. Selecciona puntos y eventos para consultar sus detalles.");
+      svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5}));
+      if(state.showFastingRange){
+        svg.append(svgElement("rect",{class:"comparison-fasting",x:left,y:y(130),width:plotW,height:y(80)-y(130),fill:"#2563eb",opacity:.07}));
+        for(const value of [80,130])svg.append(svgElement("line",{x1:left,x2:W-right,y1:y(value),y2:y(value),stroke:"#2563eb","stroke-dasharray":"6 4","pointer-events":"none"}));
+        legend.append(element("span","comparison-key","Ayuno: líneas discontinuas 80–130 mg/dL"));
+      }
+      // Capa decorativa anterior a ejes, curvas, textos y objetivos táctiles.
+      const connectorLayer=svgElement("g",{class:"comparison-connectors","pointer-events":"none","aria-hidden":"true"});svg.append(connectorLayer);
+      for(let i=0;i<=4;i++){const value=yMax*i/4;svg.append(svgElement("line",{x1:left,x2:W-right,y1:y(value),y2:y(value),stroke:"#e5ebf2","stroke-dasharray":"3 5"}),svgElement("text",{x:left-7,y:y(value)+4,"text-anchor":"end"},Math.round(value)));}
+      const hours=W<450?[0,6,12,18,24]:[0,3,6,9,12,15,18,21,24];
+      hours.forEach(hour=>{const px=left+hour/24*plotW;svg.append(svgElement("text",{class:"comparison-hour",x:px,y:axisY+24,"text-anchor":hour===0?"start":hour===24?"end":"middle",style:"font-size:11px"},String(hour).padStart(2,"0")+":00"));});
+      const nodes=[],dashes=["","7 3","2 3","10 3 2 3","4 2","12 4","6 3 1 3"];
+      const addNode=(event,px,py,color,kind,decorative=true,medicationLabel="")=>{
+        const node=svgElement("g",{class:"hit comparison-point",tabindex:0,role:"button","aria-controls":"chart-detail","aria-label":`${comparisonDateLabel(localDateKey(event.timestamp))}, ${localTime(event.timestamp)}, ${temporalTitle(event)}`,"data-day":localDateKey(event.timestamp),"data-type":event.type,"data-minute":comparisonMinutes(event.timestamp)});
+        node.append(svgElement("circle",{cx:px,cy:py,r:13,fill:"transparent"}),svgElement("circle",{class:"dot",cx:px,cy:py,r:kind==="glucose"?5:4,fill:color,stroke:"white","stroke-width":2,"pointer-events":"none"}));
+        if(kind!=="glucose"&&decorative)node.append(svgElement("text",{x:px,y:py+4,"text-anchor":"middle","pointer-events":"none","aria-hidden":"true",style:"font-size:13px"},kind==="meal"?getMealEmoji(event.record.mealType):"💊"));
+        if(kind==="medication"&&decorative&&medicationLabel){
+          const placeLeft=px+12+medicationLabel.length*8>W-right;
+          node.append(svgElement("text",{class:"comparison-medication-label",x:px+(placeLeft?-12:12),y:py+4,"text-anchor":placeLeft?"end":"start","pointer-events":"none","aria-hidden":"true",style:`font-size:11px;font-weight:700;fill:${color}`},medicationLabel));
+        }
+        nodes.push({node,event,x:px,y:py});svg.append(node);
+      };
+      // Líneas primero, puntos después: las curvas nunca cubren sus objetivos táctiles.
+      groups.forEach((group,i)=>{
+        const entries=group.events.filter(e=>e.type==="glucose").sort((a,b)=>comparisonMinutes(a.timestamp)-comparisonMinutes(b.timestamp)||a.timestamp-b.timestamp);
+        if(entries.length>1)svg.append(svgElement("polyline",{class:"comparison-line","data-day":group.day,points:entries.map(e=>`${x(e.timestamp)},${y(e.record.glucose)}`).join(" "),fill:"none",stroke:comparisonState.colors[i],"stroke-width":2.5,"stroke-dasharray":dashes[i],"stroke-linejoin":"round","pointer-events":"none"}));
+      });
+      groups.forEach((group,i)=>{
+        const color=comparisonState.colors[i];group.events.filter(e=>e.type==="glucose").forEach(e=>addNode(e,x(e.timestamp),y(e.record.glucose),color,"glucose"));
+        if(!hasLanes)return;
+        const lane=axisY+50+i*76;
+        svg.append(svgElement("text",{x:left,y:lane,style:`font-size:11px;font-weight:700;fill:${color}`},`${i+1}. ${comparisonDateLabel(group.day)}`));
+        for(const [kind,offset,enabled] of [["meal",19,state.showMeals],["medication",44,state.showMedications]]){
+          if(!enabled)continue;let lastIcon=-Infinity;
+          svg.append(svgElement("text",{x:left-10,y:lane+offset+4,"text-anchor":"end",style:"font-size:12px","aria-hidden":"true"},kind==="meal"?"🍽️":"💊"));
+          svg.append(svgElement("line",{x1:left,x2:W-right,y1:lane+offset,y2:lane+offset,stroke:color,opacity:.15}));
+          const laneEvents=group.events.filter(e=>e.type===kind).sort((a,b)=>comparisonMinutes(a.timestamp)-comparisonMinutes(b.timestamp));
+          laneEvents.forEach(e=>{
+            const px=x(e.timestamp),decorative=px-lastIcon>=(kind==="medication"?55:25);
+            const keys=new Set(kind==="medication"?laneEvents.filter(other=>Math.floor(comparisonMinutes(other.timestamp))===Math.floor(comparisonMinutes(e.timestamp))).map(other=>other.medication.key):[]);
+            const medicationLabel=[keys.has("metformin")?"M":"",keys.has("glibenclamide")?"G":""].filter(Boolean).join("+");
+            addNode(e,px,lane+offset,color,kind,decorative,medicationLabel);if(decorative)lastIcon=px;
+          });
+        }
+      });
+      if(comparisonState.showConnectors){
+        const guides=new Map();
+        for(const item of nodes){
+          if(item.event.type==="glucose")continue;
+          const day=localDateKey(item.event.timestamp),key=day+"|"+item.x,previous=guides.get(key);
+          if(previous)previous.y=Math.max(previous.y,item.y);else guides.set(key,{day,x:item.x,y:item.y});
+        }
+        for(const guide of guides.values()){
+          const index=comparisonState.days.indexOf(guide.day);
+          connectorLayer.append(svgElement("line",{class:"comparison-connector","data-day":guide.day,x1:guide.x,x2:guide.x,y1:top,y2:guide.y,stroke:comparisonState.colors[index],"stroke-width":2,opacity:.7,"stroke-dasharray":"6 15","stroke-dashoffset":-index*3,"pointer-events":"none"}));
+        }
+      }
+      nodes.forEach(item=>{
+        const show=()=>{
+          const ratio=svg.getBoundingClientRect().width/W,nearby=nodes.filter(other=>Math.abs(other.x-item.x)*ratio<=12&&Math.abs(other.y-item.y)*ratio<=12);
+          nodes.forEach(other=>other.node.classList.toggle("is-selected",nearby.includes(other)));detail.replaceChildren();
+          nearby.forEach(other=>appendChartEvent(detail,other.event,true));
+        };
+        item.node.addEventListener("pointerenter",event=>{if(event.pointerType==="mouse")show();});item.node.addEventListener("click",show);item.node.addEventListener("focus",show);
+        item.node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});
+      });
+      renderComparisonSummary(groups);
+    }
+    function initializeDayComparison() {
+      $("#compare-days").addEventListener("click",openDayComparison);
+      $("#comparison-form").addEventListener("submit",applyDayComparison);
+      $("#comparison-connectors").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showConnectors=!comparisonState.showConnectors;renderComparisonChart();});
+      $("#comparison-exit").addEventListener("click",()=>exitDayComparison());
+      $("#comparison-add").addEventListener("click",()=>{
+        if(comparisonState.draft.length>=7)return;
+        let day=localDateKey(Date.now());while(comparisonState.draft.includes(day))day=shiftDay(day,-1);
+        comparisonState.draft.push(day);renderComparisonSelectors();comparisonError("");$("#comparison-date-"+(comparisonState.draft.length-1)).focus();
+      });
+    }
+
+    initializeDayComparison();
     initializeEventForms();
     initializeMedicationFields();
     if(!location.hash.includes("family=")) history.replaceState(null,"",location.pathname+location.search+"#family=c3a3f9a68f520fbe288a1cbc607932b87b96c37b3ccfac4effafe3e531580a65");
