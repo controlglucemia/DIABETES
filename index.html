@@ -312,7 +312,7 @@
             <div id="comparison-dates" class="comparison-dates"></div>
             <div class="comparison-actions"><button id="comparison-add" type="button" class="now-button">+ Agregar otro día</button><span id="comparison-limit" class="small muted" hidden>Máximo 7 días</span></div>
             <p id="comparison-error" class="error" role="alert" hidden></p>
-            <div class="comparison-actions"><button id="comparison-apply" type="submit" class="primary">Comparar</button><button id="comparison-connectors" type="button" class="now-button" role="switch" aria-checked="false" hidden>Líneas de conexión <strong id="comparison-connectors-label">OFF</strong></button><button id="comparison-exit" type="button" class="now-button">Salir de comparación</button></div>
+            <div class="comparison-actions"><button id="comparison-apply" type="submit" class="primary">Comparar</button><button id="comparison-connectors" type="button" class="now-button" role="switch" aria-checked="false" hidden>Líneas de conexión <strong id="comparison-connectors-label">OFF</strong></button><button id="comparison-values" type="button" class="now-button" role="switch" aria-checked="false" hidden>Valores de los puntos <strong id="comparison-values-label">OFF</strong></button><button id="comparison-average" type="button" class="now-button" role="switch" aria-checked="false" hidden>Línea promedio <strong id="comparison-average-label">OFF</strong></button><button id="comparison-exit" type="button" class="now-button">Salir de comparación</button></div>
           </form>
         </section>
         <div id="comparison-legend" class="comparison-legend" aria-label="Fechas comparadas" hidden></div>
@@ -528,7 +528,7 @@
     const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showMeals:true, calendarShowMeals:true, showFastingRange:false };
 
     state.comparisonMode=false;
-    const comparisonState={showConnectors:false,open:false,draft:[],days:[],previous:null,colors:["#2563eb","#b34b16","#087d61","#8b46bd","#bd3563","#127e93","#6b6320"]};
+    const comparisonState={showAverage:false,showValues:false,showConnectors:false,open:false,draft:[],days:[],previous:null,colors:["#2563eb","#b34b16","#087d61","#8b46bd","#bd3563","#127e93","#6b6320"]};
 
     // MEDICAMENTOS: equivalencias aritméticas de cantidades ya tomadas.
     // No se calculan recomendaciones ni se relaciona la cantidad con la glucemia.
@@ -1758,17 +1758,17 @@
           if(input.value&&comparisonState.draft.some((other,i)=>i!==index&&other===input.value)){
             input.value=comparisonState.draft[index];comparisonError("Selecciona fechas diferentes: ese día ya está agregado.");return;
           }
-          comparisonState.draft[index]=input.value;comparisonError("");
+          comparisonState.draft[index]=input.value;comparisonError("");refreshComparisonAverageDates();
         });
         const remove=element("button","now-button","Quitar");remove.type="button";remove.disabled=comparisonState.draft.length<=2;remove.setAttribute("aria-label",`Quitar día ${index+1}`);
-        remove.addEventListener("click",()=>{if(comparisonState.draft.length<=2)return;comparisonState.draft.splice(index,1);renderComparisonSelectors();comparisonError("");$("#comparison-add").focus();});
+        remove.addEventListener("click",()=>{if(comparisonState.draft.length<=2)return;comparisonState.draft.splice(index,1);refreshComparisonAverageDates();renderComparisonSelectors();comparisonError("");$("#comparison-add").focus();});
         field.append(label,input);row.append(field,remove);box.append(row);
       });
       $("#comparison-add").disabled=comparisonState.draft.length>=7;$("#comparison-limit").hidden=comparisonState.draft.length<7;
     }
     function openDayComparison() {
       if(comparisonState.open){$("#comparison-date-0").focus();return;}
-      comparisonState.open=true;comparisonState.showConnectors=false;
+      comparisonState.open=true;comparisonState.showAverage=false;comparisonState.showConnectors=false;comparisonState.showValues=false;
       comparisonState.previous={period:state.period,showMeals:state.showMeals,showMedications:state.showMedications,showFastingRange:state.showFastingRange};
       if(!comparisonState.draft.length){
         const days=[...new Set(timelineEvents(state.records).filter(e=>Number.isFinite(e.timestamp)).map(e=>localDateKey(e.timestamp)))].sort().reverse();
@@ -1787,7 +1787,7 @@
     }
     function exitDayComparison(redraw=true) {
       if(!comparisonState.open)return;
-      state.comparisonMode=false;comparisonState.open=false;comparisonState.showConnectors=false;$("#comparison-connectors").hidden=true;
+      state.comparisonMode=false;comparisonState.open=false;comparisonState.showAverage=false;$("#comparison-average").hidden=true;comparisonState.showConnectors=false;$("#comparison-connectors").hidden=true;comparisonState.showValues=false;$("#comparison-values").hidden=true;
       Object.assign(state,comparisonState.previous);comparisonState.previous=null;
       $("#comparison-panel").hidden=true;$("#comparison-legend").hidden=true;$("#comparison-summary").hidden=true;
       $("#compare-days").setAttribute("aria-expanded","false");$("#compare-days").setAttribute("aria-pressed","false");
@@ -1812,7 +1812,67 @@
       const body=element("tbody");rows.forEach(([title,value])=>{const row=element("tr"),label=element("th","",title);label.scope="row";row.append(label);stats.forEach(stat=>{const v=value(stat);row.append(element("td","",v==null?"—":typeof v==="number"?numberFormat.format(v):v));});body.append(row);});
       table.append(body);wrapper.append(table);box.append(wrapper,element("p","small muted","Porcentajes de mediciones puntuales. Ayuno incluye únicamente registros marcados «En ayunas»."));
     }
+    function calculateComparisonAverage(records,days) {
+      const selected=new Set(days),bins=Array.from({length:8},(_,index)=>({index,startMinute:index*180,endMinute:(index+1)*180,centerMinute:index*180+90,total:0,count:0,days:new Set()}));
+      for(const record of records){
+        if(!hasGlucose(record)||!Number.isFinite(Date.parse(record.createdAt)))continue;
+        const day=localDateKey(record.createdAt);if(!selected.has(day))continue;
+        const bin=bins[Math.floor(comparisonMinutes(record.createdAt)/180)];
+        bin.total+=record.glucose;bin.count++;bin.days.add(day);
+      }
+      return bins.map(bin=>({...bin,days:[...bin.days],dayCount:bin.days.size,average:bin.count?bin.total/bin.count:null}));
+    }
+    function refreshComparisonAverageDates() {
+      if(!state.comparisonMode||!comparisonState.showAverage)return;
+      const days=comparisonState.draft;
+      if(days.length<2||days.length>7||new Set(days).size!==days.length||days.some(day=>!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day+"T12:00:00Z"))))return;
+      comparisonState.days=[...days];renderComparisonChart();
+    }
+    function drawComparisonAverage(svg,detail,legend,minuteX,y) {
+      const bins=calculateComparisonAverage(state.records,comparisonState.days),color="#243244",format=new Intl.NumberFormat("es",{maximumFractionDigits:2});
+      const legendItem=element("span","comparison-key comparison-average-legend"),sample=element("span","comparison-swatch");sample.style.background=color;sample.style.height="5px";legendItem.append(sample,document.createTextNode("Promedio · franjas de 3 h"));legend.append(legendItem);
+      const curve=svgElement("g",{class:"comparison-average-curves","pointer-events":"none","aria-hidden":"true"});
+      let segment=[];
+      const finishSegment=()=>{if(segment.length>1)curve.append(svgElement("polyline",{class:"comparison-average-line",points:segment.map(bin=>`${minuteX(bin.centerMinute)},${y(bin.average)}`).join(" "),fill:"none",stroke:color,"stroke-width":3.5,"stroke-dasharray":"8 4","stroke-linejoin":"round"}));segment=[];};
+      for(const bin of bins){if(bin.count)segment.push(bin);else finishSegment();}finishSegment();
+      svg.insertBefore(curve,svg.querySelector(".comparison-point"));
+      if(!bins.some(bin=>bin.count)){legendItem.append(document.createTextNode(" · Sin mediciones"));return;}
+      const tooltip=element("div","chart-tooltip comparison-average-tooltip");tooltip.hidden=true;tooltip.setAttribute("aria-hidden","true");svg.parentElement.append(tooltip);
+      const controller=new AbortController(),options={signal:controller.signal};
+      const hide=()=>{tooltip.hidden=true;};
+      // Reutiliza el ciclo de limpieza del gráfico para no dejar tooltips ni listeners antiguos.
+      svg.chartInteractionCleanup=()=>{controller.abort();tooltip.remove();delete svg.chartInteractionCleanup;};
+      svg.addEventListener("pointerdown",hide,{...options,capture:true});
+      window.addEventListener("scroll",hide,{...options,capture:true});
+      const hour=minute=>String(minute/60).padStart(2,"0")+":00";
+      bins.filter(bin=>bin.count).forEach(bin=>{
+        const range=`${hour(bin.startMinute)}–${hour(bin.endMinute)}`,average=`Promedio: ${format.format(bin.average)} mg/dL`,count=`${bin.count} ${bin.count===1?"medición":"mediciones"}`,days=`${bin.dayCount} de ${comparisonState.days.length} días`;
+        const px=minuteX(bin.centerMinute),py=y(bin.average),node=svgElement("g",{class:"hit comparison-average-point",tabindex:0,role:"button","aria-controls":"chart-detail","aria-label":`${range}. ${average}. ${count}. ${days}.`,"data-bin":bin.index,"data-average":bin.average,"data-count":bin.count,"data-days":bin.dayCount});
+        node.append(svgElement("circle",{cx:px,cy:py,r:16,fill:"transparent"}),svgElement("circle",{class:"dot",cx:px,cy:py,r:7,fill:color,stroke:"white","stroke-width":2,"pointer-events":"none"}));
+        const show=()=>{
+          const fill=box=>box.replaceChildren(element("strong","",range),element("p","",average),element("p","",count),element("p","",days));
+          fill(detail);fill(tooltip);tooltip.hidden=false;
+          const host=svg.parentElement.getBoundingClientRect(),bounds=svg.getBoundingClientRect(),point=new DOMPoint(px,py).matrixTransform(svg.getScreenCTM());
+          const minX=Math.max(bounds.left,0)+4,maxX=Math.min(bounds.right,innerWidth)-4;
+          tooltip.style.maxWidth=Math.max(1,maxX-minX)+"px";
+          const size=tooltip.getBoundingClientRect();
+          const tx=Math.max(minX,Math.min(maxX-size.width,point.x+12));
+          const minY=Math.max(bounds.top,0)+4,maxY=Math.min(bounds.bottom,innerHeight)-4;
+          const ty=Math.max(minY,Math.min(maxY-size.height,point.y-size.height-12));
+          tooltip.style.left=tx-host.left+"px";tooltip.style.top=ty-host.top+"px";
+        };
+        node.addEventListener("pointerenter",event=>{if(event.pointerType==="mouse")show();});node.addEventListener("pointerleave",hide);node.addEventListener("click",show);node.addEventListener("focus",show);node.addEventListener("blur",hide);
+        node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}else if(event.key==="Escape")hide();});svg.append(node);
+      });
+    }
+
     function renderComparisonChart() {
+      $("#comparison-average").hidden=false;
+      $("#comparison-average").setAttribute("aria-checked",String(comparisonState.showAverage));
+      $("#comparison-average-label").textContent=comparisonState.showAverage?"ON":"OFF";
+      $("#comparison-values").hidden=false;
+      $("#comparison-values").setAttribute("aria-checked",String(comparisonState.showValues));
+      $("#comparison-values-label").textContent=comparisonState.showValues?"ON":"OFF";
       $("#comparison-connectors").hidden=false;
       $("#comparison-connectors").setAttribute("aria-checked",String(comparisonState.showConnectors));
       $("#comparison-connectors-label").textContent=comparisonState.showConnectors?"ON":"OFF";
@@ -1829,7 +1889,7 @@
       const W=Math.max(180,svg.clientWidth||600),left=42,right=14,top=30,plotW=W-left-right,plotH=200,axisY=top+plotH;
       const hasLanes=state.showMeals||state.showMedications,H=axisY+52+(hasLanes?groups.length*76:0);
       const max=groups.reduce((m,g)=>Math.max(m,calculateStats(g.records).max||0),200),yMax=Math.ceil(max*1.12/50)*50;
-      const x=timestamp=>left+comparisonMinutes(timestamp)/1440*plotW,y=value=>top+plotH-value/yMax*plotH;
+      const minuteX=minute=>left+minute/1440*plotW,x=timestamp=>minuteX(comparisonMinutes(timestamp)),y=value=>top+plotH-value/yMax*plotH;
       svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Comparación de días, de 00:00 a 24:00. Cada línea representa una fecha. Selecciona puntos y eventos para consultar sus detalles.");
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5}));
       if(state.showFastingRange){
@@ -1846,6 +1906,9 @@
       const addNode=(event,px,py,color,kind,decorative=true,medicationLabel="")=>{
         const node=svgElement("g",{class:"hit comparison-point",tabindex:0,role:"button","aria-controls":"chart-detail","aria-label":`${comparisonDateLabel(localDateKey(event.timestamp))}, ${localTime(event.timestamp)}, ${temporalTitle(event)}`,"data-day":localDateKey(event.timestamp),"data-type":event.type,"data-minute":comparisonMinutes(event.timestamp)});
         node.append(svgElement("circle",{cx:px,cy:py,r:13,fill:"transparent"}),svgElement("circle",{class:"dot",cx:px,cy:py,r:kind==="glucose"?5:4,fill:color,stroke:"white","stroke-width":2,"pointer-events":"none"}));
+        if(kind==="glucose"&&comparisonState.showValues){
+          node.append(svgElement("text",{class:"comparison-value-label",x:Math.max(left+12,Math.min(W-right-12,px)),y:py-11,"text-anchor":"middle","pointer-events":"none","aria-hidden":"true",style:`font-size:12px;font-weight:700;fill:${color};stroke:white;stroke-width:3px;paint-order:stroke;stroke-linejoin:round`},String(event.record.glucose)));
+        }
         if(kind!=="glucose"&&decorative)node.append(svgElement("text",{x:px,y:py+4,"text-anchor":"middle","pointer-events":"none","aria-hidden":"true",style:"font-size:13px"},kind==="meal"?getMealEmoji(event.record.mealType):"💊"));
         if(kind==="medication"&&decorative&&medicationLabel){
           const placeLeft=px+12+medicationLabel.length*8>W-right;
@@ -1897,17 +1960,20 @@
         item.node.addEventListener("pointerenter",event=>{if(event.pointerType==="mouse")show();});item.node.addEventListener("click",show);item.node.addEventListener("focus",show);
         item.node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});
       });
+      if(comparisonState.showAverage)drawComparisonAverage(svg,detail,legend,minuteX,y);
       renderComparisonSummary(groups);
     }
     function initializeDayComparison() {
       $("#compare-days").addEventListener("click",openDayComparison);
       $("#comparison-form").addEventListener("submit",applyDayComparison);
+      $("#comparison-average").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showAverage=!comparisonState.showAverage;if(comparisonState.showAverage)refreshComparisonAverageDates();renderComparisonChart();});
+      $("#comparison-values").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showValues=!comparisonState.showValues;renderComparisonChart();});
       $("#comparison-connectors").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showConnectors=!comparisonState.showConnectors;renderComparisonChart();});
       $("#comparison-exit").addEventListener("click",()=>exitDayComparison());
       $("#comparison-add").addEventListener("click",()=>{
         if(comparisonState.draft.length>=7)return;
         let day=localDateKey(Date.now());while(comparisonState.draft.includes(day))day=shiftDay(day,-1);
-        comparisonState.draft.push(day);renderComparisonSelectors();comparisonError("");$("#comparison-date-"+(comparisonState.draft.length-1)).focus();
+        comparisonState.draft.push(day);refreshComparisonAverageDates();renderComparisonSelectors();comparisonError("");$("#comparison-date-"+(comparisonState.draft.length-1)).focus();
       });
     }
 
