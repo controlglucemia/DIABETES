@@ -219,6 +219,24 @@
     @media(max-width:480px) { .comparison-dates { grid-template-columns:minmax(0,1fr); } .comparison-panel { padding:12px; } .comparison-actions>button { flex:1 1 150px; } .comparison-table th:first-child { min-width:125px;max-width:135px; } }
     .hba1c-card .hba1c-value { font-size:2.8rem;font-weight:700;letter-spacing:-.04em;line-height:1.2;margin:8px 0; }
     .hba1c-card .hba1c-value small { font-size:1.1rem;color:var(--muted); }
+    .hba1c-scale { margin-top:22px; }
+    .hba1c-track { position:relative;padding-top:48px; }
+    .hba1c-marker { position:absolute;inset:0;pointer-events:none; }
+    .hba1c-marker-label { position:absolute;top:0;left:clamp(52px,var(--position),calc(100% - 52px));transform:translateX(-50%);background:#172b46;color:white;border:2px solid white;border-radius:8px;padding:5px 9px;font-size:.875rem;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px #172b4640; }
+    .hba1c-marker-tip { position:absolute;top:34px;left:var(--position);transform:translateX(-50%);width:18px;height:18px;filter:drop-shadow(0 1px 1px #172b4670); }
+    .hba1c-segments { display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px; }
+    .hba1c-segment { min-width:0;border:0;background:transparent;padding:0;color:#172b46;cursor:pointer;border-radius:5px; }
+    .hba1c-segment:focus-visible { outline:3px solid #172b46;outline-offset:4px; }
+    .hba1c-swatch { display:block;height:44px;background:var(--segment-color);border-radius:4px;border:1px solid #172b4633; }
+    .hba1c-segment[aria-pressed="true"] .hba1c-swatch { box-shadow:inset 0 0 0 3px #fff,inset 0 0 0 5px #172b46; }
+    .hba1c-range,.hba1c-rating { display:block;font-size:.8rem;line-height:1.4;margin-top:6px;overflow-wrap:anywhere; }
+    .hba1c-rating { font-weight:400;margin-top:2px; }
+    .hba1c-limits { display:flex;justify-content:space-between;margin-top:5px; }
+    .hba1c-current { margin:16px 0 10px;font-weight:600; }
+    .hba1c-reference { padding:14px;background:#f3f6fa;border:1px solid var(--line);border-radius:12px; }
+    .hba1c-reference p { margin-top:5px; }
+    .hba1c-source { margin-top:12px; }
+    @media(max-width:767px) { .hba1c-segment .hba1c-range,.hba1c-segment .hba1c-rating { display:none; } }
     .hba1c-actions { display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:16px; }
     .hba1c-history { margin-top:16px; }
     .hba1c-history summary { cursor:pointer;color:var(--blue);font-size:.875rem;min-height:44px;padding:10px 0; }
@@ -319,13 +337,25 @@
         <div class="form-field"><label for="hba1c-input">HbA1c (%)</label><input id="hba1c-input" type="text" inputmode="decimal" required autocomplete="off" aria-describedby="hba1c-error" placeholder="Ej.: 7,4"></div>
         <div class="form-field"><label for="hba1c-test-date">Fecha del examen</label><input id="hba1c-test-date" type="date" required aria-describedby="hba1c-error"></div>
         <p id="hba1c-error" class="error" role="alert" hidden></p>
-        <div class="edit-actions"><button id="hba1c-cancel" type="button" class="now-button" hidden>Cancelar edición</button><button id="hba1c-save" type="submit" class="primary">Guardar</button></div>
+        <div class="edit-actions"><button id="hba1c-delete" type="button" class="danger" hidden>Borrar examen</button><button id="hba1c-cancel" type="button" class="now-button" hidden>Cancelar edición</button><button id="hba1c-save" type="submit" class="primary">Guardar</button></div>
       </form>
       </section>
       <section class="card full hba1c-card" data-pages="inicio" aria-labelledby="hba1c-title">
-        <div class="card-head"><div><h2 id="hba1c-title">HbA1c</h2><p class="small muted">Hemoglobina glicosilada · Examen de laboratorio</p></div></div>
+        <div class="card-head"><div><h2 id="hba1c-title">Hemoglobina glicosilada / HbA1c</h2><p class="small muted">Hemoglobina glicosilada · Examen de laboratorio</p></div></div>
         <div class="hba1c-value"><span id="hba1c-value">—</span> <small>%</small></div>
         <p class="small muted">Último examen: <span id="hba1c-date">Cargando…</span></p>
+        <div class="hba1c-scale">
+          <p class="small muted">Toca un segmento para consultar su rango y calificación.</p>
+          <div class="hba1c-track">
+            <div id="hba1c-marker" class="hba1c-marker" hidden aria-hidden="true"><span class="hba1c-marker-label"></span><svg class="hba1c-marker-tip" viewBox="0 0 18 18"><path d="M1 1H17L9 16Z" fill="#172b46" stroke="white" stroke-width="2"/></svg></div>
+            <div id="hba1c-segments" class="hba1c-segments" role="group" aria-label="Rangos de referencia HbA1c"></div>
+          </div>
+          <div class="hba1c-limits small muted"><span>5%</span><span>12%</span></div>
+          <p id="hba1c-current" class="hba1c-current small"></p>
+          <div id="hba1c-reference" class="hba1c-reference" aria-live="polite"></div>
+          <p class="small muted hba1c-source">Clasificación de referencia: Álvarez (2008).</p>
+          <p class="small muted">Estas categorías son una referencia, no un diagnóstico médico. El promedio de glicemias indicado pertenece a la tabla y no es el promedio de tus registros.</p>
+        </div>
         <p id="hba1c-change" class="small" hidden></p>
         <details class="hba1c-history"><summary>Ver historial</summary><div id="hba1c-history-list"></div></details>
         <p id="hba1c-status" class="small muted" role="status" aria-live="polite">Cargando exámenes…</p>
@@ -2027,6 +2057,15 @@
         }
         return orderedHba1c(records);
       },
+      async remove(hash,id){
+        const resource=`hba1c_records?owner_hash=eq.${hash}&id=eq.${encodeURIComponent(id)}`;
+        const rows=await cloudRequest(resource,{method:"DELETE",prefer:"return=representation"});
+        if(!Array.isArray(rows))throw new Error("No se pudo confirmar el borrado.");
+        if(!rows.some(record=>record.id===id)){
+          const remaining=await cloudRequest(resource+"&select=id");
+          if(!Array.isArray(remaining)||remaining.length)throw new Error("No se pudo confirmar el borrado.");
+        }
+      },
       async save(hash,record,editing){
         const resource=editing?`hba1c_records?owner_hash=eq.${hash}&id=eq.${encodeURIComponent(record.id)}`:"hba1c_records?on_conflict=owner_hash,id";
         const rows=await cloudRequest(resource,{method:editing?"PATCH":"POST",prefer:editing?"return=representation":"resolution=ignore-duplicates,return=representation",body:editing?{test_date:record.test_date,hba1c:record.hba1c}:{owner_hash:hash,...record}});
@@ -2036,13 +2075,45 @@
         return saved;
       }
     };
+    const HBA1C_RANGES = [
+      {min:5,max:6,glucose:"80–120 mg/dL",label:"Excelente",color:"#15803d"},
+      {min:6,max:7,glucose:"120–150 mg/dL",label:"Muy bueno",color:"#86cf78"},
+      {min:7,max:8,glucose:"150–180 mg/dL",label:"Bueno",color:"#c4d957"},
+      {min:8,max:9,glucose:"180–210 mg/dL",label:"Regular",color:"#f4ce3f"},
+      {min:9,max:10,glucose:"210–240 mg/dL",label:"Problemático",color:"#f39838"},
+      {min:10,max:11,glucose:"240–270 mg/dL",label:"Malo",color:"#ef8581"},
+      {min:11,max:12,glucose:"270–300 mg/dL",label:"Muy malo",color:"#be1830"}
+    ];
+    const hba1cScaleState={key:null,selected:-1};
+    function classifyHba1c(value) {return HBA1C_RANGES.findIndex((r,i)=>value>=r.min&&(value<r.max||(i===6&&value===r.max)));}
+    function renderHba1cScale(latest) {
+      const current=latest?classifyHba1c(latest.hba1c):-1,key=latest?`${latest.id}/${latest.test_date}/${latest.hba1c}`:"empty";
+      if(hba1cScaleState.key!==key){hba1cScaleState.key=key;hba1cScaleState.selected=current;}
+      const marker=$("#hba1c-marker");marker.hidden=!latest;
+      if(latest){marker.style.setProperty("--position",`${Math.max(0,Math.min(100,(latest.hba1c-5)/7*100))}%`);marker.querySelector("span").textContent=`${hba1cFormat.format(latest.hba1c)}%`;}
+      const range=HBA1C_RANGES[current];
+      $("#hba1c-current").textContent=latest?`Resultado registrado: ${hba1cFormat.format(latest.hba1c)}% · ${hba1cDateLabel(latest.test_date)} · ${range?`${range.min}–${range.max}% · ${range.label}`:"Fuera de la escala de referencia (5–12%)"}`:"Sin resultado de laboratorio registrado.";
+      const group=$("#hba1c-segments");
+      if(!group.children.length)HBA1C_RANGES.forEach((r,i)=>{
+        const button=element("button","hba1c-segment");button.type="button";button.style.setProperty("--segment-color",r.color);
+        button.setAttribute("aria-label",`${r.min}–${r.max}%, ${r.label}, promedio de glicemias de referencia: ${r.glucose}`);
+        button.append(element("span","hba1c-swatch"),element("strong","hba1c-range",`${r.min}–${r.max}%`),element("span","hba1c-rating",r.label));
+        button.addEventListener("click",()=>{hba1cScaleState.selected=i;renderHba1cScale(orderedHba1c(hba1cState.records)[0]);});group.append(button);
+      });
+      [...group.children].forEach((button,i)=>button.setAttribute("aria-pressed",String(i===hba1cScaleState.selected)));
+      const selected=HBA1C_RANGES[hba1cScaleState.selected],detail=$("#hba1c-reference");detail.replaceChildren();
+      if(selected){detail.append(element("p","small muted",hba1cScaleState.selected===current?"Referencia del resultado registrado":"Segmento consultado · el resultado registrado no cambia"),element("strong","",`${selected.min}–${selected.max}% · ${selected.label}`),element("p","small",`Promedio de glicemias: ${selected.glucose}`));}
+      else detail.append(element("p","small",latest?"El resultado queda fuera de los rangos de esta tabla. Puedes consultar sus segmentos.":"Selecciona un segmento para consultar la tabla de referencia."));
+    }
     function renderHba1c() {
       const records=orderedHba1c(hba1cState.records),latest=records[0],previous=records[1];
+      renderHba1cScale(latest);
       $("#hba1c-value").textContent=latest?hba1cFormat.format(latest.hba1c):"—";
       $("#hba1c-date").textContent=latest?hba1cDateLabel(latest.test_date):"Sin exámenes registrados";
       const change=$("#hba1c-change");change.hidden=!previous;
       if(previous){const delta=Number((latest.hba1c-previous.hba1c).toFixed(10));change.textContent=`${delta<0?"−":delta>0?"+":""}${hba1cFormat.format(Math.abs(delta))} puntos porcentuales respecto al ${hba1cDateLabel(previous.test_date)}`;}
       $("#hba1c-status").textContent=hba1cState.status;
+      $("#hba1c-delete").disabled=hba1cState.saving;
       $("#hba1c-save").disabled=hba1cState.saving;$("#hba1c-cancel").disabled=hba1cState.saving;
       $("#hba1c-save").textContent=hba1cState.saving?"Guardando…":"Guardar";
       const list=$("#hba1c-history-list");list.replaceChildren();
@@ -2074,7 +2145,7 @@
       $("#hba1c-form-title").textContent=id?"Editar HbA1c":"Registrar HbA1c";
       $("#hba1c-input").value=record?String(record.hba1c).replace(".",","):"";
       $("#hba1c-test-date").value=record?record.test_date:localDateKey(Date.now());$("#hba1c-error").hidden=true;
-      $("#hba1c-cancel").hidden=!id;navigate("registrar");$("#hba1c-input").focus();
+      $("#hba1c-cancel").hidden=!id;$("#hba1c-delete").hidden=!id;navigate("registrar");$("#hba1c-input").focus();
     }
     async function saveHba1c(event) {
       event.preventDefault();if(hba1cState.saving)return;
@@ -2095,14 +2166,29 @@
       }catch(error){if(generation!==hba1cState.generation)return;errorBox.textContent=error.message+" El formulario conserva tus datos.";errorBox.hidden=false;hba1cState.status="Guardado de HbA1c sin confirmar · Puedes reintentar";}
       finally{if(generation===hba1cState.generation){hba1cState.saving=false;renderHba1c();}}
     }
+    async function deleteHba1c() {
+      if(hba1cState.saving||!hba1cState.editingId)return;
+      const id=hba1cState.editingId,record=hba1cState.records.find(r=>r.id===id);if(!record)return;
+      if(!window.confirm(`¿Borrar el examen HbA1c de ${hba1cFormat.format(record.hba1c)}% del ${hba1cDateLabel(record.test_date)}? Esta acción no se puede deshacer.`))return;
+      const generation=++hba1cState.generation,errorBox=$("#hba1c-error");errorBox.hidden=true;
+      hba1cState.loading=false;hba1cState.saving=true;renderHba1c();
+      try {
+        const {hash}=await getCloudIdentity();if(generation!==hba1cState.generation)return;
+        await Hba1cRepository.remove(hash,id);if(generation!==hba1cState.generation)return;
+        hba1cState.records=hba1cState.records.filter(r=>r.id!==id);cacheHba1c();
+        hba1cState.status="Examen HbA1c eliminado";resetHba1cForm();navigate("inicio");notify("✓ Examen HbA1c eliminado");
+      }catch(error){if(generation!==hba1cState.generation)return;errorBox.textContent=error.message+" Borrado sin confirmar. Puedes reintentar.";errorBox.hidden=false;hba1cState.status="Borrado de HbA1c sin confirmar";}
+      finally{if(generation===hba1cState.generation){hba1cState.saving=false;renderHba1c();}}
+    }
     function resetHba1cForm() {
       hba1cState.editingId=null;hba1cState.pending=null;$("#hba1c-form").reset();
       $("#hba1c-test-date").value=localDateKey(Date.now());$("#hba1c-error").hidden=true;
-      $("#hba1c-form-title").textContent="Registrar HbA1c";$("#hba1c-cancel").hidden=true;
+      $("#hba1c-form-title").textContent="Registrar HbA1c";$("#hba1c-cancel").hidden=true;$("#hba1c-delete").hidden=true;
     }
     function initializeHba1c() {
       resetHba1cForm();
       $("#hba1c-form").addEventListener("submit",saveHba1c);
+      $("#hba1c-delete").addEventListener("click",deleteHba1c);
       $("#hba1c-cancel").addEventListener("click",()=>{if(!hba1cState.saving)resetHba1cForm();});
       $("#cloud-refresh").addEventListener("click",loadHba1c);window.addEventListener("online",loadHba1c);
       document.addEventListener("visibilitychange",()=>{if(!document.hidden)loadHba1c();});
