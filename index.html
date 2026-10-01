@@ -217,6 +217,14 @@
     .comparison-table thead th { background:#f5f8fc; }
     .comparison-table tr:last-child>* { border-bottom:0; }
     @media(max-width:480px) { .comparison-dates { grid-template-columns:minmax(0,1fr); } .comparison-panel { padding:12px; } .comparison-actions>button { flex:1 1 150px; } .comparison-table th:first-child { min-width:125px;max-width:135px; } }
+    .hba1c-card .hba1c-value { font-size:2.8rem;font-weight:700;letter-spacing:-.04em;line-height:1.2;margin:8px 0; }
+    .hba1c-card .hba1c-value small { font-size:1.1rem;color:var(--muted); }
+    .hba1c-actions { display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:16px; }
+    .hba1c-history { margin-top:16px; }
+    .hba1c-history summary { cursor:pointer;color:var(--blue);font-size:.875rem;min-height:44px;padding:10px 0; }
+    .hba1c-history-row { display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line); }
+    .hba1c-history-row strong,.hba1c-history-row time { display:block; }
+    #hba1c-status,#hba1c-change { margin-top:10px;overflow-wrap:anywhere; }
   </style>
 </head>
 <body data-page="inicio">
@@ -304,6 +312,24 @@
         </form>
       </section>
 
+      <section class="card hba1c-register-card" data-pages="registrar" aria-labelledby="hba1c-form-title" hidden>
+        <div class="card-head"><h2 id="hba1c-form-title">Registrar HbA1c</h2></div>
+        <p class="small muted" style="margin-bottom:16px">Ingresa el resultado de tu examen de laboratorio.</p>
+      <form id="hba1c-form" novalidate>
+        <div class="form-field"><label for="hba1c-input">HbA1c (%)</label><input id="hba1c-input" type="text" inputmode="decimal" required autocomplete="off" aria-describedby="hba1c-error" placeholder="Ej.: 7,4"></div>
+        <div class="form-field"><label for="hba1c-test-date">Fecha del examen</label><input id="hba1c-test-date" type="date" required aria-describedby="hba1c-error"></div>
+        <p id="hba1c-error" class="error" role="alert" hidden></p>
+        <div class="edit-actions"><button id="hba1c-cancel" type="button" class="now-button" hidden>Cancelar edición</button><button id="hba1c-save" type="submit" class="primary">Guardar</button></div>
+      </form>
+      </section>
+      <section class="card full hba1c-card" data-pages="inicio" aria-labelledby="hba1c-title">
+        <div class="card-head"><div><h2 id="hba1c-title">HbA1c</h2><p class="small muted">Hemoglobina glicosilada · Examen de laboratorio</p></div></div>
+        <div class="hba1c-value"><span id="hba1c-value">—</span> <small>%</small></div>
+        <p class="small muted">Último examen: <span id="hba1c-date">Cargando…</span></p>
+        <p id="hba1c-change" class="small" hidden></p>
+        <details class="hba1c-history"><summary>Ver historial</summary><div id="hba1c-history-list"></div></details>
+        <p id="hba1c-status" class="small muted" role="status" aria-live="polite">Cargando exámenes…</p>
+      </section>
       <section class="card chart-card" data-pages="inicio estadisticas" aria-labelledby="chart-title">
         <div class="card-head"><div><h2 id="chart-title">Tu glucemia</h2><p class="small muted">Una mirada a tus mediciones</p></div><div class="filters" role="group" aria-label="Período del gráfico"><button type="button" data-period="1" aria-pressed="true">Hoy</button><button type="button" data-period="24h" aria-pressed="false">Últimas 24 horas</button><button type="button" data-period="48h" aria-pressed="false">Últimas 48 horas</button><button type="button" data-period="72h" aria-pressed="false">Últimas 72 horas</button><button type="button" data-period="7" aria-pressed="false">7 días</button><button type="button" data-period="30" aria-pressed="false">30 días</button><button id="compare-days" type="button" aria-pressed="false" aria-expanded="false" aria-controls="comparison-panel">Comparar días</button></div></div>
         <section id="comparison-panel" class="comparison-panel" aria-labelledby="comparison-title" hidden>
@@ -1977,11 +2003,123 @@
       });
     }
 
+    // HbA1c de laboratorio: almacenamiento, carga y errores independientes de la glucemia.
+    const hba1cState={records:[],loading:false,saving:false,generation:0,owner:null,editingId:null,pending:null,status:"Cargando exámenes…"};
+    const hba1cFormat=new Intl.NumberFormat("es",{minimumFractionDigits:1,maximumFractionDigits:10});
+    const HBA1C_CACHE="control-glucemia.hba1c.v1.";
+    function validHba1cDate(day) {
+      if(typeof day!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(day)||day.startsWith("0000"))return false;
+      const date=new Date(day+"T12:00:00Z");return Number.isFinite(date.getTime())&&date.toISOString().slice(0,10)===day;
+    }
+    function validHba1cRecord(record) {
+      return !!record&&typeof record.id==="string"&&record.id.length>0&&validHba1cDate(record.test_date)&&typeof record.hba1c==="number"&&Number.isFinite(record.hba1c)&&record.hba1c>0&&record.hba1c<=100;
+    }
+    function orderedHba1c(records) {return [...records].sort((a,b)=>b.test_date.localeCompare(a.test_date)||String(b.saved_at||"").localeCompare(String(a.saved_at||""))||a.id.localeCompare(b.id));}
+    function hba1cDateLabel(day) {return day.split("-").reverse().join("/");}
+    function cacheHba1c() {if(hba1cState.owner)try{localStorage.setItem(HBA1C_CACHE+hba1cState.owner,JSON.stringify(hba1cState.records));}catch{/* La escritura remota ya fue confirmada. */}}
+    const Hba1cRepository={
+      async load(hash){
+        const records=[];
+        for(let offset=0;;offset+=500){
+          const rows=await cloudRequest(`hba1c_records?select=id,test_date,hba1c,saved_at&owner_hash=eq.${hash}&order=test_date.desc,saved_at.desc,id.asc&offset=${offset}&limit=500`);
+          if(!Array.isArray(rows)||rows.some(record=>!validHba1cRecord(record)))throw new Error("Hay un examen HbA1c que no se puede interpretar.");
+          records.push(...rows);if(rows.length<500)break;
+        }
+        return orderedHba1c(records);
+      },
+      async save(hash,record,editing){
+        const resource=editing?`hba1c_records?owner_hash=eq.${hash}&id=eq.${encodeURIComponent(record.id)}`:"hba1c_records?on_conflict=owner_hash,id";
+        const rows=await cloudRequest(resource,{method:editing?"PATCH":"POST",prefer:editing?"return=representation":"resolution=ignore-duplicates,return=representation",body:editing?{test_date:record.test_date,hba1c:record.hba1c}:{owner_hash:hash,...record}});
+        let saved=Array.isArray(rows)?rows[0]:null;
+        if(!saved&&!editing){const existing=await cloudRequest(`hba1c_records?select=id,test_date,hba1c,saved_at&owner_hash=eq.${hash}&id=eq.${encodeURIComponent(record.id)}`);saved=existing?.[0];}
+        if(!validHba1cRecord(saved)||saved.test_date!==record.test_date||saved.hba1c!==record.hba1c)throw new Error("No se pudo confirmar el guardado de HbA1c. Actualiza y vuelve a intentarlo.");
+        return saved;
+      }
+    };
+    function renderHba1c() {
+      const records=orderedHba1c(hba1cState.records),latest=records[0],previous=records[1];
+      $("#hba1c-value").textContent=latest?hba1cFormat.format(latest.hba1c):"—";
+      $("#hba1c-date").textContent=latest?hba1cDateLabel(latest.test_date):"Sin exámenes registrados";
+      const change=$("#hba1c-change");change.hidden=!previous;
+      if(previous){const delta=Number((latest.hba1c-previous.hba1c).toFixed(10));change.textContent=`${delta<0?"−":delta>0?"+":""}${hba1cFormat.format(Math.abs(delta))} puntos porcentuales respecto al ${hba1cDateLabel(previous.test_date)}`;}
+      $("#hba1c-status").textContent=hba1cState.status;
+      $("#hba1c-save").disabled=hba1cState.saving;$("#hba1c-cancel").disabled=hba1cState.saving;
+      $("#hba1c-save").textContent=hba1cState.saving?"Guardando…":"Guardar";
+      const list=$("#hba1c-history-list");list.replaceChildren();
+      if(!records.length)list.append(element("p","small muted","Sin exámenes HbA1c para mostrar."));
+      for(const record of records){
+        const row=element("div","hba1c-history-row"),info=element("div"),date=element("time","small muted",hba1cDateLabel(record.test_date));date.dateTime=record.test_date;
+        info.append(date,element("strong","",`${hba1cFormat.format(record.hba1c)} %`));
+        const edit=element("button","now-button","Editar");edit.type="button";edit.disabled=hba1cState.saving;edit.setAttribute("aria-label",`Editar HbA1c del ${hba1cDateLabel(record.test_date)}`);edit.addEventListener("click",()=>openHba1cForm(record.id));row.append(info,edit);list.append(row);
+      }
+    }
+    async function loadHba1c() {
+      if(hba1cState.loading||hba1cState.saving)return;
+      const generation=++hba1cState.generation;hba1cState.loading=true;hba1cState.status="Cargando exámenes…";renderHba1c();
+      try{
+        const {hash}=await getCloudIdentity();if(generation!==hba1cState.generation)return;
+        if(hba1cState.owner!==hash){hba1cState.records=[];hba1cState.owner=hash;renderHba1c();}
+        const records=await Hba1cRepository.load(hash);if(generation!==hba1cState.generation)return;
+        hba1cState.records=records;hba1cState.status="Exámenes sincronizados";cacheHba1c();
+      }catch(error){
+        if(generation!==hba1cState.generation)return;
+        if(!hba1cState.records.length&&hba1cState.owner)try{const cached=JSON.parse(localStorage.getItem(HBA1C_CACHE+hba1cState.owner)||"[]");if(Array.isArray(cached))hba1cState.records=cached.filter(validHba1cRecord);}catch{/* No hay copia utilizable. */}
+        hba1cState.status=`HbA1c sin sincronizar. ${error.message} ${hba1cState.records.length?"Mostramos la última copia disponible. ":""}Pulsa Actualizar para reintentar.`;
+      }finally{if(generation===hba1cState.generation){hba1cState.loading=false;renderHba1c();}}
+    }
+    function openHba1cForm(id=null) {
+      if(hba1cState.saving)return;
+      const record=id?hba1cState.records.find(r=>r.id===id):null;if(id&&!record)return;
+      hba1cState.editingId=id;hba1cState.pending=null;
+      $("#hba1c-form-title").textContent=id?"Editar HbA1c":"Registrar HbA1c";
+      $("#hba1c-input").value=record?String(record.hba1c).replace(".",","):"";
+      $("#hba1c-test-date").value=record?record.test_date:localDateKey(Date.now());$("#hba1c-error").hidden=true;
+      $("#hba1c-cancel").hidden=!id;navigate("registrar");$("#hba1c-input").focus();
+    }
+    async function saveHba1c(event) {
+      event.preventDefault();if(hba1cState.saving)return;
+      const errorBox=$("#hba1c-error");errorBox.hidden=true;
+      const raw=$("#hba1c-input").value.trim(),value=Number(raw.replace(",",".")),day=$("#hba1c-test-date").value;
+      if(!/^\d+(?:[.,]\d+)?$/.test(raw)||!Number.isFinite(value)||value<=0||value>100){errorBox.textContent="Ingresa un resultado HbA1c válido, mayor que 0 y hasta 100 %, usando coma o punto decimal.";errorBox.hidden=false;$("#hba1c-input").focus();return;}
+      if(!validHba1cDate(day)){errorBox.textContent="Indica una fecha válida para el examen.";errorBox.hidden=false;$("#hba1c-test-date").focus();return;}
+      // Una carga anterior no debe sobrescribir el resultado de este guardado.
+      const generation=++hba1cState.generation;hba1cState.loading=false;hba1cState.saving=true;renderHba1c();
+      const editing=hba1cState.editingId,signature=JSON.stringify({editing,test_date:day,hba1c:value});
+      if(!hba1cState.pending||hba1cState.pending.signature!==signature)hba1cState.pending={signature,record:{id:editing||createId(),test_date:day,hba1c:value}};
+      try{
+        const {hash}=await getCloudIdentity();if(generation!==hba1cState.generation)return;
+        const saved=await Hba1cRepository.save(hash,hba1cState.pending.record,!!editing);if(generation!==hba1cState.generation)return;
+        if(hba1cState.owner!==hash)hba1cState.records=[];hba1cState.owner=hash;
+        hba1cState.records=[...hba1cState.records.filter(r=>r.id!==saved.id),saved];hba1cState.pending=null;cacheHba1c();
+        hba1cState.status="HbA1c guardada en Supabase";resetHba1cForm();notify("✓ HbA1c guardada en Supabase");
+      }catch(error){if(generation!==hba1cState.generation)return;errorBox.textContent=error.message+" El formulario conserva tus datos.";errorBox.hidden=false;hba1cState.status="Guardado de HbA1c sin confirmar · Puedes reintentar";}
+      finally{if(generation===hba1cState.generation){hba1cState.saving=false;renderHba1c();}}
+    }
+    function resetHba1cForm() {
+      hba1cState.editingId=null;hba1cState.pending=null;$("#hba1c-form").reset();
+      $("#hba1c-test-date").value=localDateKey(Date.now());$("#hba1c-error").hidden=true;
+      $("#hba1c-form-title").textContent="Registrar HbA1c";$("#hba1c-cancel").hidden=true;
+    }
+    function initializeHba1c() {
+      resetHba1cForm();
+      $("#hba1c-form").addEventListener("submit",saveHba1c);
+      $("#hba1c-cancel").addEventListener("click",()=>{if(!hba1cState.saving)resetHba1cForm();});
+      $("#cloud-refresh").addEventListener("click",loadHba1c);window.addEventListener("online",loadHba1c);
+      document.addEventListener("visibilitychange",()=>{if(!document.hidden)loadHba1c();});
+      window.addEventListener("storage",event=>{
+        if(event.key===CLOUD.accessKey||event.key===null){hba1cState.generation++;hba1cState.records=[];hba1cState.owner=null;hba1cState.loading=false;hba1cState.saving=false;hba1cState.pending=null;resetHba1cForm();renderHba1c();loadHba1c();}
+        else if(event.key===HBA1C_CACHE+hba1cState.owner)loadHba1c();
+      });
+      setInterval(()=>{if(!document.hidden)loadHba1c();},60000);
+      loadHba1c();
+    }
+
     initializeDayComparison();
     initializeEventForms();
     initializeMedicationFields();
     if(!location.hash.includes("family=")) history.replaceState(null,"",location.pathname+location.search+"#family=c3a3f9a68f520fbe288a1cbc607932b87b96c37b3ccfac4effafe3e531580a65");
     loadMeasurements();
+    initializeHba1c();
   </script>
 </body>
 </html>
