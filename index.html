@@ -190,6 +190,8 @@
 
     #chart { touch-action:pan-y; }
     #chart-content .chart-scroll { position:relative; }
+    .chart-touch-surface { pointer-events:none;touch-action:none; }
+    @media(any-pointer:coarse) { .chart-touch-surface { pointer-events:all; } .comparison-average-point { touch-action:none; } }
     .chart-crosshair { stroke:#7c8798;stroke-width:1;stroke-dasharray:2 3;opacity:.8;pointer-events:none; }
     .chart-tooltip { position:absolute;z-index:3;max-width:290px;box-sizing:border-box;background:#172b46;color:white;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.35;pointer-events:none;box-shadow:0 3px 12px #14294426;overflow:hidden; }
     .chart-tooltip .event-detail { padding:5px 0 0;margin:5px 0 0;border-top:1px solid #ffffff40; }
@@ -243,6 +245,20 @@
     .hba1c-history-row { display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line); }
     .hba1c-history-row strong,.hba1c-history-row time { display:block; }
     #hba1c-status,#hba1c-change { margin-top:10px;overflow-wrap:anywhere; }
+    .vitals-summary { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0; }
+    .vitals-stat { border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0; }
+    .vitals-stat strong { display:block;font-size:1.5rem;margin:8px 0; }
+    .vitals-stat small { display:block;color:var(--muted);margin-top:6px; }
+    #vitals-reference-legend p { margin-top:10px; }
+    .vitals-units,.vitals-legend { display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted);margin:16px 0; }
+    #vitals-chart { width:100%;height:330px;display:block;touch-action:pan-y; }
+    #vitals-host { position:relative; }
+    #vitals-tooltip { pointer-events:none;z-index:5; }
+    #vitals-detail { margin-top:12px; }
+    #vitals-detail:empty { display:none; }
+    .vitals-key { display:inline-block;width:24px;border-top:3px solid;vertical-align:middle;margin-right:6px; }
+    @media(max-width:800px) { .vitals-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }.vitals-stat { padding:12px; }.vitals-stat strong { font-size:1.2rem; } }
+    @media(max-width:359px) { .vitals-summary { grid-template-columns:1fr; } }
   </style>
 </head>
 <body data-page="inicio">
@@ -401,6 +417,32 @@
           <div class="range-item"><div class="range-label"><span class="swatch" style="background:#2fa780"></span>En rango</div><strong id="percent-normal">—</strong><small id="label-normal"></small></div>
           <div class="range-item"><div class="range-label"><span class="swatch" style="background:#de7788"></span>Altas</div><strong id="percent-high">—</strong><small id="label-high"></small></div>
         </div><p class="range-note">Rangos de demostración, configurables en el código. Define tus objetivos personales con un profesional de salud.</p>
+      </section>
+      <section class="card full" id="vitals-card" data-pages="estadisticas" hidden aria-labelledby="vitals-title">
+        <div class="card-head"><div><h2 id="vitals-title">Tu presión arterial y pulso</h2><p class="small muted">Una mirada a tus mediciones</p></div></div>
+        <div id="vitals-summary" class="vitals-summary"></div>
+        <div id="vitals-periods" class="filters" role="group" aria-label="Período de presión arterial y pulso">
+          <button type="button" data-vitals-period="1" aria-pressed="false">Hoy</button>
+          <button type="button" data-vitals-period="24h" aria-pressed="false">Últimas 24 horas</button>
+          <button type="button" data-vitals-period="48h" aria-pressed="false">Últimas 48 horas</button>
+          <button type="button" data-vitals-period="72h" aria-pressed="false">Últimas 72 horas</button>
+          <button type="button" data-vitals-period="7" aria-pressed="false">7 días</button>
+          <button type="button" data-vitals-period="30" aria-pressed="true">30 días</button>
+        </div>
+        <div class="hba1c-actions"><button id="vitals-references" class="now-button" type="button" role="switch" aria-checked="true">Rangos de referencia <strong>ON</strong></button></div>
+        <p id="vitals-paired-average" class="small" style="margin-top:14px"></p>
+        <div class="vitals-units"><span>Presión (mmHg) · eje izquierdo</span><span>Pulso (ppm) · eje derecho</span></div>
+        <p id="vitals-empty" class="empty" hidden>Sin datos de presión arterial ni pulso en este período.</p>
+        <div id="vitals-host" class="chart-scroll"><svg id="vitals-chart" role="group" aria-label="Evolución de presión arterial y pulso"></svg><div id="vitals-tooltip" class="chart-tooltip" hidden></div></div>
+        <p id="vitals-view-note" class="small muted" hidden></p>
+        <div id="vitals-detail" class="small" aria-live="polite"></div>
+        <div class="vitals-legend"><span><i class="vitals-key" style="border-color:#c7354c"></i>Sistólica (mmHg)</span><span><i class="vitals-key" style="border-color:#2563eb"></i>Diastólica (mmHg)</span><span><i class="vitals-key" style="border-color:#8250bf;border-top-style:dashed"></i>Pulso (ppm) · escala derecha</span></div>
+        <div class="small muted" id="vitals-reference-legend">
+          <p><a href="https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings" target="_blank" rel="noopener noreferrer">Referencia de presión arterial para adultos · AHA/ACC 2025</a></p>
+          <p>Normal: &lt;120 y &lt;80 mmHg<br>Elevada: 120–129 y &lt;80 mmHg<br>Etapa 1: 130–139 o 80–89 mmHg<br>Etapa 2: ≥140 o ≥90 mmHg</p>
+          <div id="vitals-band-legend"><p><strong>Rangos de referencia</strong><br>🔴 Sistólica: 90–120 mmHg<br>🔵 Diastólica: 60–80 mmHg</p>
+          <p>Referencia visual orientativa. Los objetivos individuales pueden variar.</p></div>
+        </div>
       </section>
       <section class="card full" data-pages="historial" aria-labelledby="history-title" hidden>
         <div class="card-head"><div><h2 id="history-title">Historial</h2><p id="history-count" class="small muted">0 registros guardados</p></div><button id="export-excel" class="now-button" type="button">📊 Exportar Excel</button></div>
@@ -732,10 +774,11 @@
     function showFormError(message) { $("#form-error").textContent=message; $("#form-error").hidden=!message; }
     function navigate(page) {
       if(!["inicio","registrar","historial","estadisticas","calendario"].includes(page)) return;
+      if(state.page!==page){$("#chart").touchInteractionCleanup?.();$("#vitals-chart").touchInteractionCleanup?.();}
       state.page=page; document.body.dataset.page=page;
       $$("[data-nav]").forEach(button=>{ if(button.dataset.nav===page) button.setAttribute("aria-current","page"); else button.removeAttribute("aria-current"); });
       $$("[data-pages]").forEach(section=>{ section.hidden=!section.dataset.pages.split(" ").includes(page); section.classList.remove("page-enter"); if(!section.hidden){void section.offsetWidth;section.classList.add("page-enter");} });
-      window.scrollTo({top:0,behavior:"instant"}); renderChart();renderCalendar();
+      window.scrollTo({top:0,behavior:"instant"}); renderChart();renderCalendar();renderVitals();
     }
     function renderSummary() {
       const stats=calculateStats(state.records);
@@ -831,7 +874,7 @@
     const chartSizeObserver=typeof ResizeObserver==="function"?new ResizeObserver(entries=>{
       let changed=false;
       for(const entry of entries){const width=entry.contentRect.width,previous=observedChartContainers.get(entry.target);observedChartContainers.set(entry.target,width);if(width>0&&Math.abs(width-(previous??width))>1)changed=true;}
-      if(changed){clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>{renderChart();renderCalendarChart();},100);}
+      if(changed){clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>{renderChart();renderCalendarChart();renderVitals();},100);}
     }):null;
     function observeChartSizes() {
       if(!chartSizeObserver)return;
@@ -858,6 +901,30 @@
         if(fraction)item.append(element("p","",fraction.short));
       }
     }
+    // Captura solo gestos iniciados en los datos. La superficie touch-action:none
+    // evita el scroll de ese gesto; fuera de ella la página conserva su scroll.
+    function captureChartTouch(svg,{left,top,plotW,plotH,move,end}) {
+      svg.touchInteractionCleanup?.();
+      const controller=new AbortController(),options={signal:controller.signal,capture:true};
+      const surface=svgElement("rect",{class:"chart-touch-surface",x:left,y:top,width:plotW,height:plotH,fill:"transparent","aria-hidden":"true"});svg.append(surface);
+      let active=null,anchorY=0,lastX=left;
+      const local=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+      // Safari/Chromium no aplican touch-action de forma uniforme a formas SVG.
+      // Cancelar el gesto nativo solo si esta captura ya comenzó dentro del área.
+      for(const type of ["touchstart","touchmove"])svg.addEventListener(type,e=>{if(active!==null&&e.cancelable)e.preventDefault();},{signal:controller.signal,passive:false});
+      const finish=()=>{if(active===null)return;const id=active;active=null;end(lastX,anchorY);if(svg.hasPointerCapture(id))svg.releasePointerCapture(id);};
+      svg.addEventListener("pointerdown",e=>{
+        if(e.pointerType==="mouse"||!e.isPrimary||active!==null)return;
+        const p=local(e);if(p.x<left||p.x>left+plotW||p.y<top||p.y>top+plotH)return;
+        active=e.pointerId;anchorY=p.y;lastX=p.x;svg.setPointerCapture(active);e.preventDefault();move(lastX,anchorY);
+      },options);
+      svg.addEventListener("pointermove",e=>{if(e.pointerId!==active)return;e.preventDefault();lastX=Math.max(left,Math.min(left+plotW,local(e).x));move(lastX,anchorY);},options);
+      for(const type of ["pointerup","pointercancel","lostpointercapture"])svg.addEventListener(type,e=>{if(e.pointerId===active)finish();},options);
+      svg.addEventListener("click",e=>{if(e.pointerType&&e.pointerType!=="mouse"){e.preventDefault();e.stopImmediatePropagation();}},options);
+      const cleanup=()=>{finish();controller.abort();surface.remove();if(svg.touchInteractionCleanup===cleanup)delete svg.touchInteractionCleanup;};
+      svg.touchInteractionCleanup=cleanup;
+      return {active:()=>active!==null,cleanup};
+    }
     function attachChartInteraction({svg,detail,scale,nodes,left,top,plotW,plotH,W,H}) {
       const controller=new AbortController(),options={signal:controller.signal},host=svg.parentElement;
       const line=svgElement("line",{class:"chart-crosshair",x1:left,x2:left,y1:top,y2:top+plotH,visibility:"hidden","aria-hidden":"true"});
@@ -880,8 +947,8 @@
       };
       const highlight=(items,name)=>{const selected=new Set(items.map(item=>item.node));for(const {node} of events)node.classList.toggle(name,selected.has(node));};
       const hide=()=>{if(frame)cancelAnimationFrame(frame);frame=0;pending=null;line.setAttribute("visibility","hidden");tooltip.hidden=true;highlight([],"is-preview");};
-      const paint=(position,pointerY)=>{
-        const group=groupAt(position,pointerY);line.setAttribute("x1",group.x);line.setAttribute("x2",group.x);line.setAttribute("visibility","visible");
+      const paint=(position,pointerY,touch=false)=>{
+        const group=groupAt(position,pointerY);if(touch)group.x=position;line.setAttribute("x1",group.x);line.setAttribute("x2",group.x);line.setAttribute("visibility","visible");
         highlight(group.items,"is-preview");
         const key=group.items.length?group.items.map(item=>item.index).join(",")+":"+group.timestamp:timeLabel(group.timestamp);
         if(key!==lastKey){
@@ -903,7 +970,7 @@
       const localPoint=event=>new DOMPoint(event.clientX,event.clientY).matrixTransform(svg.getScreenCTM().inverse());
       const queue=event=>{
         if(event.target.closest?.(".comparison-average-point")){hide();return;}
-        if(event.pointerType!=="mouse"&&activePointer!==event.pointerId)return;
+        if(event.pointerType!=="mouse")return;
         const point=localPoint(event);
         if(point.x<left||point.x>left+plotW||point.y<top||point.y>top+plotH){hide();return;}
         pending=point;if(!frame)frame=requestAnimationFrame(()=>{frame=0;const next=pending;pending=null;if(next)paint(next.x,next.y);});
@@ -918,7 +985,7 @@
         queue(event);
       },options);
       svg.addEventListener("pointerdown",event=>{
-        if(!event.isPrimary||event.button!==0)return;
+        if(event.pointerType!=="mouse"||!event.isPrimary||event.button!==0)return;
         activePointer=event.pointerId;down={x:event.clientX,y:event.clientY};dragged=false;
         const p=localPoint(event);
         if(event.pointerType!=="mouse"&&p.x>=left&&p.x<=left+plotW&&p.y>=top&&p.y<=top+plotH)svg.setPointerCapture(event.pointerId);
@@ -932,7 +999,7 @@
         if(event.pointerType!=="mouse")hide();
       },options);
       svg.addEventListener("pointercancel",()=>{activePointer=null;down=null;dragged=true;hide();},options);
-      svg.addEventListener("pointerleave",hide,options);
+      svg.addEventListener("pointerleave",()=>{if(!touchControl.active())hide();},options);
       layer.addEventListener("click",event=>{if(!dragged){const p=localPoint(event);selectPosition(p.x,p.y);}},options);
       // The transparent layer leaves the existing keyboard-focusable SVG nodes intact.
       svg.addEventListener("keydown",event=>{
@@ -941,7 +1008,8 @@
         const index=events.findIndex(item=>item.node===document.activeElement);if(index<0)return;
         event.preventDefault();events[Math.max(0,Math.min(events.length-1,index+(event.key==="ArrowRight"?1:-1)))].node.focus();
       },options);
-      svg.chartInteractionCleanup=()=>{hide();controller.abort();tooltip.remove();delete svg.chartInteractionCleanup;};
+      const touchControl=captureChartTouch(svg,{left,top,plotW,plotH,move:(px,py)=>{if(frame)cancelAnimationFrame(frame);frame=0;pending=null;paint(px,py,true);},end:(px,py)=>{selectPosition(px,py);hide();}});
+      svg.chartInteractionCleanup=()=>{touchControl.cleanup();hide();controller.abort();tooltip.remove();delete svg.chartInteractionCleanup;};
       return {select:node=>{const item=events.find(e=>e.node===node);if(!item)return;highlight([item],"is-selected");detail.replaceChildren();appendChartEvent(detail,item.event,true);}};
     }
 
@@ -1103,7 +1171,7 @@
       if(!prefix)interaction=attachChartInteraction({svg,detail:q("chart-detail"),scale,nodes:interactiveNodes,left,top,plotW,plotH,W,H});
     }
 
-    function renderAll() { renderSummary();renderRanges();renderHistory();renderChart();renderCalendar(); }
+    function renderAll() { renderSummary();renderRanges();renderHistory();renderChart();renderCalendar();renderVitals(); }
 
     // EXPORTACIÓN EXCEL: lectura independiente y no destructiva del almacenamiento.
     // SheetJS CE 0.20.3, CDN oficial, cargado solo cuando se pide exportar.
@@ -1456,7 +1524,7 @@
     $("#glucose").addEventListener("input",event=>{if(!/^\d{0,3}$/.test(event.target.value)) event.target.value="";event.target.removeAttribute("aria-invalid");showFormError("");});
     window.addEventListener("storage",event=>{if(event.key===CLOUD.accessKey){cloudIdentity=null;state.records=[];renderAll();}if(event.key?.startsWith(CONFIG.storageKey)||event.key===CLOUD.accessKey||event.key===null) loadMeasurements();});
     document.addEventListener("visibilitychange",()=>{if(!document.hidden){renderSummary();renderChart();loadMeasurements();}});
-    setInterval(()=>{if(!document.hidden){renderSummary();renderChart();renderCalendar();}},60000);
+    setInterval(()=>{if(!document.hidden){renderSummary();renderChart();renderCalendar();renderVitals();}},60000);
     // FECHAS: las claves de día siempre son civiles de Chile, sin alterar createdAt.
     const doseFormat=new Intl.NumberFormat("es",{maximumFractionDigits:20});
     const chilePartsFormat=new Intl.DateTimeFormat("en-CA",{timeZone:CHILE_ZONE,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"});
@@ -2053,6 +2121,121 @@
         comparisonState.draft.push(day);refreshComparisonAverageDates();renderComparisonSelectors();comparisonError("");$("#comparison-date-"+(comparisonState.draft.length-1)).focus();
       });
     }
+
+    // Análisis independiente: lee los registros existentes, sin escrituras ni estimaciones.
+    let vitalsPeriod=30,vitalsReferences=true;
+    const VITAL_SERIES=[{key:"systolic",name:"Presión sistólica",color:"#c7354c",unit:"mmHg",max:350},{key:"diastolic",name:"Presión diastólica",color:"#2563eb",unit:"mmHg",max:250},{key:"ppm",name:"Pulso",color:"#8250bf",unit:"ppm",max:300}];
+    function validVital(record,series) {return Number.isInteger(record[series.key])&&record[series.key]>0&&record[series.key]<=series.max;}
+    function vitalStats(records,series) {
+      const values=records.filter(r=>validVital(r,series)).map(r=>r[series.key]);
+      return {count:values.length,mean:values.length?values.reduce((a,b)=>a+b,0)/values.length:null,min:values.length?Math.min(...values):null,max:values.length?Math.max(...values):null};
+    }
+    function pressureReference(record) {
+      if(!validVital(record,VITAL_SERIES[0])||!validVital(record,VITAL_SERIES[1]))return null;
+      if(record.systolic>=140||record.diastolic>=90)return "Etapa 2";
+      if(record.systolic>=130||record.diastolic>=80)return "Etapa 1";
+      return record.systolic>=120?"Elevada":"Normal";
+    }
+    function vitalsData(period,now=Date.now()) {
+      const bounds=periodBounds(period,now);
+      // Ventanas consecutivas de igual duración; Hoy conserva el día civil de Chile.
+      if(period===7||period===30)bounds.start=bounds.end-period*86400000;
+      const duration=bounds.end-bounds.start,previousBounds={start:bounds.start-duration,end:bounds.start};
+      const records=chronological(state.records.filter(r=>Number.isFinite(Date.parse(r.createdAt))&&Date.parse(r.createdAt)>=bounds.start&&Date.parse(r.createdAt)<=bounds.end));
+      const previousRecords=state.records.filter(r=>Date.parse(r.createdAt)>=previousBounds.start&&Date.parse(r.createdAt)<previousBounds.end);
+      const stats=VITAL_SERIES.map(series=>vitalStats(records,series)),previous=VITAL_SERIES.map(series=>vitalStats(previousRecords,series));
+      const complete=records.filter(r=>validVital(r,VITAL_SERIES[0])&&validVital(r,VITAL_SERIES[1]));
+      return {bounds,previousBounds,records,stats,previous,means:stats.map(s=>s.mean),latest:complete.at(-1),paired:VITAL_SERIES.slice(0,2).map(series=>vitalStats(complete,series))};
+    }
+    function renderVitals() {
+      if(state.page!=="estadisticas")return;
+      const {bounds,records,means,latest,stats,previous,paired}=vitalsData(vitalsPeriod),summary=$("#vitals-summary"),svg=$("#vitals-chart"),tip=$("#vitals-tooltip"),detail=$("#vitals-detail");
+      const selected=$("#vitals-periods").querySelector(`[data-vitals-period="${vitalsPeriod}"]`),periodLabel=selected.textContent;
+      $$("[data-vitals-period]").forEach(b=>b.setAttribute("aria-pressed",String(b===selected)));
+      summary.replaceChildren();
+      const cards=[["❤️ Última presión",latest?`${latest.systolic}/${latest.diastolic} mmHg`:"—",latest?`${dateFormat.format(Date.parse(latest.createdAt))} · ${localTime(latest.createdAt)}`:"Sin presión completa en este período"],["↑ Promedio sistólica",means[0]===null?"—":`${numberFormat.format(means[0])} mmHg`,periodLabel],["↓ Promedio diastólica",means[1]===null?"—":`${numberFormat.format(means[1])} mmHg`,periodLabel],["💓 Pulso promedio",means[2]===null?"—":`${numberFormat.format(means[2])} ppm`,periodLabel]];
+      cards.forEach(([label,value,caption],index)=>{
+        const card=element("div","vitals-stat");card.append(element("span","small muted",label),element("strong","",value));
+        if(index===0)card.append(element("small","",caption));
+        else {
+          const current=stats[index-1],prior=previous[index-1],unit=VITAL_SERIES[index-1].unit;
+          card.append(element("small","",`${current.count} ${current.count===1?"medición":"mediciones"} · ${periodLabel}`));
+          card.append(element("small","",current.count?`Mín. ${current.min} · Máx. ${current.max} ${unit}`:"Mín. — · Máx. —"));
+          const delta=current.mean!==null&&prior.mean!==null?current.mean-prior.mean:null;
+          const change=vitalsPeriod===1?"Sin comparación para Hoy":delta===null?"Sin datos suficientes para comparar":`${delta<0?"↓":delta>0?"↑":"="} ${numberFormat.format(Math.abs(delta))} ${unit} respecto al período anterior (promedio: ${numberFormat.format(prior.mean)} ${unit}; ${prior.count} ${prior.count===1?"medición":"mediciones"})`;
+          card.append(element("small","",change));
+        }
+        summary.append(card);
+      });
+      $("#vitals-paired-average").textContent=paired[0].count?`Promedio del período: ${numberFormat.format(paired[0].mean)}/${numberFormat.format(paired[1].mean)} mmHg · ${paired[0].count} ${paired[0].count===1?"medición completa":"mediciones completas"}`:"Promedio del período: — · 0 mediciones completas";
+      $("#vitals-references").setAttribute("aria-checked",String(vitalsReferences));$("#vitals-references strong").textContent=vitalsReferences?"ON":"OFF";$("#vitals-band-legend").hidden=!vitalsReferences;
+      svg.touchInteractionCleanup?.();svg.replaceChildren();tip.hidden=true;detail.replaceChildren();
+      const available=records.filter(r=>VITAL_SERIES.some(series=>validVital(r,series)));
+      $("#vitals-empty").hidden=!!available.length;$("#vitals-host").hidden=!available.length;$("#vitals-view-note").hidden=true;if(!available.length)return;
+      const W=Math.max(200,svg.clientWidth),H=330,left=38,right=W<600?104:182,top=16,plotH=246,plotW=W-left-right;
+      svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
+      let viewStart=bounds.start,viewEnd=bounds.end;
+      if(vitalsPeriod===30){
+        const first=Date.parse(available[0].createdAt),last=Date.parse(available.at(-1).createdAt);
+        const padding=Math.max(3600000,(last-first)*.05);
+        viewStart=Math.max(bounds.start,first-padding);viewEnd=Math.min(bounds.end,last+padding);
+        const note=$("#vitals-view-note");note.hidden=false;
+        note.textContent="Vista ampliada al tramo con mediciones. Los resúmenes y la comparación conservan los 30 días seleccionados.";
+      }
+      const scale=createChartTimeScale(viewStart,viewEnd,left,plotW),x=r=>scale.timestampToX(Date.parse(r.createdAt));
+      const maxima=[0,1].map(axis=>Math.max(50,...available.flatMap(r=>VITAL_SERIES.filter(s=>(s.key==="ppm")===!!axis&&validVital(r,s)).map(s=>r[s.key]))));
+      const limits=maxima.map((v,i)=>Math.max(i===0?160:0,Math.ceil(v*1.1/40)*40)),y=(value,axis)=>top+plotH-value/limits[axis]*plotH;
+      if(vitalsReferences){
+        // Columna de etiquetas reservada: no coincide con puntos ni con el eje ppm.
+        const bandRight=W-38;
+        for(const [low,high,color,ink,name] of [[90,120,"#f8e8eb","#984252","Sistólica"],[60,80,"#e6effc","#315d99","Diastólica"]]){
+          const label=`${low}–${high} ${name}`,band=svgElement("rect",{class:"vitals-reference-band",x:left,y:y(high,0),width:bandRight-left,height:y(low,0)-y(high,0),rx:5,fill:color,"pointer-events":"none",role:"img","aria-label":`${label} mmHg`,"data-low":low,"data-high":high});
+          band.append(svgElement("title",{},`${label} mmHg`));svg.append(band);
+          for(const limit of [low,high])svg.append(svgElement("line",{class:"vitals-reference-edge",x1:left,x2:bandRight,y1:y(limit,0),y2:y(limit,0),stroke:ink,"stroke-width":.6,opacity:.3,"pointer-events":"none"}));
+          svg.append(svgElement("text",{class:"vitals-reference-label",x:bandRight-6,y:(y(low,0)+y(high,0))/2,"dominant-baseline":"middle","text-anchor":"end",fill:ink,style:"font-size:10px;font-weight:600","pointer-events":"none","aria-label":`${label} mmHg`},W<600?`${low}–${high}`:label));
+        }
+      }
+      for(let i=0;i<=4;i++){
+        const py=top+plotH-i*plotH/4;
+        svg.append(svgElement("line",{x1:left,x2:W-right,y1:py,y2:py,stroke:"#dce5f0","stroke-dasharray":"3 5"}));
+        for(const axis of [0,1])svg.append(svgElement("text",{x:axis?W-31:left-7,y:py+4,"text-anchor":axis?"start":"end",fill:axis?"#8250bf":"#63758c",style:"font-size:11px"},String(limits[axis]*i/4)));
+      }
+      const tickCount=Math.max(2,Math.min(7,Math.floor(plotW/100)+1));
+      for(let i=0;i<tickCount;i++){
+        const timestamp=viewStart+(viewEnd-viewStart)*i/(tickCount-1),px=scale.timestampToX(timestamp),anchor=i===0?"start":i===tickCount-1?"end":"middle";
+        svg.append(svgElement("text",{x:px,y:top+plotH+22,"text-anchor":anchor,fill:"#63758c",style:"font-size:11px"},dateFormat.format(timestamp).slice(0,5)));
+        if((vitalsPeriod!==7&&vitalsPeriod!==30)||viewEnd-viewStart<=2*86400000)svg.append(svgElement("text",{x:px,y:top+plotH+39,"text-anchor":anchor,fill:"#63758c",style:"font-size:11px"},localTime(timestamp)));
+      }
+      const nodes=[];
+      available.forEach(r=>{if(validVital(r,VITAL_SERIES[0])&&validVital(r,VITAL_SERIES[1]))svg.append(svgElement("line",{class:"vitals-pair",x1:x(r),x2:x(r),y1:y(r.systolic,0),y2:y(r.diastolic,0),stroke:"#8797ae",opacity:.3}));});
+      for(const series of VITAL_SERIES){
+        let points=[];const flush=()=>{if(points.length>1)svg.append(svgElement("polyline",{class:"vitals-line","data-series":series.key,points:points.join(" "),fill:"none",stroke:series.color,"stroke-width":2.5,"stroke-dasharray":series.key==="ppm"?"6 4":"none","pointer-events":"none"}));points=[];};
+        // Los datos ausentes interrumpen la línea; nunca se sustituyen por cero.
+        for(const r of records){if(!validVital(r,series)){flush();continue;}const px=x(r),py=y(r[series.key],series.key==="ppm"?1:0);points.push(`${px},${py}`);nodes.push({r,series,x:px,y:py});}flush();
+      }
+      const guide=svgElement("line",{class:"chart-crosshair",y1:top,y2:top+plotH,visibility:"hidden"});svg.append(guide);
+      const fill=(box,r)=>{box.replaceChildren(element("strong","",`${dateFormat.format(Date.parse(r.createdAt))} · ${localTime(r.createdAt)}`));VITAL_SERIES.forEach(series=>{if(validVital(r,series))box.append(element("p","",`${series.name}: ${r[series.key]} ${series.unit}`));});const category=pressureReference(r);if(category)box.append(element("p","small",`Referencia AHA/ACC: ${category} · No es un diagnóstico`));};
+      const show=item=>{
+        guide.setAttribute("x1",item.x);guide.setAttribute("x2",item.x);guide.setAttribute("visibility","visible");
+        nodes.forEach(n=>n.node.setAttribute("stroke-width",n.r===item.r?3:1.5));fill(tip,item.r);fill(detail,item.r);tip.hidden=false;
+        const width=svg.getBoundingClientRect().width;tip.style.maxWidth=Math.max(100,width-8)+"px";
+        const box=tip.getBoundingClientRect();tip.style.left=Math.max(4,Math.min(width-box.width-4,item.x/W*width+12))+"px";tip.style.top=Math.max(4,Math.min(H-box.height-4,item.y-box.height-12))+"px";
+      };
+      for(const item of nodes){const dot=svgElement("circle",{class:"vitals-point",cx:item.x,cy:item.y,r:5,fill:item.series.color,stroke:"white","stroke-width":1.5,tabindex:0,role:"button","aria-label":`${dateFormat.format(Date.parse(item.r.createdAt))}, ${localTime(item.r.createdAt)}, ${item.series.name}: ${item.r[item.series.key]} ${item.series.unit}`,"data-series":item.series.key});item.node=dot;dot.onfocus=()=>show(item);dot.onclick=()=>show(item);dot.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();show(item);}};svg.append(dot);}
+      const point=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+      const inspect=e=>{const p=point(e);if(p.x<left||p.x>W-right||p.y<top||p.y>top+plotH)return;let nearest=null,distance=Infinity;for(const item of nodes){const d=Math.hypot(item.x-p.x,item.y-p.y);if(d<distance){distance=d;nearest=item;}}if(nearest)show(nearest);};
+      svg.onpointermove=e=>{if(e.pointerType==="mouse")inspect(e);};svg.onpointerdown=e=>{if(e.pointerType==="mouse")inspect(e);};
+      const touchControl=captureChartTouch(svg,{left,top,plotW,plotH,move:(px,py)=>{
+        let nearest=null,distance=Infinity;
+        for(const item of nodes){const d=Math.abs(item.x-px),tie=Math.abs(item.y-py);if(d<distance||(d===distance&&tie<Math.abs(nearest.y-py))){distance=d;nearest=item;}}
+        if(nearest){show(nearest);guide.setAttribute("x1",px);guide.setAttribute("x2",px);}
+      },end:()=>{tip.hidden=true;guide.setAttribute("visibility","hidden");}});
+      svg.onpointerleave=()=>{if(!touchControl.active()){tip.hidden=true;guide.setAttribute("visibility","hidden");}};
+      svg.onkeydown=e=>{if(e.key==="Escape"){tip.hidden=true;guide.setAttribute("visibility","hidden");}};
+      observeChartSizes();
+    }
+    $("#vitals-references").addEventListener("click",()=>{vitalsReferences=!vitalsReferences;renderVitals();});
+    $("#vitals-periods").addEventListener("click",event=>{const button=event.target.closest("[data-vitals-period]");if(!button)return;const value=button.dataset.vitalsPeriod;vitalsPeriod=value.endsWith("h")?value:Number(value);renderVitals();});
 
     // HbA1c de laboratorio: almacenamiento, carga y errores independientes de la glucemia.
     const hba1cState={records:[],loading:false,saving:false,generation:0,owner:null,editingId:null,pending:null,status:"Cargando exámenes…"};
