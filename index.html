@@ -292,10 +292,11 @@
           <div class="form-field"><label for="moment">Momento de la medición</label><select id="moment" name="moment"><option>En ayunas</option><option>Antes de comer</option><option>Después de comer</option><option>Antes de dormir</option><option>Otro</option></select></div>
           <div class="form-field"><label for="note">Nota <span class="optional">· opcional</span></label><textarea id="note" name="note" maxlength="1000" placeholder="Algo que quieras recordar…"></textarea></div>
           <section class="pressure-section" aria-labelledby="pressure-title">
-            <h2 id="pressure-title" class="eyebrow section-label">Presión arterial (opcional)</h2>
+            <h2 id="pressure-title" class="eyebrow section-label">Presión arterial y pulso (opcionales)</h2>
             <div class="pressure-fields">
               <div class="form-field"><label for="systolic">Presión alta (sistólica)</label><input id="systolic" name="systolic" type="number" inputmode="numeric" min="1" max="350" step="1" aria-describedby="pressure-help form-error"><span class="small muted">mmHg</span></div>
               <div class="form-field"><label for="diastolic">Presión baja (diastólica)</label><input id="diastolic" name="diastolic" type="number" inputmode="numeric" min="1" max="250" step="1" aria-describedby="pressure-help form-error"><span class="small muted">mmHg</span></div>
+            <div class="form-field"><label for="ppm">Pulso (ppm)</label><input id="ppm" type="number" inputmode="numeric" min="1" max="300" step="1"><span class="small muted">Pulsaciones por minuto · opcional</span></div>
             </div>
             <p id="pressure-help" class="small muted">Completa ambos valores o deja ambos vacíos. Límites de entrada: alta 1–350 y baja 1–250 mmHg; no son una evaluación médica.</p>
           </section>
@@ -420,10 +421,11 @@
         <div class="form-field"><label for="edit-moment">Momento de la medición</label><select id="edit-moment"></select></div>
         <div class="form-field"><label for="edit-note">Nota <span class="optional">· opcional</span></label><textarea id="edit-note" maxlength="1000"></textarea></div>
         <section class="pressure-section">
-          <h3 class="eyebrow section-label">Presión arterial (opcional)</h3>
+          <h3 class="eyebrow section-label">Presión arterial y pulso (opcionales)</h3>
           <div class="pressure-fields">
             <div class="form-field"><label for="edit-systolic">Presión alta (sistólica)</label><input id="edit-systolic" type="number" min="1" max="350" step="1"><span class="small muted">mmHg</span></div>
             <div class="form-field"><label for="edit-diastolic">Presión baja (diastólica)</label><input id="edit-diastolic" type="number" min="1" max="250" step="1"><span class="small muted">mmHg</span></div>
+            <div class="form-field"><label for="edit-ppm">Pulso (ppm)</label><input id="edit-ppm" type="number" inputmode="numeric" min="1" max="300" step="1"><span class="small muted">Pulsaciones por minuto · opcional</span></div>
           </div>
         </section>
         <p id="edit-error" class="error" role="alert" hidden></p>
@@ -800,6 +802,7 @@
 
     function showChartDetail(record,detailId="chart-detail") {
       const box=document.getElementById(detailId),date=new Date(record.createdAt),value=element("strong","",`${record.glucose} mg/dL`); box.replaceChildren(value);
+      appendPressure(box,record);
       box.append(document.createTextNode(` · ${timeFormat.format(date)} · ${dateFormat.format(date)}`),document.createElement("br"),document.createTextNode(`${record.food||"Sin comida registrada"} · ${record.moment||record.measurementContext||"Sin contexto registrado"}`));
     }
     function renderChart() {
@@ -848,6 +851,7 @@
         if(context)item.append(element("p","",context));
         if(record.food)item.append(element("p","",record.food));
         if(record.systolic&&record.diastolic)item.append(element("p","",`Presión: ${record.systolic}/${record.diastolic} mmHg`));
+        if(record.ppm)item.append(element("p","",`Pulso: ${record.ppm} ppm`));
         if(record.note)item.append(element("p","",`Nota: ${record.note}`));
       }else if(event.type==="medication"){
         const fraction=TABLET_FRACTIONS.find(item=>item.value===event.saved.tabletFraction);
@@ -865,15 +869,19 @@
       const crossesDays=localDateKey(scale.start)!==localDateKey(scale.end);
       const timeLabel=timestamp=>`${crossesDays?dateFormat.format(timestamp)+" · ":""}${localTime(timestamp)}`;
       const pixelsPerUnit=()=>Math.hypot(svg.getScreenCTM().a,svg.getScreenCTM().b);
-      const groupAt=position=>{
+      const groupAt=(position,pointerY=top)=>{
         const tolerance=12/pixelsPerUnit();let nearest=null,distance=Infinity;
-        for(const item of events){const delta=Math.abs(item.x-position);if(delta<distance){nearest=item;distance=delta;}}
-        return nearest&&distance<=tolerance?{x:nearest.x,timestamp:nearest.event.timestamp,items:events.filter(item=>Math.abs(item.x-nearest.x)<=tolerance)}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
+        for(const item of events){
+          const box=item.node.getBBox(),shape=item.node.querySelector("circle"),cy=item.y??(shape?Number(shape.getAttribute("cy")):box.y+box.height/2);
+          const dx=Math.abs(item.x-position),delta=Math.hypot(dx,cy-pointerY);
+          if(dx<=tolerance&&delta<distance){nearest=item;distance=delta;}
+        }
+        return nearest?{x:nearest.x,timestamp:nearest.event.timestamp,items:[nearest]}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
       };
       const highlight=(items,name)=>{const selected=new Set(items.map(item=>item.node));for(const {node} of events)node.classList.toggle(name,selected.has(node));};
       const hide=()=>{if(frame)cancelAnimationFrame(frame);frame=0;pending=null;line.setAttribute("visibility","hidden");tooltip.hidden=true;highlight([],"is-preview");};
       const paint=(position,pointerY)=>{
-        const group=groupAt(position);line.setAttribute("x1",group.x);line.setAttribute("x2",group.x);line.setAttribute("visibility","visible");
+        const group=groupAt(position,pointerY);line.setAttribute("x1",group.x);line.setAttribute("x2",group.x);line.setAttribute("visibility","visible");
         highlight(group.items,"is-preview");
         const key=group.items.length?group.items.map(item=>item.index).join(",")+":"+group.timestamp:timeLabel(group.timestamp);
         if(key!==lastKey){
@@ -894,13 +902,14 @@
       };
       const localPoint=event=>new DOMPoint(event.clientX,event.clientY).matrixTransform(svg.getScreenCTM().inverse());
       const queue=event=>{
+        if(event.target.closest?.(".comparison-average-point")){hide();return;}
         if(event.pointerType!=="mouse"&&activePointer!==event.pointerId)return;
         const point=localPoint(event);
         if(point.x<left||point.x>left+plotW||point.y<top||point.y>top+plotH){hide();return;}
         pending=point;if(!frame)frame=requestAnimationFrame(()=>{frame=0;const next=pending;pending=null;if(next)paint(next.x,next.y);});
       };
-      const selectPosition=position=>{
-        const group=groupAt(position);highlight(group.items,"is-selected");detail.replaceChildren();
+      const selectPosition=(position,pointerY)=>{
+        const group=groupAt(position,pointerY);highlight(group.items,"is-selected");detail.replaceChildren();
         group.items.forEach(item=>appendChartEvent(detail,item.event,true));
       };
       svg.addEventListener("pointerenter",queue,options);
@@ -918,13 +927,13 @@
       svg.addEventListener("pointerup",event=>{
         if(activePointer!==event.pointerId)return;
         const point=localPoint(event);
-        if(event.pointerType!=="mouse"&&!dragged&&point.x>=left&&point.x<=left+plotW&&point.y>=top&&point.y<=top+plotH)selectPosition(point.x);
+        if(event.pointerType!=="mouse"&&!dragged&&point.x>=left&&point.x<=left+plotW&&point.y>=top&&point.y<=top+plotH)selectPosition(point.x,point.y);
         activePointer=null;down=null;if(svg.hasPointerCapture(event.pointerId))svg.releasePointerCapture(event.pointerId);
         if(event.pointerType!=="mouse")hide();
       },options);
       svg.addEventListener("pointercancel",()=>{activePointer=null;down=null;dragged=true;hide();},options);
       svg.addEventListener("pointerleave",hide,options);
-      layer.addEventListener("click",event=>{if(!dragged)selectPosition(localPoint(event).x);},options);
+      layer.addEventListener("click",event=>{if(!dragged){const p=localPoint(event);selectPosition(p.x,p.y);}},options);
       // The transparent layer leaves the existing keyboard-focusable SVG nodes intact.
       svg.addEventListener("keydown",event=>{
         if(event.key==="Escape"){hide();return;}
@@ -933,7 +942,7 @@
         event.preventDefault();events[Math.max(0,Math.min(events.length-1,index+(event.key==="ArrowRight"?1:-1)))].node.focus();
       },options);
       svg.chartInteractionCleanup=()=>{hide();controller.abort();tooltip.remove();delete svg.chartInteractionCleanup;};
-      return {select:timestamp=>selectPosition(scale.timestampToX(timestamp))};
+      return {select:node=>{const item=events.find(e=>e.node===node);if(!item)return;highlight([item],"is-selected");detail.replaceChildren();appendChartEvent(detail,item.event,true);}};
     }
 
     function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,showFastingRange=false,fitData=false}) {
@@ -1057,9 +1066,9 @@
           }
           interactiveNodes.push({node:group,event});
           const show=()=>{
-            if(!prefix){interaction?.select(event.timestamp);return;}
+            if(!prefix){interaction?.select(group);return;}
             const box=q("chart-detail");box.replaceChildren();
-            visibleEvents.filter(candidate=>Math.abs(x(candidate.timestamp)-px)<=12).forEach(candidate=>{
+            [event].forEach(candidate=>{
               appendTemporalDetail(box,candidate);
             });
           };
@@ -1078,7 +1087,7 @@
           svgElement("circle",{class:"dot",cx:point.x,cy:point.y,r:5,fill:category.color,stroke:"#fff","stroke-width":2,"pointer-events":"none"})
         );
         interactiveNodes.push({node:group,event:{type:"glucose",timestamp:Date.parse(record.createdAt),record}});
-        const show=()=>prefix?showChartDetail(record,prefix+"chart-detail"):interaction?.select(Date.parse(record.createdAt));if(prefix)group.addEventListener("pointerenter",show);group.addEventListener("click",show);group.addEventListener("focus",show);group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});svg.append(group);
+        const show=()=>prefix?showChartDetail(record,prefix+"chart-detail"):interaction?.select(group);if(prefix)group.addEventListener("pointerenter",show);group.addEventListener("click",show);group.addEventListener("focus",show);group.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});svg.append(group);
       });
       if(!prefix){
         // Omitir solo rótulos que chocan; cada punto sigue accesible al cursor o al foco.
@@ -1152,7 +1161,7 @@
             time:validMedicationTime(saved.time)?saved.time:"",...(validInstant(saved.recordedAt)?{recordedAt:saved.recordedAt}:{})
           };
         });
-        const record={...(isMeal(source)?{type:"meal",mealType:source.mealType}:{}),glucose:hasGlucose(source)?source.glucose:null,createdAt:source.createdAt,food:text(source.food),moment:text(source.moment)||text(source.measurementContext),note:text(source.note),medications,...pressureValues(source)};
+        const record={...(isMeal(source)?{type:"meal",mealType:source.mealType}:{}),glucose:hasGlucose(source)?source.glucose:null,createdAt:source.createdAt,food:text(source.food),moment:text(source.moment)||text(source.measurementContext),note:text(source.note),medications,...pressureValues(source),...(Number.isInteger(source.ppm)?{ppm:source.ppm}:{})};
         if(!isMeal(record)&&!hasGlucose(record)&&!hasRecordedMedication(record)) {skipped++;continue;}
         // Un ID identifica el mismo registro. Sin ID se compara el contenido normalizado.
         const identity=typeof source.id==="string"&&source.id?"id:"+source.id:"data:"+JSON.stringify(record);
@@ -1179,9 +1188,9 @@
       const rows=records.map(record=>{
         const met=recordedMedication(record,"metformin"),gli=recordedMedication(record,"glibenclamide");
         return [excelDate(record.createdAt),hasGlucose(record)?excelTime(localTime(record.createdAt)):null,record.glucose,
-          hasGlucose(record)?record.moment:"",record.food,met?.doseMg??null,excelTime(met?.time),gli?.doseMg??null,excelTime(gli?.time),record.note,record.systolic??null,record.diastolic??null,isMeal(record)?"Comida":hasGlucose(record)?"Glucemia":"Medicamento",isMeal(record)?record.mealType:"",excelTime(localTime(record.createdAt))];
+          hasGlucose(record)?record.moment:"",record.food,met?.doseMg??null,excelTime(met?.time),gli?.doseMg??null,excelTime(gli?.time),record.note,record.systolic??null,record.diastolic??null,isMeal(record)?"Comida":hasGlucose(record)?"Glucemia":"Medicamento",isMeal(record)?record.mealType:"",excelTime(localTime(record.createdAt)),record.ppm??null];
       });
-      const sheet=createExcelTable(["Fecha","Hora glucemia","Glucemia (mg/dL)","Momento","Comida","Metformina","Hora Metformina","Glibenclamida","Hora Glibenclamida","Nota","Presión alta (mmHg)","Presión baja (mmHg)","Tipo de registro","Tipo de comida","Hora del registro"],rows,[14,17,20,24,32,18,20,18,23,45,22,22,22,20,20],{0:"dd/mm/yyyy",1:"hh:mm",2:"0",5:'0.###" mg"',6:"hh:mm",7:'0.###" mg"',8:"hh:mm",10:"0",11:"0",14:"hh:mm"});
+      const sheet=createExcelTable(["Fecha","Hora glucemia","Glucemia (mg/dL)","Momento","Comida","Metformina","Hora Metformina","Glibenclamida","Hora Glibenclamida","Nota","Presión alta (mmHg)","Presión baja (mmHg)","Tipo de registro","Tipo de comida","Hora del registro","Pulso (ppm)"],rows,[14,17,20,24,32,18,20,18,23,45,22,22,22,20,20,18],{0:"dd/mm/yyyy",1:"hh:mm",2:"0",5:'0.###" mg"',6:"hh:mm",7:'0.###" mg"',8:"hh:mm",10:"0",11:"0",14:"hh:mm",15:"0"});
       sheet.C1.c=[{a:"Control de Glucemia",t:"Las celdas vacías corresponden a registros de medicamentos o comidas sin medición de glucemia. No se incluyen en las estadísticas de glucemia."}];
       return sheet;
     }
@@ -1276,7 +1285,7 @@
       $("#glucose").removeAttribute("aria-invalid");
       if(glucose===null) {showFormError("Ingresa una glucemia para guardar la medición.");$("#glucose").focus();return;}
       let pressure,createdAt;
-      try { pressure=readPressure();createdAt=readDateFields("measurement","de la glucemia"); } catch(error) { showFormError(error.message); return; }
+      try { pressure={...readPressure(),...readPulse("ppm")};createdAt=readDateFields("measurement","de la glucemia"); } catch(error) { showFormError(error.message); return; }
       const fields={glucose,createdAt,food:"",moment:$("#moment").value,note:$("#note").value.trim(),medications:{},...pressure};
       const signature=JSON.stringify(fields);
       if(!pendingSave||pendingSave.signature!==signature)pendingSave={signature,record:{id:createId(),...fields}};
@@ -1296,6 +1305,7 @@
       $("#edit-moment").value=MOMENTS.includes(record.moment)?record.moment:"Otro";
       $("#edit-note").value=record.note||"";
       $("#edit-systolic").value=Number.isFinite(record.systolic)?record.systolic:"";
+      $("#edit-ppm").value=record.ppm??"";
       $("#edit-diastolic").value=Number.isFinite(record.diastolic)?record.diastolic:"";
       $("#edit-date").value=localDateKey(record.createdAt);
       $("#edit-time").value=localTime(record.createdAt);
@@ -1319,6 +1329,7 @@
         if(!Number.isInteger(systolic)||systolic<1||systolic>350||!Number.isInteger(diastolic)||diastolic<1||diastolic>250){errorBox.textContent="Revisa los valores de presión arterial.";errorBox.hidden=false;return;}
         updated.systolic=systolic;updated.diastolic=diastolic;
       }else{delete updated.systolic;delete updated.diastolic;}
+      try{delete updated.ppm;Object.assign(updated,readPulse("edit-ppm"));}catch(error){errorBox.textContent=error.message;errorBox.hidden=false;return;}
       updateBusy(true);$("#cloud-status").textContent="Guardando cambios en Supabase…";
       try{
         await MeasurementRepository.update(updated);
@@ -1479,6 +1490,12 @@
       return {events,unresolved};
     }
 
+    function readPulse(id) {
+      const input=document.getElementById(id),raw=input.value.trim();input.removeAttribute("aria-invalid");
+      if(!raw&&!input.validity.badInput)return {};
+      if(!/^\d+$/.test(raw)||Number(raw)<1||Number(raw)>300){input.setAttribute("aria-invalid","true");input.focus();throw new Error("El pulso debe ser un número entero entre 1 y 300 ppm.");}
+      return {ppm:Number(raw)};
+    }
     function pressureValues(record) {
       return Number.isInteger(record.systolic)&&record.systolic>0&&record.systolic<=350&&Number.isInteger(record.diastolic)&&record.diastolic>0&&record.diastolic<=250?{systolic:record.systolic,diastolic:record.diastolic}:{};
     }
@@ -1492,7 +1509,7 @@
       }
       return {systolic:Number(a),diastolic:Number(b)};
     }
-    function appendPressure(parent,record) {const p=pressureValues(record);if(p.systolic)parent.append(element("p","record-pressure small",`Presión arterial: ${p.systolic}/${p.diastolic} mmHg`));}
+    function appendPressure(parent,record) {if(record.ppm)parent.append(element("p","record-pressure small",`Pulso: ${record.ppm} ppm`));const p=pressureValues(record);if(p.systolic)parent.append(element("p","record-pressure small",`Presión arterial: ${p.systolic}/${p.diastolic} mmHg`));}
     function dayStatus(records) {
       const stats=calculateStatistics(records);
       if(!stats.count)return {key:"gray",symbol:"—",label:"Sin mediciones"};
@@ -1897,7 +1914,7 @@
       const controller=new AbortController(),options={signal:controller.signal};
       const hide=()=>{tooltip.hidden=true;};
       // Reutiliza el ciclo de limpieza del gráfico para no dejar tooltips ni listeners antiguos.
-      svg.chartInteractionCleanup=()=>{controller.abort();tooltip.remove();delete svg.chartInteractionCleanup;};
+      const previousCleanup=svg.chartInteractionCleanup;svg.chartInteractionCleanup=()=>{previousCleanup?.();controller.abort();tooltip.remove();delete svg.chartInteractionCleanup;};
       svg.addEventListener("pointerdown",hide,{...options,capture:true});
       window.addEventListener("scroll",hide,{...options,capture:true});
       const hour=minute=>String(minute/60).padStart(2,"0")+":00";
@@ -1941,7 +1958,7 @@
       const count=groups.reduce((n,g)=>n+g.records.length,0);$("#chart-count").textContent=`${count} mediciones · ${groups.length} días`;
       $("#chart-period-label").textContent="Comparación por hora de Chile · 00:00–24:00 · Cada color identifica una fecha";
       const unresolved=allEvents.filter(e=>e.type==="medication"&&e.timestamp===null&&comparisonState.days.includes(localDateKey(e.record.createdAt))).length;
-      $("#chart-events-note").textContent="Toca o enfoca un punto para consultar sus datos. Los eventos próximos se muestran juntos con su fecha."+(state.showMedications&&unresolved?` ${unresolved} tomas sin hora inequívoca permanecen en el historial.`:"");
+      $("#chart-events-note").textContent="Toca o enfoca un punto para consultar sus datos. Se muestra únicamente el punto señalado, con su fecha."+(state.showMedications&&unresolved?` ${unresolved} tomas sin hora inequívoca permanecen en el historial.`:"");
       const W=Math.max(180,svg.clientWidth||600),left=42,right=14,top=30,plotW=W-left-right,plotH=200,axisY=top+plotH;
       const hasLanes=state.showMeals||state.showMedications,H=axisY+52+(hasLanes?groups.length*76:0);
       const max=groups.reduce((m,g)=>Math.max(m,calculateStats(g.records).max||0),200),yMax=Math.ceil(max*1.12/50)*50;
@@ -2009,13 +2026,17 @@
       }
       nodes.forEach(item=>{
         const show=()=>{
-          const ratio=svg.getBoundingClientRect().width/W,nearby=nodes.filter(other=>Math.abs(other.x-item.x)*ratio<=12&&Math.abs(other.y-item.y)*ratio<=12);
+          const nearby=[item];
           nodes.forEach(other=>other.node.classList.toggle("is-selected",nearby.includes(other)));detail.replaceChildren();
           nearby.forEach(other=>appendChartEvent(detail,other.event,true));
         };
         item.node.addEventListener("pointerenter",event=>{if(event.pointerType==="mouse")show();});item.node.addEventListener("click",show);item.node.addEventListener("focus",show);
         item.node.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();show();}});
       });
+      const dayStart=startOfChileDay(comparisonState.days[0]);
+      const comparisonScale={start:dayStart,end:dayStart+86400000,timestampToX:x,xToTimestamp:px=>dayStart+(px-left)/plotW*86400000};
+      attachChartInteraction({svg,detail,scale:comparisonScale,nodes,left,top,plotW,plotH:H-top,W,H});
+      svg.querySelector(".chart-interaction-layer").setAttribute("pointer-events","none");
       if(comparisonState.showAverage)drawComparisonAverage(svg,detail,legend,minuteX,y);
       renderComparisonSummary(groups);
     }
