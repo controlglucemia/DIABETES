@@ -1073,7 +1073,7 @@
           if(end<=start)break;
           const px=x(start),width=x(end)-px,index=Math.round(Date.parse(day+"T12:00:00Z")/86400000);
           layer.append(svgElement("rect",{class:"chart-day-band","data-day":day,x:px,y:top,width,height:plotH,fill:index%2?"#e8efff":"#fff1da"}));
-          layer.append(svgElement("line",{x1:px,x2:px,y1:top,y2:H-bottom,stroke:"#9aaac0","stroke-width":1,opacity:.5}));
+          layer.append(svgElement("line",{class:"chart-day-divider",x1:px,x2:px,y1:top,y2:H-bottom,stroke:"#9aaac0","stroke-width":1,opacity:.5}));
           if(width>=38&&px>=labelEnd){
             layer.append(svgElement("text",{x:px+width/2,y:H-bottom+66,"text-anchor":"middle",style:"font-size:10px;fill:#52627a"},`${Number(day.slice(8))}/${Number(day.slice(5,7))}`));
             labelEnd=px+width/2+22;
@@ -1082,7 +1082,11 @@
         }
         svg.append(layer);
       }
-      svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",opacity:(state.showDayColors&&!prefix) ? 0.65 : 1,rx:5,"aria-hidden":"true"}));
+      svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:(state.showDayColors&&!prefix)?"#ccebdc":"#edf8f2",opacity:1,stroke:(state.showDayColors&&!prefix)?"#69b58f":"none","stroke-width":1,rx:5,"aria-hidden":"true"}));
+      // Mantener las divisiones de fecha visibles sobre la franja de normalidad.
+      svg.querySelectorAll(".chart-day-divider").forEach(line=>{
+        line.setAttribute("pointer-events","none");svg.append(line);
+      });
       if(showFastingRange&&!prefix){
         const fastingTop=y(130),fastingBottom=y(80);
         svg.append(svgElement("rect",{x:left,y:fastingTop,width:plotW,height:fastingBottom-fastingTop,fill:"#2563eb",opacity:".07","pointer-events":"none","aria-hidden":"true"}));
