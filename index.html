@@ -191,7 +191,11 @@
     #chart { touch-action:pan-y; }
     #chart-content .chart-scroll { position:relative; }
     .chart-touch-surface { pointer-events:none;touch-action:none; }
-    @media(any-pointer:coarse) { .chart-touch-surface { pointer-events:all; } .comparison-average-point { touch-action:none; } }
+    @media(any-pointer:coarse) { .comparison-average-point { touch-action:none; } }
+    .note-event-marker text { font-size:13px; }
+    .event-detail,.record-main { overflow-wrap:anywhere; }
+    .calendar-event-flag { position:absolute;right:3px;top:3px;font-size:11px; }
+    .calendar-day { position:relative; }
     .chart-crosshair { stroke:#7c8798;stroke-width:1;stroke-dasharray:2 3;opacity:.8;pointer-events:none; }
     .chart-tooltip { position:absolute;z-index:3;max-width:290px;box-sizing:border-box;background:#172b46;color:white;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.35;pointer-events:none;box-shadow:0 3px 12px #14294426;overflow:hidden; }
     .chart-tooltip .event-detail { padding:5px 0 0;margin:5px 0 0;border-top:1px solid #ffffff40; }
@@ -357,6 +361,15 @@
         <div class="edit-actions"><button id="hba1c-delete" type="button" class="danger" hidden>Borrar examen</button><button id="hba1c-cancel" type="button" class="now-button" hidden>Cancelar edición</button><button id="hba1c-save" type="submit" class="primary">Guardar</button></div>
       </form>
       </section>
+      <section class="card" data-pages="registrar" hidden aria-labelledby="note-event-title">
+        <h2 id="note-event-title">🚩 Evento / Nota</h2>
+        <form id="note-event-form" novalidate>
+          <div id="note-event-datetime"></div>
+          <div class="form-field"><label for="note-event-text">Descripción</label><textarea id="note-event-text" maxlength="1000" required placeholder="Escribe qué ocurrió..."></textarea></div>
+          <p id="note-event-error" class="error" role="alert" hidden></p>
+          <div class="edit-actions"><button id="note-event-cancel" class="now-button" type="button" hidden>Cancelar edición</button><button id="note-event-save" class="primary" type="submit">Guardar evento</button></div>
+        </form>
+      </section>
       <section class="card full hba1c-card" data-pages="inicio" aria-labelledby="hba1c-title">
         <div class="card-head"><div><h2 id="hba1c-title">Hemoglobina glicosilada / HbA1c</h2><p class="small muted">Hemoglobina glicosilada · Examen de laboratorio</p></div></div>
         <div class="hba1c-value"><span id="hba1c-value">—</span> <small>%</small></div>
@@ -392,7 +405,7 @@
         <div class="chart-top"><span>Glucemia · mg/dL</span><span id="chart-count">0 mediciones</span></div>
         <div id="chart-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-chart"/></svg></div><h3>Aún no hay mediciones</h3><p>Las mediciones de este período aparecerán aquí.</p></div>
         <div id="chart-content" hidden><div class="chart-scroll"><svg id="chart" class="chart" viewBox="0 0 600 250" aria-label="Gráfico de glucemia. Selecciona un punto para ver sus detalles."></svg></div><div id="chart-detail" class="chart-detail" role="status" aria-live="polite"></div></div>
-        <div class="chart-options"><button id="show-medications" type="button" class="now-button" role="switch" aria-checked="true">💊 Mostrar medicamentos <strong id="medications-switch-label">ON</strong></button><button id="show-meals" type="button" class="now-button" role="switch" aria-checked="true">🍽️ Mostrar comidas <strong id="meals-switch-label">ON</strong></button><button id="show-fasting-range" type="button" class="now-button" role="switch" aria-checked="false">Ayuno 80–130 <strong id="fasting-switch-label">OFF</strong></button></div>
+        <div class="chart-options"><button id="show-medications" type="button" class="now-button" role="switch" aria-checked="true">💊 Mostrar medicamentos <strong id="medications-switch-label">ON</strong></button><button id="show-meals" type="button" class="now-button" role="switch" aria-checked="true">🍽️ Mostrar comidas <strong id="meals-switch-label">ON</strong></button><button id="show-events" type="button" class="now-button" role="switch" aria-checked="true">🚩 Eventos <strong id="events-switch-label">ON</strong></button><button id="show-fasting-range" type="button" class="now-button" role="switch" aria-checked="false">Ayuno 80–130 <strong id="fasting-switch-label">OFF</strong></button></div>
         <p id="chart-period-label" class="small muted"></p>
         <p id="chart-events-note" class="small muted"></p>
         <section id="comparison-summary" class="comparison-summary" aria-label="Resumen comparativo" hidden></section>
@@ -612,7 +625,7 @@
     };
     function isValidRecord(record) {
       return record && typeof record.id === "string" && record.id.length>0 &&
-        (isMeal(record) || hasGlucose(record) || (record.glucose == null && hasRecordedMedication(record))) &&
+        (isNoteEvent(record) || isMeal(record) || hasGlucose(record) || (record.glucose == null && hasRecordedMedication(record))) &&
         (record.food == null || typeof record.food === "string") &&
         (record.moment == null || typeof record.moment === "string") &&
         (record.note == null || typeof record.note === "string") &&
@@ -625,7 +638,7 @@
       return saved?.taken===true && typeof saved.doseMg==="number" && Number.isFinite(saved.doseMg) && saved.doseMg>0 ? saved : null;
     }
     function hasRecordedMedication(record) { return ["metformin","glibenclamide"].some(key=>recordedMedication(record,key)); }
-    const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showMeals:true, calendarShowMeals:true, showFastingRange:false };
+    const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showEvents:true, calendarShowEvents:true, showMeals:true, calendarShowMeals:true, showFastingRange:false };
 
     state.comparisonMode=false;
     const comparisonState={showAverage:false,showValues:false,showConnectors:false,open:false,draft:[],days:[],previous:null,colors:["#2563eb","#b34b16","#087d61","#8b46bd","#bd3563","#127e93","#6b6320"]};
@@ -778,6 +791,7 @@
       state.page=page; document.body.dataset.page=page;
       $$("[data-nav]").forEach(button=>{ if(button.dataset.nav===page) button.setAttribute("aria-current","page"); else button.removeAttribute("aria-current"); });
       $$("[data-pages]").forEach(section=>{ section.hidden=!section.dataset.pages.split(" ").includes(page); section.classList.remove("page-enter"); if(!section.hidden){void section.offsetWidth;section.classList.add("page-enter");} });
+      if(page==="registrar"&&!editingNoteEvent&&!$("#note-event-text").value.trim())setDateNow("note-event");
       window.scrollTo({top:0,behavior:"instant"}); renderChart();renderCalendar();renderVitals();
     }
     function renderSummary() {
@@ -831,6 +845,8 @@
         const actions=element("div","record-actions");
         if(event.type==="glucose"){
           const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar medición de ${record.glucose} mg/dL`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMeasurement(record.id));actions.append(edit);
+        }else if(event.type==="event"){
+          const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label","Editar evento");edit.append(icon("edit"));edit.addEventListener("click",()=>openNoteEvent(record.id));actions.append(edit);
         }else if(event.type==="meal"){
           const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar comida ${record.mealType}`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMeal(record.id));actions.append(edit);
         }else if(event.type==="medication"){
@@ -888,6 +904,7 @@
         xToTimestamp:position=>start+Math.max(0,Math.min(1,(position-left)/width))*span};
     }
     function appendChartEvent(parent,event,withTime) {
+      if(event.members){event.members.forEach(member=>appendChartEvent(parent,member,withTime));return;}
       const item=appendTemporalDetail(parent,event,withTime),record=event.record;
       if(event.type==="glucose"){
         const context=record.moment||record.measurementContext;
@@ -907,7 +924,7 @@
       svg.touchInteractionCleanup?.();
       const controller=new AbortController(),options={signal:controller.signal,capture:true};
       const surface=svgElement("rect",{class:"chart-touch-surface",x:left,y:top,width:plotW,height:plotH,fill:"transparent","aria-hidden":"true"});svg.append(surface);
-      let active=null,anchorY=0,lastX=left;
+      let active=null,anchorY=0,lastX=left,suppressClick=false;
       const local=e=>new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());
       // Safari/Chromium no aplican touch-action de forma uniforme a formas SVG.
       // Cancelar el gesto nativo solo si esta captura ya comenzó dentro del área.
@@ -915,12 +932,13 @@
       const finish=()=>{if(active===null)return;const id=active;active=null;end(lastX,anchorY);if(svg.hasPointerCapture(id))svg.releasePointerCapture(id);};
       svg.addEventListener("pointerdown",e=>{
         if(e.pointerType==="mouse"||!e.isPrimary||active!==null)return;
+        suppressClick=false;if(e.target.closest?.(".comparison-average-point"))return;
         const p=local(e);if(p.x<left||p.x>left+plotW||p.y<top||p.y>top+plotH)return;
-        active=e.pointerId;anchorY=p.y;lastX=p.x;svg.setPointerCapture(active);e.preventDefault();move(lastX,anchorY);
+        active=e.pointerId;suppressClick=true;anchorY=p.y;lastX=p.x;svg.setPointerCapture(active);e.preventDefault();move(lastX,anchorY);
       },options);
       svg.addEventListener("pointermove",e=>{if(e.pointerId!==active)return;e.preventDefault();lastX=Math.max(left,Math.min(left+plotW,local(e).x));move(lastX,anchorY);},options);
       for(const type of ["pointerup","pointercancel","lostpointercapture"])svg.addEventListener(type,e=>{if(e.pointerId===active)finish();},options);
-      svg.addEventListener("click",e=>{if(e.pointerType&&e.pointerType!=="mouse"){e.preventDefault();e.stopImmediatePropagation();}},options);
+      svg.addEventListener("click",e=>{if(suppressClick&&e.pointerType&&e.pointerType!=="mouse"){suppressClick=false;e.preventDefault();e.stopImmediatePropagation();}},options);
       const cleanup=()=>{finish();controller.abort();surface.remove();if(svg.touchInteractionCleanup===cleanup)delete svg.touchInteractionCleanup;};
       svg.touchInteractionCleanup=cleanup;
       return {active:()=>active!==null,cleanup};
@@ -943,7 +961,7 @@
           const dx=Math.abs(item.x-position),delta=Math.hypot(dx,cy-pointerY);
           if(dx<=tolerance&&delta<distance){nearest=item;distance=delta;}
         }
-        return nearest?{x:nearest.x,timestamp:nearest.event.timestamp,items:[nearest]}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
+        return nearest?{x:nearest.x,timestamp:nearest.event.timestamp,items:events.filter(item=>item===nearest||(item.event.timestamp===nearest.event.timestamp&&(item.event.type==="event"||nearest.event.type==="event")))}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
       };
       const highlight=(items,name)=>{const selected=new Set(items.map(item=>item.node));for(const {node} of events)node.classList.toggle(name,selected.has(node));};
       const hide=()=>{if(frame)cancelAnimationFrame(frame);frame=0;pending=null;line.setAttribute("visibility","hidden");tooltip.hidden=true;highlight([],"is-preview");};
@@ -1015,7 +1033,8 @@
 
     function renderTimeChart({prefix="",bounds,records,showMedications,showMeals=false,showDayBoundary=false,compactLongPeriod=false,showFastingRange=false,fitData=false}) {
       const q=id=>document.getElementById(prefix+id),{events,unresolved}=collectChartEvents(state.records,bounds);
-      const visibleEvents=events.filter(event=>event.type==="meal"?showMeals:showMedications);
+      const showEvents=prefix?state.calendarShowEvents:state.showEvents,visibleEvents=groupedNoteEvents(events.filter(event=>event.type==="event"?showEvents:event.type==="meal"?showMeals:showMedications));
+      if(q("show-events")){q("show-events").setAttribute("aria-checked",String(showEvents));q("events-switch-label").textContent=showEvents?"ON":"OFF";}
       q("show-meals").setAttribute("aria-checked",String(showMeals));q("meals-switch-label").textContent=showMeals?"ON":"OFF";
       q("chart-count").textContent=`${records.length} ${records.length===1?"medición":"mediciones"}`;
       q("show-medications").setAttribute("aria-checked",String(showMedications));q("medications-switch-label").textContent=showMedications?"ON":"OFF";
@@ -1024,7 +1043,7 @@
       const visible=records.length>0||visibleEvents.length>0;
       q("chart-empty").hidden=visible;q("chart-content").hidden=!visible;q("chart-detail").replaceChildren();
       const svg=q("chart");svg.chartInteractionCleanup?.();observeChartSizes();svg.replaceChildren();if(!visible)return;
-      const W=Math.max(180,svg.clientWidth||600),H=300,left=42,right=showFastingRange&&!prefix?82:14,top=42,bottom=90,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
+      const W=Math.max(180,svg.clientWidth||600),H=300,left=42,right=showFastingRange&&!prefix?82:14,top=visibleEvents.some(e=>e.type==="event")?68:42,bottom=90,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
       svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
       // Una sola escala proporcional para los datos y su inversa interactiva.
       const anchorTimes=records.map(record=>Date.parse(record.createdAt)).sort((a,b)=>a-b);
@@ -1115,6 +1134,19 @@
       if(visibleEvents.length) {
         const lastIcon={meal:-Infinity,medication:-Infinity};
         visibleEvents.forEach((event,index)=>{
+          if(event.type==="event"){
+            const px=x(event.timestamp),py=top-46,count=event.members.length;
+            const group=svgElement("g",{class:"event-marker note-event-marker",tabindex:0,role:"button","aria-label":`Evento a las ${localTime(event.timestamp)}: ${event.members.map(e=>e.record.eventText).join("; ")}`,"data-event-time":event.timestamp});
+            group.append(
+              svgElement("line",{x1:px,x2:px,y1:py+8,y2:H-bottom,stroke:"transparent","stroke-width":22,"pointer-events":"stroke"}),
+              svgElement("line",{class:"event-line",x1:px,x2:px,y1:py+8,y2:H-bottom,stroke:"#c44755","stroke-width":1.5,"stroke-dasharray":"4 3",opacity:0.85,"pointer-events":"none"}),
+              svgElement("circle",{cx:px,cy:py,r:13,fill:"transparent"}),
+              svgElement("text",{x:px,y:py+4,"text-anchor":"middle","pointer-events":"none"},count>1?`🚩×${count}`:"🚩")
+            );
+            interactiveNodes.push({node:group,event,x:px,y:py});
+            const show=()=>{if(!prefix)interaction?.select(group);else{q("chart-detail").replaceChildren();appendChartEvent(q("chart-detail"),event,true);}};
+            group.addEventListener("click",show);group.addEventListener("focus",show);group.addEventListener("pointerenter",e=>{if(e.pointerType==="mouse")show();});group.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();show();}});svg.append(group);return;
+          }
           const px=x(event.timestamp),meal=event.type==="meal",color=meal?"#b77421":"#8056a8",eventIcon=meal?getMealEmoji(event.record.mealType):"💊",description=`${temporalTitle(event)}, ${dateFormat.format(event.timestamp)}, ${localTime(event.timestamp)}`;
           const group=svgElement("g",{class:"event-marker "+(meal?"meal-marker":"medication-marker"),tabindex:"0",role:"button","aria-label":description,"aria-controls":prefix+"chart-detail","data-event-time":event.timestamp});
           group.append(svgElement("title",{},description),svgElement("line",{x1:px,x2:px,y1:top-22,y2:H-bottom,stroke:"transparent","stroke-width":22,"pointer-events":"stroke"}),svgElement("line",{class:"event-line",x1:px,x2:px,y1:top-5,y2:H-bottom,stroke:color,"stroke-width":1.2,"stroke-dasharray":meal?"2 4":"5 3",opacity:events.length>40?0.32:0.8,"pointer-events":"none"}));
@@ -1168,7 +1200,7 @@
         }
         if(omitted)q("chart-events-note").textContent+=` · ${omitted} valores se consultan al pasar el cursor o tocar, para evitar superposiciones.`;
       }
-      if(!prefix)interaction=attachChartInteraction({svg,detail:q("chart-detail"),scale,nodes:interactiveNodes,left,top,plotW,plotH,W,H});
+      if(!prefix)interaction=attachChartInteraction({svg,detail:q("chart-detail"),scale,nodes:interactiveNodes,left,top:visibleEvents.some(e=>e.type==="event")?top-60:top,plotW,plotH:visibleEvents.some(e=>e.type==="event")?plotH+60:plotH,W,H});
     }
 
     function renderAll() { renderSummary();renderRanges();renderHistory();renderChart();renderCalendar();renderVitals(); }
@@ -1229,8 +1261,8 @@
             time:validMedicationTime(saved.time)?saved.time:"",...(validInstant(saved.recordedAt)?{recordedAt:saved.recordedAt}:{})
           };
         });
-        const record={...(isMeal(source)?{type:"meal",mealType:source.mealType}:{}),glucose:hasGlucose(source)?source.glucose:null,createdAt:source.createdAt,food:text(source.food),moment:text(source.moment)||text(source.measurementContext),note:text(source.note),medications,...pressureValues(source),...(Number.isInteger(source.ppm)?{ppm:source.ppm}:{})};
-        if(!isMeal(record)&&!hasGlucose(record)&&!hasRecordedMedication(record)) {skipped++;continue;}
+        const record=isNoteEvent(source)?{id:source.id,type:"event",createdAt:source.createdAt,eventText:source.eventText}:{...(isMeal(source)?{type:"meal",mealType:source.mealType}:{}),glucose:hasGlucose(source)?source.glucose:null,createdAt:source.createdAt,food:text(source.food),moment:text(source.moment)||text(source.measurementContext),note:text(source.note),medications,...pressureValues(source),...(Number.isInteger(source.ppm)?{ppm:source.ppm}:{})};
+        if(!isNoteEvent(record)&&!isMeal(record)&&!hasGlucose(record)&&!hasRecordedMedication(record)) {skipped++;continue;}
         // Un ID identifica el mismo registro. Sin ID se compara el contenido normalizado.
         const identity=typeof source.id==="string"&&source.id?"id:"+source.id:"data:"+JSON.stringify(record);
         if(seen.has(identity)) {skipped++;continue;}
@@ -1256,9 +1288,9 @@
       const rows=records.map(record=>{
         const met=recordedMedication(record,"metformin"),gli=recordedMedication(record,"glibenclamide");
         return [excelDate(record.createdAt),hasGlucose(record)?excelTime(localTime(record.createdAt)):null,record.glucose,
-          hasGlucose(record)?record.moment:"",record.food,met?.doseMg??null,excelTime(met?.time),gli?.doseMg??null,excelTime(gli?.time),record.note,record.systolic??null,record.diastolic??null,isMeal(record)?"Comida":hasGlucose(record)?"Glucemia":"Medicamento",isMeal(record)?record.mealType:"",excelTime(localTime(record.createdAt)),record.ppm??null];
+          hasGlucose(record)?record.moment:"",record.food,met?.doseMg??null,excelTime(met?.time),gli?.doseMg??null,excelTime(gli?.time),record.note,record.systolic??null,record.diastolic??null,isNoteEvent(record)?"Evento":isMeal(record)?"Comida":hasGlucose(record)?"Glucemia":"Medicamento",isMeal(record)?record.mealType:"",excelTime(localTime(record.createdAt)),record.ppm??null,isNoteEvent(record)?record.eventText:""];
       });
-      const sheet=createExcelTable(["Fecha","Hora glucemia","Glucemia (mg/dL)","Momento","Comida","Metformina","Hora Metformina","Glibenclamida","Hora Glibenclamida","Nota","Presión alta (mmHg)","Presión baja (mmHg)","Tipo de registro","Tipo de comida","Hora del registro","Pulso (ppm)"],rows,[14,17,20,24,32,18,20,18,23,45,22,22,22,20,20,18],{0:"dd/mm/yyyy",1:"hh:mm",2:"0",5:'0.###" mg"',6:"hh:mm",7:'0.###" mg"',8:"hh:mm",10:"0",11:"0",14:"hh:mm",15:"0"});
+      const sheet=createExcelTable(["Fecha","Hora glucemia","Glucemia (mg/dL)","Momento","Comida","Metformina","Hora Metformina","Glibenclamida","Hora Glibenclamida","Nota","Presión alta (mmHg)","Presión baja (mmHg)","Tipo de registro","Tipo de comida","Hora del registro","Pulso (ppm)","Descripción del evento"],rows,[14,17,20,24,32,18,20,18,23,45,22,22,22,20,20,18,50],{0:"dd/mm/yyyy",1:"hh:mm",2:"0",5:'0.###" mg"',6:"hh:mm",7:'0.###" mg"',8:"hh:mm",10:"0",11:"0",14:"hh:mm",15:"0"});
       sheet.C1.c=[{a:"Control de Glucemia",t:"Las celdas vacías corresponden a registros de medicamentos o comidas sin medición de glucemia. No se incluyen en las estadísticas de glucemia."}];
       return sheet;
     }
@@ -1344,7 +1376,7 @@
 
     // ACCIONES: confirmar persistencia antes de actualizar o limpiar el formulario.
     function createId() { if(globalThis.crypto?.randomUUID) return crypto.randomUUID(); return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`; }
-    function updateBusy(busy) { state.busy=busy; $("#meal-save").disabled=busy||state.storageProblem; $("#medication-save").disabled=busy||state.storageProblem; $("#save-button").disabled=busy||state.storageProblem; $("#edit-save").disabled=busy||state.storageProblem; $("#edit-meal-save").disabled=busy||state.storageProblem; $("#edit-medication-save").disabled=busy||state.storageProblem; $("#cloud-refresh").disabled=busy; $("#export-excel").disabled=busy||exporting; $$(".delete-one,.edit-one").forEach(button=>{button.disabled=busy||state.storageProblem;}); }
+    function updateBusy(busy) { state.busy=busy;$("#note-event-save").disabled=busy||state.storageProblem;$("#note-event-cancel").disabled=busy; $("#meal-save").disabled=busy||state.storageProblem; $("#medication-save").disabled=busy||state.storageProblem; $("#save-button").disabled=busy||state.storageProblem; $("#edit-save").disabled=busy||state.storageProblem; $("#edit-meal-save").disabled=busy||state.storageProblem; $("#edit-medication-save").disabled=busy||state.storageProblem; $("#cloud-refresh").disabled=busy; $("#export-excel").disabled=busy||exporting; $$(".delete-one,.edit-one").forEach(button=>{button.disabled=busy||state.storageProblem;}); }
     let pendingSave=null;
     async function saveMeasurement(event) {
       event.preventDefault(); if(state.busy||state.storageProblem) return; showFormError("");
@@ -1491,7 +1523,7 @@
     }
 
     async function deleteMeasurement(id) {
-      if(state.busy) return; const record=state.records.find(item=>item.id===id); if(!window.confirm(isMeal(record)?"¿Seguro que quieres eliminar esta comida?":hasGlucose(record)?"¿Seguro que quieres eliminar esta medición y los medicamentos asociados, si existen?":"¿Seguro que quieres eliminar este registro de medicamentos?")) return; updateBusy(true);
+      if(state.busy) return; const record=state.records.find(item=>item.id===id); if(!window.confirm(isNoteEvent(record)?"¿Seguro que quieres eliminar este evento?":isMeal(record)?"¿Seguro que quieres eliminar esta comida?":hasGlucose(record)?"¿Seguro que quieres eliminar esta medición y los medicamentos asociados, si existen?":"¿Seguro que quieres eliminar este registro de medicamentos?")) return; updateBusy(true);
       try { await MeasurementRepository.remove(id); state.records=state.records.filter(record=>record.id!==id); cacheCloudRecords(state.records);renderAll(); notify("Registro eliminado de Supabase"); }
       catch(error) { notify("No se pudo eliminar la medición. Inténtalo nuevamente."); } finally {updateBusy(false);}
     }
@@ -1609,6 +1641,7 @@
         if(key===localDateKey(Date.now()))button.setAttribute("aria-current","date");
         button.setAttribute("aria-label",`${dateFormat.format(calendarDate(key))}: ${stats.count} mediciones. ${status.label}.${stats.count?` Promedio ${numberFormat.format(stats.average)} mg/dL.`:""}${mealCount?` ${mealCount} comidas.`:""}${medCount?` ${medCount} tomas de medicamentos.`:""}`);
         button.append(element("span","day-number",String(d)),element("span","calendar-symbol",status.symbol),element("span","day-count",`${stats.count} med.`));
+        const noteCount=dayEvents.filter(e=>e.type==="event").length;if(noteCount){const flag=element("span","calendar-event-flag","🚩");flag.title=`${noteCount} eventos`;button.append(flag);button.setAttribute("aria-label",button.getAttribute("aria-label")+` ${noteCount} eventos.`);}
         if(mealCount||medCount)button.append(element("span","day-count",`${mealCount?"🍽️ "+mealCount:""}${mealCount&&medCount?" · ":""}${medCount?"💊 "+medCount:""}`));
         if(stats.count)button.append(element("span","day-average",`${numberFormat.format(stats.average)} prom.`));
         button.addEventListener("click",()=>{state.calendarDay=key;renderCalendar();$("#calendar-grid").querySelector(`[data-date="${key}"]`).focus({preventScroll:true});});fragment.append(button);
@@ -1628,10 +1661,11 @@
       // Marcado fijo; ningún dato del usuario se inserta como HTML.
       section.innerHTML=`<h3 id="calendar-clock-title">Reloj de 24 horas</h3>
         <div class="calendar-clock-wrap"><svg id="calendar-clock" class="calendar-clock" viewBox="0 0 420 420" role="group" aria-label="Reloj de 24 horas del día seleccionado. Puntos interiores: glucemia. Anillo exterior: medicamentos. Anillo interior: comidas. Selecciona un punto para consultar el registro."></svg></div>
-        <div class="clock-legend"><span>🩸 Glucemia</span><span><i class="swatch" style="background:#eeb54c"></i>Baja</span><span><i class="swatch" style="background:#2fa780"></i>Normal</span><span><i class="swatch" style="background:#de7788"></i>Alta</span><span id="calendar-clock-medication-legend">💊 Medicamentos</span><span id="calendar-clock-meal-legend">🍽️ Comidas</span></div>
+        <div class="clock-legend"><span>🩸 Glucemia</span><span><i class="swatch" style="background:#eeb54c"></i>Baja</span><span><i class="swatch" style="background:#2fa780"></i>Normal</span><span><i class="swatch" style="background:#de7788"></i>Alta</span><span id="calendar-clock-medication-legend">💊 Medicamentos</span><span id="calendar-clock-meal-legend">🍽️ Comidas</span><span>🚩 Eventos</span></div>
         <div id="calendar-clock-detail" class="chart-detail" role="status" aria-live="polite"></div>
         <p id="calendar-clock-note" class="small muted"></p>
         <div class="chart-options"><button id="calendar-show-medications" type="button" class="now-button" role="switch" aria-checked="true">💊 Mostrar medicamentos <strong id="calendar-medications-switch-label">ON</strong></button><button id="calendar-show-meals" type="button" class="now-button" role="switch" aria-checked="true">🍽️ Mostrar comidas <strong id="calendar-meals-switch-label">ON</strong></button></div>
+        <div class="chart-options"><button id="calendar-show-events" type="button" class="now-button" role="switch" aria-checked="true">🚩 Eventos <strong id="calendar-events-switch-label">ON</strong></button></div>
         <h3 id="calendar-chart-title">Gráfico del día</h3>
         <div class="chart-top"><span>Glucemia · mg/dL</span><span id="calendar-chart-count"></span></div>
         <div id="calendar-chart-empty" class="empty"><p>No hay mediciones ni tomas con hora para mostrar este día.</p></div>
@@ -1642,6 +1676,7 @@
         <p class="small muted">Las tomas nuevas usan su fecha y hora propias en Chile; las antiguas sin fecha usan la del registro. Las horas ausentes o ambiguas no generan marcadores.</p>`;
       parent.append(section);
       $("#calendar-show-medications").addEventListener("click",()=>{state.calendarShowMedications=!state.calendarShowMedications;renderCalendarChart();});
+      $("#calendar-show-events").addEventListener("click",()=>{state.calendarShowEvents=!state.calendarShowEvents;renderCalendarChart();});
       $("#calendar-show-meals").addEventListener("click",()=>{state.calendarShowMeals=!state.calendarShowMeals;renderCalendarChart();});
       renderCalendarChart();
     }
@@ -1665,7 +1700,7 @@
       const angleFor=timestamp=>{const p=chileParts(timestamp);return (+p.hour*3600 + +p.minute*60 + +p.second)/86400*Math.PI*2;};
       const {events,unresolved}=collectChartEvents(state.records,bounds);
       const entries=records.map(record=>({type:"glucose",timestamp:Date.parse(record.createdAt),record}));
-      entries.push(...events.filter(e=>e.type==="meal"?state.calendarShowMeals:state.calendarShowMedications));
+      entries.push(...groupedNoteEvents(events.filter(e=>e.type==="event"?state.calendarShowEvents:e.type==="meal"?state.calendarShowMeals:state.calendarShowMedications)));
       entries.forEach(entry=>{entry.angle=angleFor(entry.timestamp);});
       svg.append(svgElement("circle",{cx:C,cy:C,r:glucoseRadius,fill:"none",stroke:"#e5ebf2","stroke-width":2,"aria-hidden":"true"}));
       if(state.calendarShowMedications)svg.append(svgElement("circle",{cx:C,cy:C,r:medicationRadius,fill:"none",stroke:"#eee7f6","stroke-width":1.5,"stroke-dasharray":"3 5","aria-hidden":"true"}));
@@ -1679,20 +1714,21 @@
       svg.append(svgElement("text",{x:C,y:C-22,"text-anchor":"middle",class:"clock-date"},dateLabel),svgElement("text",{x:C,y:C+14,"text-anchor":"middle",class:"clock-count"},String(records.length)),svgElement("text",{x:C,y:C+38,"text-anchor":"middle",class:"clock-hour"},records.length===1?"medición":"mediciones"));
       const colors={low:"#eeb54c",normal:"#2fa780",high:"#de7788"};
       entries.sort((a,b)=>a.timestamp-b.timestamp).forEach(entry=>{
-        const isGlucose=entry.type==="glucose",p=position(entry.angle,isGlucose?glucoseRadius:entry.type==="meal"?mealRadius:medicationRadius),category=isGlucose?classify(entry.record.glucose):null;
+        const isGlucose=entry.type==="glucose",p=position(entry.angle,isGlucose?glucoseRadius:entry.type==="event"?106:entry.type==="meal"?(entries.some(e=>e.type==="event"&&Math.abs(e.angle-entry.angle)<.15)?mealRadius-10:mealRadius):medicationRadius),category=isGlucose?classify(entry.record.glucose):null;
         const description=`${localTime(entry.timestamp)} · ${temporalTitle(entry)}`;
-        const group=svgElement("g",{class:"clock-point "+(isGlucose?"clock-glucose":entry.type==="meal"?"clock-meal":"clock-medication"),role:"button",tabindex:"0","aria-label":description,"aria-controls":"calendar-clock-detail","data-timestamp":entry.timestamp});
+        const group=svgElement("g",{class:"clock-point "+(isGlucose?"clock-glucose":entry.type==="event"?"clock-event":entry.type==="meal"?"clock-meal":"clock-medication"),role:"button",tabindex:"0","aria-label":description,"aria-controls":"calendar-clock-detail","data-timestamp":entry.timestamp});
         group.append(svgElement("title",{},description),svgElement("circle",{cx:p.x,cy:p.y,r:18,fill:"transparent"}),svgElement("circle",{class:"clock-dot",cx:p.x,cy:p.y,r:isGlucose?8:12,fill:isGlucose?colors[category.key]:entry.type==="meal"?"#fff1da":"#f1eafa",stroke:isGlucose?category.color:entry.type==="meal"?"#b77421":"#8056a8","stroke-width":2,"pointer-events":"none"}));
-        if(!isGlucose)group.append(svgElement("text",{x:p.x,y:p.y+5,"text-anchor":"middle","font-size":15,"pointer-events":"none","aria-hidden":"true"},entry.type==="meal"?getMealEmoji(entry.record.mealType):"💊"));
+        if(!isGlucose)group.append(svgElement("text",{x:p.x,y:p.y+5,"text-anchor":"middle","font-size":15,"pointer-events":"none","aria-hidden":"true"},entry.type==="event"?(entry.members.length>1?`🚩×${entry.members.length}`:"🚩"):entry.type==="meal"?getMealEmoji(entry.record.mealType):"💊"));
         const show=()=>{
           detail.replaceChildren();
           const nearby=entries.filter(other=>{const distance=Math.abs(other.angle-entry.angle);return other.type===entry.type&&Math.min(distance,Math.PI*2-distance)<=0.18;});
           if(nearby.length>1)detail.append(element("p","small muted",`${nearby.length} registros próximos a esta hora:`));
           const offsetFormat=new Intl.DateTimeFormat("es",{timeZone:CHILE_ZONE,hour:"2-digit",minute:"2-digit",hourCycle:"h23",timeZoneName:"shortOffset"});
-          nearby.forEach(other=>{
+          nearby.flatMap(e=>e.members||[e]).forEach(other=>{
             const item=element("div","event-detail"),label=temporalTitle(other);
             item.append(element("strong","",label),element("p","",`${offsetFormat.format(other.timestamp)} · ${dateFormat.format(other.timestamp)}`));
             if(other.type==="glucose"){const context=other.record.moment||other.record.measurementContext;if(context)item.append(element("p","",context));appendPressure(item,other.record);}
+            if(other.type==="event")item.append(element("p","record-note",other.record.eventText));
             if(other.type==="meal"){item.append(element("p","record-food",other.record.food));if(other.record.note)item.append(element("p","record-note",`Nota: ${other.record.note}`));}
             detail.append(item);
           });
@@ -1714,6 +1750,12 @@
     window.addEventListener("resize",()=>{clearTimeout(chartResizeTimer);chartResizeTimer=setTimeout(()=>{renderChart();renderCalendarChart();},150);});
 
     const MEAL_TYPES=Object.freeze(["Desayuno","Almuerzo","Once","Cena","Snack","Otro"]);
+    function isNoteEvent(record) {return !!record&&record.type==="event"&&typeof record.eventText==="string"&&record.eventText.trim().length>0&&record.eventText.length<=1000&&!Object.hasOwn(record,"glucose");}
+    function groupedNoteEvents(events) {
+      const groups=new Map(),result=[];
+      for(const event of events){if(event.type!=="event"){result.push(event);continue;}const key=event.timestamp;if(!groups.has(key)){const group={...event,members:[]};groups.set(key,group);result.push(group);}groups.get(key).members.push(event);}
+      return result;
+    }
     function isMeal(record) {return !!record&&record.type==="meal"&&MEAL_TYPES.includes(record.mealType)&&typeof record.food==="string"&&record.food.trim().length>0&&record.glucose==null;}
     function validInstant(value) {return typeof value==="string"&&/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value)&&Number.isFinite(Date.parse(value));}
     function medicationTimestamp(record,saved) {
@@ -1757,6 +1799,7 @@
       }
     }
     function temporalTitle(event) {
+      if(event.type==="event")return "🚩 Evento";
       if(event.type==="meal")return `${getMealEmoji(event.record.mealType)} ${event.record.mealType}`;
       if(event.type==="medication")return `💊 ${event.medication.name} · ${doseFormat.format(event.saved.doseMg)} mg`;
       return `🩸 ${event.record.glucose} mg/dL · ${classify(event.record.glucose).label}`;
@@ -1765,12 +1808,14 @@
       const item=element("div","event-detail");item.append(element("strong","",temporalTitle(event)));
       if(withTime&&Number.isFinite(event.timestamp))item.append(element("p","",`${localTime(event.timestamp)} · ${dateFormat.format(event.timestamp)}`));
       if(event.type==="meal"){item.append(element("p","record-food",event.record.food));if(event.record.note)item.append(element("p","record-note",`Nota: ${event.record.note}`));}
+      if(event.type==="event")item.append(element("p","record-note",event.record.eventText));
       parent.append(item);return item;
     }
     function timelineEvents(records) {
       const events=[];
       for(const record of records){
         if(hasGlucose(record))events.push({type:"glucose",record,timestamp:Date.parse(record.createdAt)});
+        if(isNoteEvent(record))events.push({type:"event",record,timestamp:Date.parse(record.createdAt)});
         if(isMeal(record))events.push({type:"meal",record,timestamp:Date.parse(record.createdAt)});
         for(const medication of MEDICATIONS){const saved=recordedMedication(record,medication.key);if(saved)events.push({type:"medication",record,saved,medication,timestamp:medicationTimestamp(record,saved)});}
       }
@@ -1796,9 +1841,21 @@
           appendTemporalDetail(main,event,false);
           if(event.type==="medication"&&!hasGlucose(record)){if(record.food)main.append(element("p","record-food",record.food));appendPressure(main,record);if(record.note)main.append(element("p","record-note",`Notas: ${record.note}`));}
         }
-        article.append(main);if(event.type==="glucose")appendRecordStatus(article,record);list.append(article);
+        article.append(main);if(event.type==="event"){const edit=element("button","now-button","Editar evento");edit.type="button";edit.addEventListener("click",()=>openNoteEvent(record.id));article.append(edit);}if(event.type==="glucose")appendRecordStatus(article,record);list.append(article);
       }
       box.append(list);
+    }
+    let editingNoteEvent=null,pendingNoteEvent=null;
+    function resetNoteEvent(){editingNoteEvent=null;pendingNoteEvent=null;$("#note-event-form").reset();setDateNow("note-event");$("#note-event-title").textContent="🚩 Evento / Nota";$("#note-event-save").textContent="Guardar evento";$("#note-event-cancel").hidden=true;$("#note-event-error").hidden=true;}
+    function openNoteEvent(id){if(state.busy)return;const record=state.records.find(r=>r.id===id&&isNoteEvent(r));if(!record)return;editingNoteEvent=id;pendingNoteEvent=null;navigate("registrar");$("#note-event-text").value=record.eventText;$("#note-event-date").value=localDateKey(record.createdAt);$("#note-event-time").value=localTime(record.createdAt);updateDateOccurrence("note-event");$("#note-event-occurrence").value=String(Date.parse(record.createdAt));$("#note-event-title").textContent="Editar evento";$("#note-event-save").textContent="Guardar cambios";$("#note-event-cancel").hidden=false;$("#note-event-error").hidden=true;$("#note-event-text").focus();}
+    async function saveNoteEvent(event){
+      event.preventDefault();if(state.busy||state.storageProblem)return;const box=$("#note-event-error");box.hidden=true;
+      let fields;try{const eventText=$("#note-event-text").value.trim();if(!eventText||eventText.length>1000)throw new Error("Escribe una descripción de 1 a 1000 caracteres.");fields={type:"event",createdAt:readDateFields("note-event","del evento"),eventText};}catch(error){box.textContent=error.message;box.hidden=false;return;}
+      const signature=JSON.stringify({editingNoteEvent,...fields});if(!pendingNoteEvent||pendingNoteEvent.signature!==signature)pendingNoteEvent={signature,record:{id:editingNoteEvent||createId(),...fields}};
+      const record=pendingNoteEvent.record;updateBusy(true);
+      try{if(editingNoteEvent)await MeasurementRepository.update(record);else await MeasurementRepository.add(record);state.records=[...state.records.filter(r=>r.id!==record.id),record];cacheCloudRecords(state.records);resetNoteEvent();renderAll();notify("✓ Evento guardado en Supabase");}
+      catch(error){box.textContent=error.message+" El formulario conserva tus datos.";box.hidden=false;}
+      finally{updateBusy(false);}
     }
     let pendingMedication=null;
     async function saveMedication(event) {
@@ -1842,6 +1899,9 @@
       finally{updateBusy(false);}
     }
     function initializeEventForms() {
+      $("#note-event-datetime").innerHTML=dateFieldsHTML("note-event","del evento");watchDateFields("note-event");resetNoteEvent();
+      $("#note-event-form").addEventListener("submit",saveNoteEvent);$("#note-event-cancel").addEventListener("click",()=>{if(!state.busy)resetNoteEvent();});
+      $("#show-events").addEventListener("click",()=>{state.showEvents=!state.showEvents;$("#show-events").setAttribute("aria-checked",String(state.showEvents));$("#events-switch-label").textContent=state.showEvents?"ON":"OFF";renderChart();});
       $("#measurement-datetime").innerHTML=dateFieldsHTML("measurement","del registro");
       $("#meal-datetime").innerHTML=dateFieldsHTML("meal","de la comida");
       MEAL_TYPES.forEach(type=>{const option=element("option","",type);option.value=type;$("#meal-type").append(option);});
