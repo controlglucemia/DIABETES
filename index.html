@@ -396,9 +396,9 @@
           <h3 id="comparison-title">Comparar días</h3>
           <form id="comparison-form" novalidate>
             <div id="comparison-dates" class="comparison-dates"></div>
-            <div class="comparison-actions"><button id="comparison-add" type="button" class="now-button">+ Agregar otro día</button><span id="comparison-limit" class="small muted" hidden>Máximo 7 días</span></div>
+            <div class="comparison-actions"><button id="comparison-add" type="button" class="now-button">+ Agregar otro día</button><span id="comparison-limit" class="small muted" hidden>Máximo 30 días</span></div>
             <p id="comparison-error" class="error" role="alert" hidden></p>
-            <div class="comparison-actions"><button id="comparison-apply" type="submit" class="primary">Comparar</button><button id="comparison-connectors" type="button" class="now-button" role="switch" aria-checked="false" hidden>Líneas de conexión <strong id="comparison-connectors-label">OFF</strong></button><button id="comparison-values" type="button" class="now-button" role="switch" aria-checked="false" hidden>Valores de los puntos <strong id="comparison-values-label">OFF</strong></button><button id="comparison-average" type="button" class="now-button" role="switch" aria-checked="false" hidden>Línea promedio <strong id="comparison-average-label">OFF</strong></button><button id="comparison-exit" type="button" class="now-button">Salir de comparación</button></div>
+            <div class="comparison-actions"><button id="comparison-apply" type="submit" class="primary">Comparar</button><button id="comparison-connectors" type="button" class="now-button" role="switch" aria-checked="false" hidden>Líneas de conexión <strong id="comparison-connectors-label">OFF</strong></button><button id="comparison-values" type="button" class="now-button" role="switch" aria-checked="false" hidden>Valores de los puntos <strong id="comparison-values-label">OFF</strong></button><button id="comparison-average" type="button" class="now-button" role="switch" aria-checked="false" hidden>Línea promedio <strong id="comparison-average-label">OFF</strong></button><button id="comparison-only-average" type="button" class="now-button" role="switch" aria-checked="false" hidden>Solo promedio <strong id="comparison-only-average-label">OFF</strong></button><button id="comparison-exit" type="button" class="now-button">Salir de comparación</button></div>
           </form>
         </section>
         <div id="comparison-legend" class="comparison-legend" aria-label="Fechas comparadas" hidden></div>
@@ -461,6 +461,8 @@
         <div class="card-head"><div><h2 id="history-title">Historial</h2><p id="history-count" class="small muted">0 registros guardados</p></div><button id="export-excel" class="now-button" type="button">📊 Exportar Excel</button></div>
         <p class="small muted" style="margin-bottom:16px">Exporta todos tus registros. Requiere conexión.</p>
         <p id="export-status" class="small muted" role="status" aria-live="polite" style="margin-bottom:16px" hidden></p>
+        <div style="margin-bottom:18px"><label for="history-type">Filtrar por tipo</label><select id="history-type"><option value="all">📋 Todos los registros</option><option value="meal">🍽️ Comidas</option><option value="event">🚩 Eventos</option><option value="glucose">🩸 Glucemias</option><option value="medication">💊 Medicamentos</option></select></div>
+        <p id="history-filter-empty" class="empty" role="status" hidden>No hay registros de este tipo. Prueba con otro filtro.</p>
         <div id="history-empty" class="empty"><div class="empty-icon"><svg class="icon" aria-hidden="true"><use href="#i-drop"/></svg></div><h3>Tu historial comienza aquí</h3><p>Agrega una medición para empezar a llevar tu registro.</p><button type="button" class="primary" data-go-register style="margin-top:18px">Registrar glucemia</button></div>
         <div id="history-list" class="history-list"></div>
       </section>
@@ -641,7 +643,7 @@
     const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showEvents:true, calendarShowEvents:true, showMeals:true, calendarShowMeals:true, showFastingRange:false };
 
     state.comparisonMode=false;
-    const comparisonState={showAverage:false,showValues:false,showConnectors:false,open:false,draft:[],days:[],previous:null,colors:["#2563eb","#b34b16","#087d61","#8b46bd","#bd3563","#127e93","#6b6320"]};
+    const comparisonState={onlyAverage:false,showAverage:false,showValues:false,showConnectors:false,open:false,draft:[],days:[],previous:null,colors:["#2563eb","#b34b16","#087d61","#8b46bd","#bd3563","#127e93","#6b6320",...Array.from({length:23},(_,i)=>`hsl(${(i*137.508+25)%360} 65% ${32+(i%3)*7}%)`)]};
 
     // MEDICAMENTOS: equivalencias aritméticas de cantidades ya tomadas.
     // No se calculan recomendaciones ni se relaciona la cantidad con la glucemia.
@@ -822,9 +824,11 @@
       return new Intl.DateTimeFormat("es",options).format(calendarDate(day));
     }
     function renderHistory() {
-      const events=timelineEvents(state.records),groups=groupEventsByChileDate(events);
-      $("#history-count").textContent=`${state.records.length} registros guardados · ${events.length} eventos`;
-      $("#history-empty").hidden=events.length>0;
+      const filter=$("#history-type").value,allEvents=timelineEvents(state.records);
+      const events=filter==="all"?allEvents:allEvents.filter(event=>event.type===filter),groups=groupEventsByChileDate(events);
+      $("#history-count").textContent=filter==="all"?`${state.records.length} registros guardados · ${events.length} eventos`:`${events.length} resultados · ${$("#history-type").selectedOptions[0].textContent}`;
+      $("#history-empty").hidden=allEvents.length>0;
+      $("#history-filter-empty").hidden=!allEvents.length||events.length>0;
       const fragment=document.createDocumentFragment();
       for(const {day,events:ordered} of groups){
         const section=element("section","history-date-group"),heading=element("h3","history-date-title",historyDateTitle(day)),list=element("div","history-list");
@@ -1546,6 +1550,7 @@
     $("#edit-dialog").addEventListener("click",event=>{if(event.target===$("#edit-dialog"))closeEditMeasurement();});
 
 
+    $("#history-type").addEventListener("change",renderHistory);
     $("#export-excel").addEventListener("click",exportToExcel);
     $("#cloud-refresh").addEventListener("click",loadMeasurements);
     window.addEventListener("online",loadMeasurements);
@@ -1965,7 +1970,7 @@
         remove.addEventListener("click",()=>{if(comparisonState.draft.length<=2)return;comparisonState.draft.splice(index,1);refreshComparisonAverageDates();renderComparisonSelectors();comparisonError("");$("#comparison-add").focus();});
         field.append(label,input);row.append(field,remove);box.append(row);
       });
-      $("#comparison-add").disabled=comparisonState.draft.length>=7;$("#comparison-limit").hidden=comparisonState.draft.length<7;
+      $("#comparison-add").disabled=comparisonState.draft.length>=30;$("#comparison-limit").hidden=comparisonState.draft.length<30;
     }
     function openDayComparison() {
       if(comparisonState.open){$("#comparison-date-0").focus();return;}
@@ -1980,7 +1985,7 @@
     }
     function applyDayComparison(event) {
       event.preventDefault();const days=comparisonState.draft;
-      if(days.length<2||days.length>7){comparisonError("Selecciona entre 2 y 7 días.");return;}
+      if(days.length<2||days.length>30){comparisonError("Selecciona entre 2 y 30 días.");return;}
       if(days.some(day=>!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day+"T12:00:00Z")))){comparisonError("Completa todas las fechas antes de comparar.");return;}
       if(new Set(days).size!==days.length){comparisonError("Selecciona fechas diferentes, sin repetir días.");return;}
       comparisonState.days=[...days];state.comparisonMode=true;comparisonError("");
@@ -1988,7 +1993,7 @@
     }
     function exitDayComparison(redraw=true) {
       if(!comparisonState.open)return;
-      state.comparisonMode=false;comparisonState.open=false;comparisonState.showAverage=false;$("#comparison-average").hidden=true;comparisonState.showConnectors=false;$("#comparison-connectors").hidden=true;comparisonState.showValues=false;$("#comparison-values").hidden=true;
+      state.comparisonMode=false;comparisonState.onlyAverage=false;$("#comparison-only-average").hidden=true;comparisonState.open=false;comparisonState.showAverage=false;$("#comparison-average").hidden=true;comparisonState.showConnectors=false;$("#comparison-connectors").hidden=true;comparisonState.showValues=false;$("#comparison-values").hidden=true;
       Object.assign(state,comparisonState.previous);comparisonState.previous=null;
       $("#comparison-panel").hidden=true;$("#comparison-legend").hidden=true;$("#comparison-summary").hidden=true;
       $("#compare-days").setAttribute("aria-expanded","false");$("#compare-days").setAttribute("aria-pressed","false");
@@ -2026,7 +2031,7 @@
     function refreshComparisonAverageDates() {
       if(!state.comparisonMode||!comparisonState.showAverage)return;
       const days=comparisonState.draft;
-      if(days.length<2||days.length>7||new Set(days).size!==days.length||days.some(day=>!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day+"T12:00:00Z"))))return;
+      if(days.length<2||days.length>30||new Set(days).size!==days.length||days.some(day=>!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(Date.parse(day+"T12:00:00Z"))))return;
       comparisonState.days=[...days];renderComparisonChart();
     }
     function drawComparisonAverage(svg,detail,legend,minuteX,y) {
@@ -2068,6 +2073,12 @@
     }
 
     function renderComparisonChart() {
+      const onlyAverage=comparisonState.onlyAverage;
+      $("#comparison-only-average").hidden=false;
+      $("#comparison-only-average").setAttribute("aria-checked",String(onlyAverage));
+      $("#comparison-only-average-label").textContent=onlyAverage?"ON":"OFF";
+      $("#comparison-values").disabled=onlyAverage;
+      $("#comparison-connectors").disabled=false;
       $("#comparison-average").hidden=false;
       $("#comparison-average").setAttribute("aria-checked",String(comparisonState.showAverage));
       $("#comparison-average-label").textContent=comparisonState.showAverage?"ON":"OFF";
@@ -2082,18 +2093,22 @@
       for(const [key,value] of [["medications",state.showMedications],["meals",state.showMeals]]){$("#show-"+key).setAttribute("aria-checked",String(value));$("#"+key+"-switch-label").textContent=value?"ON":"OFF";}
       const allEvents=timelineEvents(state.records),groups=comparisonState.days.map(day=>({day,records:state.records.filter(r=>hasGlucose(r)&&localDateKey(r.createdAt)===day),events:allEvents.filter(e=>Number.isFinite(e.timestamp)&&localDateKey(e.timestamp)===day&&(e.type==="glucose"||e.type==="meal"&&state.showMeals||e.type==="medication"&&state.showMedications))}));
       const legend=$("#comparison-legend");legend.hidden=false;legend.replaceChildren();
-      groups.forEach((group,i)=>{const item=element("span","comparison-key"),sample=element("span","comparison-swatch");sample.style.background=comparisonState.colors[i];item.append(sample,document.createTextNode(`${i+1}. ${comparisonDateLabel(group.day)}${group.records.length?"":" · Sin mediciones de glucemia"}`));legend.append(item);});
+      if(!onlyAverage)groups.forEach((group,i)=>{const item=element("span","comparison-key"),sample=element("span","comparison-swatch");sample.style.background=comparisonState.colors[i];item.append(sample,document.createTextNode(`${i+1}. ${comparisonDateLabel(group.day)}${group.records.length?"":" · Sin mediciones de glucemia"}`));legend.append(item);});
       const count=groups.reduce((n,g)=>n+g.records.length,0);$("#chart-count").textContent=`${count} mediciones · ${groups.length} días`;
       $("#chart-period-label").textContent="Comparación por hora de Chile · 00:00–24:00 · Cada color identifica una fecha";
       const unresolved=allEvents.filter(e=>e.type==="medication"&&e.timestamp===null&&comparisonState.days.includes(localDateKey(e.record.createdAt))).length;
       $("#chart-events-note").textContent="Toca o enfoca un punto para consultar sus datos. Se muestra únicamente el punto señalado, con su fecha."+(state.showMedications&&unresolved?` ${unresolved} tomas sin hora inequívoca permanecen en el historial.`:"");
+      if(onlyAverage){
+        $("#chart-period-label").textContent="Promedio por franjas de 3 horas · Hora de Chile";
+        $("#chart-events-note").textContent="Se muestra el promedio junto con las filas de comidas y medicamentos activadas. Toca un punto o un evento para consultar sus datos.";
+      }
       const W=Math.max(180,svg.clientWidth||600),left=42,right=14,top=30,plotW=W-left-right,plotH=200,axisY=top+plotH;
       const hasLanes=state.showMeals||state.showMedications,H=axisY+52+(hasLanes?groups.length*76:0);
       const max=groups.reduce((m,g)=>Math.max(m,calculateStats(g.records).max||0),200),yMax=Math.ceil(max*1.12/50)*50;
       const minuteX=minute=>left+minute/1440*plotW,x=timestamp=>minuteX(comparisonMinutes(timestamp)),y=value=>top+plotH-value/yMax*plotH;
       svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Comparación de días, de 00:00 a 24:00. Cada línea representa una fecha. Selecciona puntos y eventos para consultar sus detalles.");
       svg.append(svgElement("rect",{x:left,y:y(CONFIG.range.high),width:plotW,height:y(CONFIG.range.low)-y(CONFIG.range.high),fill:"#edf8f2",rx:5}));
-      if(state.showFastingRange){
+      if(state.showFastingRange&&!onlyAverage){
         svg.append(svgElement("rect",{class:"comparison-fasting",x:left,y:y(130),width:plotW,height:y(80)-y(130),fill:"#2563eb",opacity:.07}));
         for(const value of [80,130])svg.append(svgElement("line",{x1:left,x2:W-right,y1:y(value),y2:y(value),stroke:"#2563eb","stroke-dasharray":"6 4","pointer-events":"none"}));
         legend.append(element("span","comparison-key","Ayuno: líneas discontinuas 80–130 mg/dL"));
@@ -2118,12 +2133,12 @@
         nodes.push({node,event,x:px,y:py});svg.append(node);
       };
       // Líneas primero, puntos después: las curvas nunca cubren sus objetivos táctiles.
-      groups.forEach((group,i)=>{
+      if(!onlyAverage)groups.forEach((group,i)=>{
         const entries=group.events.filter(e=>e.type==="glucose").sort((a,b)=>comparisonMinutes(a.timestamp)-comparisonMinutes(b.timestamp)||a.timestamp-b.timestamp);
-        if(entries.length>1)svg.append(svgElement("polyline",{class:"comparison-line","data-day":group.day,points:entries.map(e=>`${x(e.timestamp)},${y(e.record.glucose)}`).join(" "),fill:"none",stroke:comparisonState.colors[i],"stroke-width":2.5,"stroke-dasharray":dashes[i],"stroke-linejoin":"round","pointer-events":"none"}));
+        if(entries.length>1)svg.append(svgElement("polyline",{class:"comparison-line","data-day":group.day,points:entries.map(e=>`${x(e.timestamp)},${y(e.record.glucose)}`).join(" "),fill:"none",stroke:comparisonState.colors[i],"stroke-width":2.5,"stroke-dasharray":dashes[i%dashes.length],"stroke-linejoin":"round","pointer-events":"none"}));
       });
       groups.forEach((group,i)=>{
-        const color=comparisonState.colors[i];group.events.filter(e=>e.type==="glucose").forEach(e=>addNode(e,x(e.timestamp),y(e.record.glucose),color,"glucose"));
+        const color=comparisonState.colors[i];if(!onlyAverage)group.events.filter(e=>e.type==="glucose").forEach(e=>addNode(e,x(e.timestamp),y(e.record.glucose),color,"glucose"));
         if(!hasLanes)return;
         const lane=axisY+50+i*76;
         svg.append(svgElement("text",{x:left,y:lane,style:`font-size:11px;font-weight:700;fill:${color}`},`${i+1}. ${comparisonDateLabel(group.day)}`));
@@ -2171,12 +2186,18 @@
     function initializeDayComparison() {
       $("#compare-days").addEventListener("click",openDayComparison);
       $("#comparison-form").addEventListener("submit",applyDayComparison);
-      $("#comparison-average").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showAverage=!comparisonState.showAverage;if(comparisonState.showAverage)refreshComparisonAverageDates();renderComparisonChart();});
+      $("#comparison-average").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showAverage=!comparisonState.showAverage;if(!comparisonState.showAverage)comparisonState.onlyAverage=false;if(comparisonState.showAverage)refreshComparisonAverageDates();renderComparisonChart();});
+      $("#comparison-only-average").addEventListener("click",()=>{
+        if(!state.comparisonMode)return;
+        comparisonState.onlyAverage=!comparisonState.onlyAverage;
+        if(comparisonState.onlyAverage){comparisonState.showAverage=true;refreshComparisonAverageDates();}
+        renderComparisonChart();
+      });
       $("#comparison-values").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showValues=!comparisonState.showValues;renderComparisonChart();});
       $("#comparison-connectors").addEventListener("click",()=>{if(!state.comparisonMode)return;comparisonState.showConnectors=!comparisonState.showConnectors;renderComparisonChart();});
       $("#comparison-exit").addEventListener("click",()=>exitDayComparison());
       $("#comparison-add").addEventListener("click",()=>{
-        if(comparisonState.draft.length>=7)return;
+        if(comparisonState.draft.length>=30)return;
         let day=localDateKey(Date.now());while(comparisonState.draft.includes(day))day=shiftDay(day,-1);
         comparisonState.draft.push(day);refreshComparisonAverageDates();renderComparisonSelectors();comparisonError("");$("#comparison-date-"+(comparisonState.draft.length-1)).focus();
       });
