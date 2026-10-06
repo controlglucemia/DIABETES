@@ -1,0 +1,18 @@
+ICONOS — CONTROL DE GLUCEMIA
+
+1. Copia la carpeta icons, apple-touch-icon.png y los favicon a la carpeta pública junto a tu index.html.
+2. En tu manifest ACTUAL, reemplaza solamente el campo icons con el de manifest-icons.json. Conserva id, start_url, scope y el resto de tu configuración, para no crear otra identidad de app.
+3. Integra las etiquetas de head-iconos.html en el <head>. Sustituye los enlaces de iconos antiguos. Conserva un solo enlace rel=manifest apuntando a tu manifest actual.
+4. Las rutas del manifest se resuelven desde su ubicación. Estas rutas relativas funcionan si el manifest está junto a index.html, incluso bajo /DIABETES/. Ajusta las rutas si tu manifest está en otra carpeta.
+5. Si tu service worker almacena iconos, actualiza sus rutas y la versión de caché según tu implementación. Este paquete no sustituye el service worker.
+6. Vuelve a publicar. Algunos dispositivos retienen el icono instalado y pueden requerir quitar el acceso directo y volver a añadirlo. No borres los datos del sitio.
+
+CONTENIDO
+- PWA: PNG 192, 256, 384, 512 y 1024, más tamaños auxiliares.
+- Android adaptable: maskable 192 y 512, opacos; gota verificada dentro del círculo seguro de radio 40%.
+- Apple: 120, 152, 167, 180, sin esquinas recortadas; el sistema aplica la forma.
+- Favicon ICO multirresolución y PNG 16, 32, 48.
+- manifest.example.webmanifest: ejemplo completo, NO reemplazo automático de tu manifest existente.
+
+El paquete adapta los iconos. No incluye una nueva versión de la aplicación ni modifica datos de salud.
+Referencia técnica: https://www.w3.org/TR/appmanifest/#icon-masks
