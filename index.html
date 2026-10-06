@@ -12,7 +12,8 @@
   <meta name="apple-mobile-web-app-title" content="Glucemia">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232563eb'/%3E%3Cpath d='M16 6C13 11 9 15 9 19a7 7 0 0014 0c0-4-4-8-7-13z' fill='white'/%3E%3C/svg%3E">
+  <link rel="icon" href="./favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
   <style>
     :root { color-scheme:light; --bg:#f4f7fb; --surface:#fff; --text:#182940; --muted:#62738a; --line:#e5ebf2; --blue:#2563eb; --blue-dark:#1d4ed8; --blue-soft:#edf3ff; --green:#087d61; --green-soft:#e7f6ef; --low:#a96609; --low-soft:#fff4dc; --high:#bf4357; --high-soft:#fff0f2; --radius:24px; --shadow:0 8px 28px rgba(35,56,84,.045); }
     * { box-sizing:border-box; } [hidden] { display:none!important; }
@@ -274,6 +275,7 @@
     .push-actions { display:flex;flex-wrap:wrap;gap:10px;margin-top:14px; }
     .push-status { margin-top:12px; }
 </style>
+<link rel="stylesheet" href="./notifications.css">
 </head>
 <body data-page="inicio">
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
@@ -291,6 +293,7 @@
     <header class="header">
       <div class="brand" aria-hidden="true"><svg class="icon"><use href="#i-drop"/></svg></div>
       <div><h1>Control de Glucemia</h1><p>Registra y controla tus mediciones</p></div>
+      <button id="notification-bell" class="notification-bell" type="button" data-pages="inicio" aria-label="Abrir configuración de notificaciones" aria-haspopup="dialog" aria-controls="notification-dialog"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></button>
     </header>
     <nav class="nav" aria-label="Navegación principal">
       <button type="button" data-nav="inicio" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Inicio</span></button>
@@ -304,15 +307,7 @@
     <noscript><p class="storage-warning">Activa JavaScript para registrar y consultar tus mediciones.</p></noscript>
     <main class="workspace">
 
-      <section class="card full push-card" data-pages="inicio" aria-labelledby="push-title">
-        <div class="card-head"><div><h2 id="push-title">🔔 Notificaciones</h2><p class="small muted">Recibe avisos de Control de Glucemia incluso cuando la app esté cerrada.</p></div></div>
-        <div class="push-actions">
-          <button id="push-enable" type="button" class="primary">Activar notificaciones</button>
-          <button id="push-test" type="button" class="now-button" hidden>Enviar notificación de prueba</button>
-          <button id="push-disable" type="button" class="now-button" hidden>Desactivar en este dispositivo</button>
-        </div>
-        <p id="push-status" class="small muted push-status" role="status" aria-live="polite">Comprobando compatibilidad…</p>
-      </section>
+
       <section class="full" data-pages="inicio estadisticas" aria-label="Resumen de mediciones">
         <div class="overview">
           <article class="card latest"><div class="card-head"><h2>Última medición</h2><span id="latest-badge" class="badge neutral">Sin datos</span></div><div id="latest-value" class="latest-value">— <span>mg/dL</span></div><p id="latest-date" class="latest-date">Registra tu primera medición</p></article>
@@ -1440,10 +1435,7 @@
       const record=pendingSave.record;
       updateBusy(true);
       $("#cloud-status").textContent="Guardando en Supabase…";
-      try { await MeasurementRepository.add(record); state.records=[...state.records.filter(item=>item.id!==record.id),record]; cacheCloudRecords(state.records); pendingSave=null; $("#measurement-form").reset();setDateNow("measurement"); $("#storage-warning").hidden=true; renderAll(); $("#cloud-status").textContent="✓ Guardado en Supabase"; notify("✓ Medición guardada en Supabase");
-        const extras=[]; if(Number.isFinite(record.systolic)&&Number.isFinite(record.diastolic))extras.push(`Presión ${record.systolic}/${record.diastolic} mmHg`); if(Number.isFinite(record.ppm))extras.push(`Pulso ${record.ppm} ppm`);
-        window.sendRegistrationPush?.("🩸 Nueva glucemia registrada", `${record.glucose} mg/dL${record.moment?` · ${record.moment}`:""}${extras.length?` · ${extras.join(" · ")}`:""}`).catch(error=>console.warn("Push automático:",error));
-      }
+      try { await MeasurementRepository.add(record); state.records=[...state.records.filter(item=>item.id!==record.id),record]; cacheCloudRecords(state.records); pendingSave=null; $("#measurement-form").reset();setDateNow("measurement"); $("#storage-warning").hidden=true; renderAll(); $("#cloud-status").textContent="✓ Guardado en Supabase"; notify("✓ Medición guardada en Supabase"); }
       catch(error) { showFormError(error.message+" El formulario conserva tus datos."); $("#cloud-status").textContent="Guardado sin confirmar · Puedes reintentar"; }
       finally { updateBusy(false); }
     }
@@ -1906,9 +1898,7 @@
       let fields;try{const eventText=$("#note-event-text").value.trim();if(!eventText||eventText.length>1000)throw new Error("Escribe una descripción de 1 a 1000 caracteres.");fields={type:"event",createdAt:readDateFields("note-event","del evento"),eventText};}catch(error){box.textContent=error.message;box.hidden=false;return;}
       const signature=JSON.stringify({editingNoteEvent,...fields});if(!pendingNoteEvent||pendingNoteEvent.signature!==signature)pendingNoteEvent={signature,record:{id:editingNoteEvent||createId(),...fields}};
       const record=pendingNoteEvent.record;updateBusy(true);
-      try{const wasEditing=!!editingNoteEvent;if(editingNoteEvent)await MeasurementRepository.update(record);else await MeasurementRepository.add(record);state.records=[...state.records.filter(r=>r.id!==record.id),record];cacheCloudRecords(state.records);resetNoteEvent();renderAll();notify("✓ Evento guardado en Supabase");
-        if(!wasEditing)window.sendRegistrationPush?.("🚩 Evento registrado", record.eventText).catch(error=>console.warn("Push automático:",error));
-      }
+      try{if(editingNoteEvent)await MeasurementRepository.update(record);else await MeasurementRepository.add(record);state.records=[...state.records.filter(r=>r.id!==record.id),record];cacheCloudRecords(state.records);resetNoteEvent();renderAll();notify("✓ Evento guardado en Supabase");}
       catch(error){box.textContent=error.message+" El formulario conserva tus datos.";box.hidden=false;}
       finally{updateBusy(false);}
     }
@@ -1931,8 +1921,6 @@
         await MeasurementRepository.add(record); state.records=[...state.records.filter(r=>r.id!==record.id),record]; cacheCloudRecords(state.records);
         pendingMedication=null; $("#medication-form").reset(); resetMedicationFields(); $("#storage-warning").hidden=true; renderAll();
         $("#cloud-status").textContent="✓ Guardado en Supabase"; notify("✓ Medicamentos guardados en Supabase");
-        const meds=MEDICATIONS.map(m=>{const taken=recordedMedication(record,m.key);return taken?`${m.name} ${taken.mg} mg`:null;}).filter(Boolean);
-        window.sendRegistrationPush?.("💊 Medicamento registrado", meds.join(" · ") || "Se registró un medicamento.").catch(error=>console.warn("Push automático:",error));
       } catch(error) { errorBox.textContent=error.message+" El formulario conserva tus datos."; errorBox.hidden=false; $("#cloud-status").textContent="Guardado sin confirmar · Puedes reintentar"; }
       finally { updateBusy(false); }
     }
@@ -1951,9 +1939,7 @@
       }catch(error){errorBox.textContent=error.message;errorBox.hidden=false;return;}
       const signature=JSON.stringify(fields);if(!pendingMeal||pendingMeal.signature!==signature)pendingMeal={signature,record:{id:createId(),...fields}};
       const record=pendingMeal.record;updateBusy(true);$("#cloud-status").textContent="Guardando comida en Supabase…";
-      try{await MeasurementRepository.add(record);state.records=[...state.records.filter(r=>r.id!==record.id),record];cacheCloudRecords(state.records);pendingMeal=null;$("#meal-form").reset();setDateNow("meal");renderAll();$("#cloud-status").textContent="✓ Guardado en Supabase";notify("✓ Comida guardada en Supabase");
-        window.sendRegistrationPush?.("🍽️ Comida registrada", `${record.mealType}: ${record.food}`).catch(error=>console.warn("Push automático:",error));
-      }
+      try{await MeasurementRepository.add(record);state.records=[...state.records.filter(r=>r.id!==record.id),record];cacheCloudRecords(state.records);pendingMeal=null;$("#meal-form").reset();setDateNow("meal");renderAll();$("#cloud-status").textContent="✓ Guardado en Supabase";notify("✓ Comida guardada en Supabase");}
       catch(error){errorBox.textContent=error.message+" El formulario conserva tus datos.";errorBox.hidden=false;$("#cloud-status").textContent="Guardado sin confirmar · Puedes reintentar";}
       finally{updateBusy(false);}
     }
@@ -2502,7 +2488,6 @@
         if(hba1cState.owner!==hash)hba1cState.records=[];hba1cState.owner=hash;
         hba1cState.records=[...hba1cState.records.filter(r=>r.id!==saved.id),saved];hba1cState.pending=null;cacheHba1c();
         hba1cState.status="HbA1c guardada en Supabase";resetHba1cForm();notify("✓ HbA1c guardada en Supabase");
-        if(!editing)window.sendRegistrationPush?.("🧪 HbA1c registrada", `${value}% · examen ${day}`).catch(error=>console.warn("Push automático:",error));
       }catch(error){if(generation!==hba1cState.generation)return;errorBox.textContent=error.message+" El formulario conserva tus datos.";errorBox.hidden=false;hba1cState.status="Guardado de HbA1c sin confirmar · Puedes reintentar";}
       finally{if(generation===hba1cState.generation){hba1cState.saving=false;renderHba1c();}}
     }
@@ -2558,107 +2543,30 @@
     }
   </script>
 
-  <script>
-  (() => {
-    const VAPID_PUBLIC_KEY = "BBiQhBO4vUJKdjdJ8_3ydmOEuvw1hzCOkah6_PslWBuX7po8klhwurIpmjrNq_FD2byuY52sn8kLai9h9gHRAmM";
-    const PUSH_URL = "https://ikbksrbvfvflgodmookv.supabase.co/functions/v1/web-push";
-    const status = document.querySelector("#push-status");
-    const enable = document.querySelector("#push-enable");
-    const test = document.querySelector("#push-test");
-    const disable = document.querySelector("#push-disable");
 
-    function base64UrlToUint8Array(value) {
-      const padding = "=".repeat((4 - value.length % 4) % 4);
-      const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
-      const raw = atob(base64);
-      return Uint8Array.from([...raw].map(ch => ch.charCodeAt(0)));
-    }
-    function supported() {
-      return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-    }
-    async function callPush(body) {
-      const identity = await getCloudIdentity();
-      const response = await fetch(PUSH_URL, {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-glucose-key":identity.token},
-        body:JSON.stringify(body)
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || "No se pudo completar la operación.");
-      return data;
-    }
-    window.sendRegistrationPush = async function(title, body) {
-      return callPush({action:"notify", title, body});
-    };
-
-    async function refreshPushUI() {
-      if (!supported()) {
-        status.textContent = "Este navegador no admite Web Push.";
-        enable.hidden = true; test.hidden = true; disable.hidden = true; return;
-      }
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      if (subscription) {
-        status.textContent = "✓ Notificaciones activadas en este dispositivo.";
-        enable.hidden = true; test.hidden = false; disable.hidden = false;
-      } else {
-        status.textContent = Notification.permission === "denied"
-          ? "Las notificaciones están bloqueadas en los ajustes del dispositivo."
-          : "Notificaciones desactivadas en este dispositivo.";
-        enable.hidden = Notification.permission === "denied";
-        test.hidden = true; disable.hidden = true;
-      }
-    }
-    enable?.addEventListener("click", async () => {
-      enable.disabled = true;
-      try {
-        if (!supported()) throw new Error("Este dispositivo no admite Web Push.");
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") throw new Error("No se concedió permiso para las notificaciones.");
-        const registration = await navigator.serviceWorker.ready;
-        let subscription = await registration.pushManager.getSubscription();
-        if (!subscription) {
-          subscription = await registration.pushManager.subscribe({
-            userVisibleOnly:true,
-            applicationServerKey:base64UrlToUint8Array(VAPID_PUBLIC_KEY)
-          });
-        }
-        await callPush({action:"subscribe",subscription:subscription.toJSON(),userAgent:navigator.userAgent});
-        status.textContent = "✓ Notificaciones activadas. Puedes enviar una prueba.";
-        await refreshPushUI();
-      } catch (error) {
-        status.textContent = error.message || "No se pudieron activar las notificaciones.";
-      } finally { enable.disabled = false; }
-    });
-    test?.addEventListener("click", async () => {
-      test.disabled = true;
-      try {
-        status.textContent = "Enviando prueba…";
-        const result = await callPush({action:"test"});
-        status.textContent = result.sent
-          ? `✓ Prueba enviada a ${result.sent} dispositivo${result.sent===1?"":"s"}.`
-          : "No se encontró ningún dispositivo suscrito.";
-      } catch (error) { status.textContent = error.message || "No se pudo enviar la prueba."; }
-      finally { test.disabled = false; }
-    });
-    disable?.addEventListener("click", async () => {
-      disable.disabled = true;
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          await callPush({action:"unsubscribe",endpoint:subscription.endpoint});
-          await subscription.unsubscribe();
-        }
-        status.textContent = "Notificaciones desactivadas en este dispositivo.";
-        await refreshPushUI();
-      } catch (error) { status.textContent = error.message || "No se pudieron desactivar."; }
-      finally { disable.disabled = false; }
-    });
-    window.addEventListener("load", () => refreshPushUI().catch(() => {
-      status.textContent = "No se pudo comprobar el estado de las notificaciones.";
-    }));
-  })();
-  </script>
+  <dialog id="notification-dialog" class="notification-dialog" aria-labelledby="notification-title">
+    <div class="card-head"><h2 id="notification-title">🔔 Notificaciones</h2><button type="button" class="now-button" data-close-notifications aria-label="Cerrar notificaciones">Cerrar</button></div>
+    <p class="small muted">Elige los avisos que quieres recibir en este dispositivo.</p>
+    <div class="push-actions"><button id="push-enable" type="button" class="primary">Activar notificaciones</button><button id="push-test" type="button" class="now-button" hidden>Enviar prueba</button><button id="push-disable" type="button" class="now-button" hidden>Desactivar en este dispositivo</button></div>
+    <p id="push-status" class="small push-status" role="status" aria-live="polite"></p>
+    <fieldset id="notification-settings" disabled><legend>Avisos de nuevos registros</legend><div class="notification-settings">
+<label class="notification-toggle" for="notify-meal"><span>🍽️ Comidas</span><input id="notify-meal" type="checkbox" role="switch"></label>
+<label class="notification-toggle" for="notify-event"><span>🚩 Eventos</span><input id="notify-event" type="checkbox" role="switch"></label>
+<label class="notification-toggle" for="notify-glucose"><span>🩸 Glucemias</span><input id="notify-glucose" type="checkbox" role="switch"></label>
+<label class="notification-toggle" for="notify-medication"><span>💊 Medicamentos</span><input id="notify-medication" type="checkbox" role="switch"></label>
+<label class="notification-toggle" for="notify-reminder"><span>⏰ Recordatorios programados</span><input id="notify-reminder" type="checkbox" role="switch"></label>
+</div><p class="small muted" style="margin-top:10px">Los avisos de registros corresponden a nuevos datos guardados por tu familia. Los recordatorios se configuran para este dispositivo.</p></fieldset>
+    <form id="reminder-form"><fieldset id="reminder-fields" disabled><legend>Programar recordatorio</legend>
+    <label for="reminder-kind">Tipo</label><select id="reminder-kind"><option value="medication">💊 Medicamento</option><option value="meal">🍽️ Comida</option><option value="event">🚩 Evento</option><option value="glucose">🩸 Glucemia</option></select>
+    <label for="reminder-title">¿Qué quieres recordar?</label><input id="reminder-title" maxlength="100" required placeholder="Ej.: Tomar metformina">
+    <div class="reminder-grid"><div><label for="reminder-date">Fecha de inicio</label><input id="reminder-date" type="date" required></div><div><label for="reminder-time">Hora de Chile</label><input id="reminder-time" type="time" required></div></div>
+    <div id="reminder-occurrence-wrap" hidden><label for="reminder-occurrence">Hora repetida por cambio de horario</label><select id="reminder-occurrence"></select></div>
+    <label for="reminder-repeat">Repetir</label><select id="reminder-repeat"><option value="once">Una sola vez</option><option value="daily">Todos los días</option></select>
+    <p class="small muted" style="margin-top:12px">Hora de Chile (America/Santiago). El aviso se envía cerca de la hora programada, incluso con la app cerrada. Su llegada depende de la conexión y los ajustes del dispositivo.</p>
+    <div class="push-actions"><button id="reminder-save" type="submit" class="primary">Guardar recordatorio</button><button id="reminder-cancel" type="button" class="now-button" hidden>Cancelar edición</button></div>
+    </fieldset></form>
+    <h3>Tus recordatorios</h3><p id="reminder-empty" class="small muted">No hay recordatorios programados en este dispositivo.</p><div id="reminder-list"></div>
+  </dialog>
+  <script src="./notifications.js"></script>
 </body>
 </html>

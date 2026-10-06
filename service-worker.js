@@ -1,11 +1,17 @@
-const CACHE_NAME = "control-glucemia-shell-v2";
+const CACHE_NAME = "control-glucemia-shell-v4-notification-settings";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./notifications.js",
+  "./notifications.css",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
-  "./apple-touch-icon.png"
+  "./apple-touch-icon.png",
+  "./icon-maskable-192.png",
+  "./icon-maskable-512.png",
+  "./favicon.ico",
+  "./favicon-32x32.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -30,10 +36,16 @@ self.addEventListener("fetch", (event) => {
 
   const staticNames = new Set([
     "index.html",
+    "notifications.js",
+    "notifications.css",
     "manifest.webmanifest",
     "icon-192.png",
     "icon-512.png",
-    "apple-touch-icon.png"
+    "apple-touch-icon.png",
+    "icon-maskable-192.png",
+    "icon-maskable-512.png",
+    "favicon.ico",
+    "favicon-32x32.png"
   ]);
   const fileName = url.pathname.split("/").pop();
 
@@ -76,6 +88,7 @@ self.addEventListener("push", (event) => {
   try { data = event.data ? event.data.json() : {}; } catch {}
   const title = data.title || "Control de Glucemia";
   const options = {
+    tag: data.tag || undefined,
     body: data.body || "Tienes una nueva notificación.",
     icon: "./icon-192.png",
     badge: "./icon-192.png",

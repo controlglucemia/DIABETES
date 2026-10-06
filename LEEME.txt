@@ -1,18 +1,27 @@
-ICONOS — CONTROL DE GLUCEMIA
+CONTROL DE GLUCEMIA — CAMPANA Y RECORDATORIOS
 
-1. Copia la carpeta icons, apple-touch-icon.png y los favicon a la carpeta pública junto a tu index.html.
-2. En tu manifest ACTUAL, reemplaza solamente el campo icons con el de manifest-icons.json. Conserva id, start_url, scope y el resto de tu configuración, para no crear otra identidad de app.
-3. Integra las etiquetas de head-iconos.html en el <head>. Sustituye los enlaces de iconos antiguos. Conserva un solo enlace rel=manifest apuntando a tu manifest actual.
-4. Las rutas del manifest se resuelven desde su ubicación. Estas rutas relativas funcionan si el manifest está junto a index.html, incluso bajo /DIABETES/. Ajusta las rutas si tu manifest está en otra carpeta.
-5. Si tu service worker almacena iconos, actualiza sus rutas y la versión de caché según tu implementación. Este paquete no sustituye el service worker.
-6. Vuelve a publicar. Algunos dispositivos retienen el icono instalado y pueden requerir quitar el acceso directo y volver a añadirlo. No borres los datos del sitio.
+INSTALACIÓN EN GITHUB
+Descomprime el ZIP. Sube todos sus archivos juntos a la carpeta donde está index.html, reemplazando los anteriores. Incluye notifications.js y notifications.css. No subas el ZIP sin descomprimir.
+Abre la página con conexión y actualízala para instalar el nuevo service worker.
 
-CONTENIDO
-- PWA: PNG 192, 256, 384, 512 y 1024, más tamaños auxiliares.
-- Android adaptable: maskable 192 y 512, opacos; gota verificada dentro del círculo seguro de radio 40%.
-- Apple: 120, 152, 167, 180, sin esquinas recortadas; el sistema aplica la forma.
-- Favicon ICO multirresolución y PNG 16, 32, 48.
-- manifest.example.webmanifest: ejemplo completo, NO reemplazo automático de tu manifest existente.
+USO
+En Inicio, pulsa la campana de arriba a la derecha.
+Activa las notificaciones en ese dispositivo. En iPhone, abre la app instalada desde la pantalla de inicio (iOS 16.4 o posterior).
+Elige los avisos con los interruptores: comidas, eventos, glucemias, medicamentos y recordatorios.
+Programa un recordatorio con descripción (por ejemplo, Tomar metformina), fecha, hora de Chile y repetición: una vez o todos los días.
+Puedes editarlo o eliminarlo. Los recordatorios y preferencias son por dispositivo.
+Desactivar las notificaciones de un dispositivo elimina sus recordatorios; apagar solo el interruptor de recordatorios conserva su configuración.
 
-El paquete adapta los iconos. No incluye una nueva versión de la aplicación ni modifica datos de salud.
-Referencia técnica: https://www.w3.org/TR/appmanifest/#icon-masks
+SERVIDOR
+Ya se configuró en tu proyecto Supabase: preferencias por suscripción, recordatorios y cola de envíos; función notifications-v2 y revisión automática cada minuto.
+No necesitas ejecutar SQL ni incluir claves privadas en GitHub.
+Los avisos de registros se generan al guardar nuevos registros, no al consultar el historial ni al editar un registro existente.
+Los avisos generales no incluyen valores de salud en la pantalla bloqueada. Los recordatorios muestran el texto que escribas.
+El horario es America/Santiago. Puede existir una demora de hasta un ciclo del programador, además de la entrega por el dispositivo. Requiere conexión, permiso de notificaciones y los ajustes del sistema pueden retrasarlo. Los avisos vencidos más de una hora se descartan.
+
+VERIFICACIÓN
+Se verificaron la interfaz en móvil/escritorio, el guardado real en Supabase, aislamiento familiar, edición/eliminación, planificación diaria y la ejecución del programador. La recepción física en tu iPhone debe comprobarse con Enviar prueba después de publicar.
+
+Base: la PWA de tu ZIP, conservando sus gráficos, registros y configuración de instalación.
+Referencias: https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/
+https://supabase.com/docs/guides/functions/schedule-functions
