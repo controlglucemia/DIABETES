@@ -313,6 +313,52 @@
   }
 #health-dialog{width:min(520px,calc(100vw - 24px));max-height:90dvh;overflow-y:auto;overflow-x:hidden;border:1px solid #dce5f2;border-radius:20px;padding:22px}#health-dialog .card-head{position:sticky;top:-22px;background:white;z-index:2;padding:12px 0}#sleep-register h2{margin-bottom:12px}#sleep-register form{margin-top:18px}#sleep-duration{font-weight:700;color:#66509a}
   </style>
+<style id="notification-styles-restored">
+/* Notificaciones: estilos autónomos y acotados, restauran la presentación original. */
+#notification-bell.notification-bell {
+  display:inline-flex;align-items:center;justify-content:center;flex:none;
+  width:44px;height:44px;margin-left:auto;border:1px solid #dce8fb;
+  border-radius:13px;background:#edf3ff;color:#2563eb;padding:9px;cursor:pointer;
+}
+#notification-bell.notification-bell .icon {width:22px;height:22px;stroke-width:1.8;}
+#notification-dialog.notification-dialog {
+  position:fixed;inset:0;margin:auto;
+  width:min(560px,calc(100vw - 24px));max-width:calc(100vw - 24px);
+  height:fit-content;max-height:min(90dvh,860px);overflow-x:hidden;overflow-y:auto;
+  padding:22px 24px 26px;border:1px solid #dce5f2;border-radius:20px;
+  background:#fff;color:#182940;box-shadow:0 24px 70px #142f5140;
+  overscroll-behavior:contain;touch-action:pan-y pinch-zoom;
+}
+#notification-dialog::backdrop {background:rgba(16,35,59,.60);backdrop-filter:blur(3px);}
+#notification-dialog .card-head {position:sticky;top:-22px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-22px -24px 16px;padding:18px 24px;background:#fff;border-bottom:1px solid #e5ebf2;}
+#notification-dialog .card-head h2 {font-size:1.16rem;}
+#notification-dialog .card-head .now-button {min-height:40px;}
+#notification-dialog .push-actions {display:flex;flex-wrap:wrap;gap:8px;margin:12px 0;}
+#notification-dialog .push-actions button {min-height:42px;max-width:100%;white-space:normal;}
+#notification-dialog #push-status {min-height:20px;margin:8px 0 14px;overflow-wrap:anywhere;}
+#notification-dialog fieldset {min-width:0;margin:15px 0 20px;padding:15px;border:1px solid #dce5f2;border-radius:15px;}
+#notification-dialog fieldset legend {padding:0 7px;color:#385677;font-size:.9rem;font-weight:700;}
+#notification-dialog fieldset:disabled {opacity:.70;}
+#notification-dialog .notification-settings {display:grid;grid-template-columns:1fr;gap:8px;}
+#notification-dialog .notification-toggle {display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;margin:0;padding:10px 12px;border:1px solid #e5ebf2;border-radius:12px;background:#fafbfd;font-weight:500;cursor:pointer;}
+#notification-dialog .notification-toggle span {flex:1;min-width:0;overflow-wrap:anywhere;}
+#notification-dialog .notification-toggle input[type="checkbox"] {width:20px;height:20px;min-height:20px;flex:none;margin:0;accent-color:#2563eb;cursor:pointer;}
+#notification-dialog label:not(.notification-toggle) {margin:12px 0 6px;}
+#notification-dialog .reminder-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+#notification-dialog .reminder-grid > div {min-width:0;}
+#notification-dialog :is(input,select,textarea) {min-width:0;max-width:100%;}
+#notification-dialog h3 {margin:16px 0 9px;}
+#notification-dialog .reminder-item {display:block;margin:9px 0;padding:13px;border:1px solid #dce5f2;border-radius:13px;background:#fafbfd;overflow-wrap:anywhere;}
+#notification-dialog .reminder-item button {margin:5px 6px 0 0;}
+#notification-dialog :is(p,span,strong,label) {overflow-wrap:anywhere;}
+@media(max-width:480px){
+  #notification-dialog.notification-dialog {padding:16px;max-height:94dvh;border-radius:16px;}
+  #notification-dialog .card-head {top:-16px;margin:-16px -16px 14px;padding:13px 16px;}
+  #notification-dialog fieldset {padding:11px;}
+  #notification-dialog .reminder-grid {grid-template-columns:1fr;}
+  #notification-dialog .push-actions > button {flex:1 1 160px;}
+}
+</style>
 </head>
 <body data-page="inicio">
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
@@ -1111,7 +1157,7 @@
       const visible=records.length>0||visibleEvents.length>0||(healthLayerEnabled(prefix?"calendar":"main","sleep")&&state.records.some(r=>sleepOverlaps(r,bounds)));
       q("chart-empty").hidden=visible;q("chart-content").hidden=!visible;q("chart-detail").replaceChildren();
       const svg=q("chart");svg.chartInteractionCleanup?.();observeChartSizes();svg.replaceChildren();if(!visible)return;
-      const W=Math.max(180,svg.clientWidth||600),H=300,left=42,right=showFastingRange&&!prefix?82:14,top=30,bottom=90,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
+      const W=Math.max(180,svg.clientWidth||600),H=390,left=42,right=showFastingRange&&!prefix?82:14,top=120,bottom=90,plotW=W-left-right,plotH=H-top-bottom,stats=calculateStats(records),yMax=Math.max(200,Math.ceil((stats.max||0)*1.12/50)*50),y=value=>top+plotH-(value/yMax)*plotH;
       svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.setAttribute("aria-label","Gráfico de glucemia y tomas registradas. Selecciona un punto o una línea de medicamento para ver sus detalles.");
       // Una sola escala proporcional para los datos y su inversa interactiva.
       const anchorTimes=records.map(record=>Date.parse(record.createdAt)).sort((a,b)=>a-b);
@@ -2131,7 +2177,7 @@
         $("#chart-period-label").textContent="Promedio por franjas de 3 horas · Hora de Chile";
         $("#chart-events-note").textContent="Se muestra el promedio junto con las filas de comidas y medicamentos activadas. Toca un punto o un evento para consultar sus datos.";
       }
-      const W=Math.max(180,svg.clientWidth||600),left=42,right=14,top=30,plotW=W-left-right,plotH=200,axisY=top+plotH;
+      const W=Math.max(180,svg.clientWidth||600),left=42,right=14,top=120,plotW=W-left-right,plotH=200,axisY=top+plotH;
       groups.forEach(g=>{g.medKeys=MEDICATIONS.filter(m=>g.events.some(e=>e.type==="medication"&&e.medication.key===m.key)).map(m=>m.key);g.showMeals=g.events.some(e=>e.type==="meal");g.laneHeight=g.showMeals||g.medKeys.length?34+(g.showMeals?25:0)+g.medKeys.length*25:0;});const hasLanes=groups.some(g=>g.laneHeight),H=axisY+52+groups.reduce((n,g)=>n+g.laneHeight,0);
       const max=groups.reduce((m,g)=>Math.max(m,calculateStats(g.records).max||0),200),yMax=Math.ceil(max*1.12/50)*50;
       const minuteX=minute=>left+minute/1440*plotW,x=timestamp=>minuteX(comparisonMinutes(timestamp)),y=value=>top+plotH-value/yMax*plotH;
@@ -2285,7 +2331,7 @@
       svg.touchInteractionCleanup?.();svg.replaceChildren();tip.hidden=true;detail.replaceChildren();
       const available=records.filter(r=>VITAL_SERIES.some(series=>validVital(r,series)));
       const layerEvents=timelineEvents(state.records).filter(e=>["meal","medication","sleep","event"].includes(e.type)&&(e.type==="sleep"?sleepOverlaps(e.record,bounds):e.timestamp>=bounds.start&&e.timestamp<=bounds.end));const hasContent=available.length||layerEvents.length;$("#vitals-empty").hidden=!!hasContent;$("#vitals-host").hidden=!hasContent;$("#vitals-view-note").hidden=true;if(!hasContent)return;
-      const W=Math.max(200,svg.clientWidth),H=330,left=38,right=W<600?104:182,top=16,plotH=246,plotW=W-left-right;
+      const W=Math.max(200,svg.clientWidth),H=434,left=38,right=W<600?104:182,top=120,plotH=246,plotW=W-left-right;
       svg.style.height=H+"px";svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
       let viewStart=bounds.start,viewEnd=bounds.end;
       if(vitalsPeriod===30){
@@ -2578,57 +2624,70 @@
     function eventOnDay(event,day){return event.type==="sleep"?sleepOverlaps(event.record,{start:startOfChileDay(day),end:startOfChileDay(shiftDay(day,1))}):localDateKey(event.timestamp??event.record.createdAt)===day;}
     function medicationShortLabel(keys){return MEDICATIONS.filter(m=>keys.has(m.key)).map(m=>m.short).join("+");}
 
-    const VISIBILITY_KEY="control-glucemia.visibility.v2";
+    // Cada apertura de la página comienza con todas las capas opcionales desactivadas.
+    // Los botones pueden activarse manualmente durante la sesión, pero no se restauran al recargar.
     const healthLayerState={main:{},calendar:{},clock:{},comparison:{},vitals:{}};
-    try{const saved=JSON.parse(localStorage.getItem(VISIBILITY_KEY)||"{}");for(const graph of Object.keys(healthLayerState))if(saved[graph]&&typeof saved[graph]==="object")for(const [key,value] of Object.entries(saved[graph]))if(typeof value==="boolean")healthLayerState[graph][key]=value;}catch{}
+
     const HEALTH_LAYERS=[{key:"sleep",name:"🌙 Sueño"},{key:"meal",name:"🍽️ Comidas"},...MEDICATIONS.map(m=>({key:m.key,name:"💊 "+(m.key==="anulit"?"ANULIT":m.name)})),{key:"event",name:"🚩 Eventos"}];
     let healthGraphContext=null;
-    function healthLayerEnabled(graph,key){return healthLayerState[graph]?.[key]!==false;}
+    function healthLayerEnabled(graph,key){return healthLayerState[graph]?.[key]===true;}
     function healthEventVisible(graph,event){return healthLayerEnabled(graph,event.type==="medication"?event.medication.key:event.type);}
     function renderVisibilityButtons(graph,detail,rerender){
       let group=document.getElementById("visibility-"+graph);
       if(!group){group=element("div","chart-options visibility-buttons");group.id="visibility-"+graph;group.setAttribute("role","group");group.setAttribute("aria-label","Mostrar registros en este gráfico");(detail.closest("#chart-content,#calendar-chart-content")||detail).after(group);
-        for(const layer of HEALTH_LAYERS){const button=element("button","now-button");button.type="button";button.dataset.layer=layer.key;button.setAttribute("role","switch");button.append(element("span","visibility-label",layer.name),element("strong"));button.addEventListener("click",()=>{healthLayerState[graph][layer.key]=!healthLayerEnabled(graph,layer.key);try{localStorage.setItem(VISIBILITY_KEY,JSON.stringify(healthLayerState));}catch{}rerender();});group.append(button);}
+        for(const layer of HEALTH_LAYERS){const button=element("button","now-button");button.type="button";button.dataset.layer=layer.key;button.setAttribute("role","switch");button.append(element("span","visibility-label",layer.name),element("strong"));button.addEventListener("click",()=>{healthLayerState[graph][layer.key]=!healthLayerEnabled(graph,layer.key);rerender();});group.append(button);}
       }
       for(const button of group.children){const on=healthLayerEnabled(graph,button.dataset.layer);button.setAttribute("aria-checked",String(on));button.querySelector("strong").textContent=on?"ON":"OFF";}
       return group;
     }
     function withHealthGraph(graph,fn){const previous=healthGraphContext;healthGraphContext=graph;try{return fn();}finally{healthGraphContext=previous;}}
 
-    // Compact markers stay within the existing plot. Dense positions share a
-    // selectable stack; its detail selector exposes every original record/time.
+    // Cada evento recibe su propio emoji, sin contadores ni agrupaciones.
+    // Se distribuyen en filas superiores para evitar solapamientos.
     function drawTemporalMarkers({graph,svg,detail,scale,left,top,plotW,plotH,entries}){
       const bounds={start:scale.start,end:scale.end};
       entries??=timelineEvents(state.records).filter(e=>["sleep","meal","medication","event"].includes(e.type)&&(e.type==="sleep"?sleepOverlaps(e.record,bounds):e.timestamp!==null&&e.timestamp>=bounds.start&&e.timestamp<=bounds.end));
-      const events=entries.filter(e=>healthEventVisible(graph,e)).map(e=>({...e,markerX:scale.timestampToX(e.plotTimestamp??Math.max(bounds.start,e.timestamp)),continued:e.continued??e.timestamp<bounds.start}));
-      const obstacles=[...svg.querySelectorAll(".dot,.vitals-point")].map(n=>({x:Number(n.getAttribute("cx")),y:Number(n.getAttribute("cy"))})).filter(p=>p.y>=top&&p.y<=top+plotH);
-      const rows=Array.from({length:Math.max(1,Math.min(4,Math.floor((plotH-24)/30)))},()=>[]),stacks=[];
-      for(const e of events.sort((a,b)=>(a.type==="sleep"?0:1)-(b.type==="sleep"?0:1)||a.markerX-b.markerX)){
-        const px=Math.max(left+15,Math.min(left+plotW-15,e.markerX));
-        let row=rows.findIndex((items,i)=>items.every(s=>Math.abs(s.x-px)>=40)&&obstacles.every(p=>Math.abs(p.x-px)>23||Math.abs(p.y-(top+16+i*30))>22));if(row<0&&!stacks.length)row=0;
-        if(row>=0){const stack={x:px,row,events:[e]};rows[row].push(stack);stacks.push(stack);}
-        else {const stack=stacks.reduce((best,s)=>Math.abs(s.x-px)<Math.abs(best.x-px)?s:best);stack.events.push(e);}
-      }
-      for(const stack of stacks){
-        let index=0;const e=stack.events[0],py=top+16+stack.row*30;
-        const key=e.type==="medication"?e.medication.key:e.type,color=e.type==="sleep"?"#7660a6":e.type==="meal"?"#a06a23":e.type==="event"?"#bd495c":e.medication.color;
+      const events=entries.filter(e=>healthEventVisible(graph,e)).map(e=>({...e,markerX:scale.timestampToX(e.plotTimestamp??Math.max(bounds.start,e.timestamp)),continued:e.continued??e.timestamp<bounds.start})).sort((a,b)=>a.markerX-b.markerX);
+      const rows=6, rowGap=19, minGap=31;
+      const occupied=Array(rows).fill(-Infinity);
+      const colors={sleep:"#7660a6",meal:"#c27b18",event:"#d04d62"};
+      for(const e of events){
+        const key=e.type==="medication"?e.medication.key:e.type;
+        const color=e.type==="medication"?e.medication.color:colors[e.type];
         const glyph=e.type==="sleep"?"🌙":e.type==="meal"?getMealEmoji(e.record.mealType):e.type==="event"?"🚩":"💊"+e.medication.short;
-        const node=svgElement("g",{class:"temporal-marker hit",tabindex:0,role:"button","data-temporal-marker":"true","data-layer":key,"data-layers":[...new Set(stack.events.map(e=>e.type==="medication"?e.medication.key:e.type))].join(" "),"data-record-id":e.record.id,"data-timestamp":e.timestamp,"data-continued":String(e.continued),"aria-controls":detail.id,"aria-label":stack.events.map(temporalTitle).join("; ")});
-        const line=svgElement("line",{x1:e.markerX,x2:e.markerX,y1:top,y2:top+plotH,stroke:color,"stroke-width":1.4,"stroke-dasharray":"4 4",opacity:.65,"pointer-events":"none"});
-        node.append(line,svgElement("line",{x1:e.markerX,x2:stack.x,y1:py,y2:py,stroke:color,"pointer-events":"none"}),svgElement("rect",{x:stack.x-18,y:py-16,width:36,height:32,fill:"transparent",stroke:"none","aria-hidden":"true"}),svgElement("text",{x:stack.x,y:py+5,"text-anchor":"middle","font-size":e.type==="medication"?12:16,"pointer-events":"none"},glyph));
-        if(stack.events.length>1)node.append(svgElement("text",{x:stack.x+14,y:py-8,"text-anchor":"end","font-size":10,fill:"#172b46","font-weight":700,"pointer-events":"none"},String(stack.events.length)));
-        else if(e.continued)node.append(svgElement("text",{x:stack.x-12,y:py-8,"font-size":11,fill:color,"pointer-events":"none"},"←"));
-        node.append(svgElement("title",{},stack.events.map(item=>`${temporalTitle(item)} · ${dateFormat.format(item.timestamp)} ${localTime(item.timestamp)}`).join("\n")));
-        // Each hidden symbol keeps its own exact time and dotted line.
-        for(const hidden of stack.events.slice(1))node.prepend(svgElement("line",{x1:hidden.markerX,x2:hidden.markerX,y1:top,y2:top+plotH,stroke:color,"stroke-width":1.4,"stroke-dasharray":"4 4",opacity:.65,"pointer-events":"none"}));
-        svg.registerChartEvents?.(stack.events.map(event=>({node,event,x:event.markerX,y:py})));
+        const x=Math.max(left+12,Math.min(left+plotW-12,e.markerX));
+        // Elegir la fila libre más cercana al gráfico; si todas están llenas,
+        // desplazamos el emoji horizontalmente dentro de su fila, no lo ocultamos.
+        let row=occupied.findIndex(last=>x-last>=minGap);
+        let labelX=x;
+        if(row<0){
+          row=occupied.indexOf(Math.min(...occupied));
+          labelX=Math.max(left+12,Math.min(left+plotW-12,occupied[row]+minGap));
+          if(labelX-occupied[row]<minGap){
+            row=occupied.indexOf(Math.max(...occupied));
+            labelX=Math.max(left+12,occupied[row]-minGap);
+          }
+        }
+        occupied[row]=labelX;
+        const py=Math.max(12,top-13-row*rowGap);
+        const node=svgElement("g",{class:"temporal-marker hit",tabindex:0,role:"button","data-temporal-marker":"true","data-layer":key,"data-layers":key,"data-record-id":e.record.id,"data-timestamp":e.timestamp,"data-continued":String(e.continued),"aria-controls":detail.id,"aria-label":temporalTitle(e)});
+        const line=svgElement("line",{x1:e.markerX,x2:e.markerX,y1:top,y2:top+plotH,stroke:color,"stroke-width":1.5,"stroke-dasharray":"4 4",opacity:.75,"pointer-events":"none"});
+        node.append(line,svgElement("rect",{x:labelX-15,y:py-14,width:30,height:26,fill:"transparent",stroke:"none","aria-hidden":"true"}),svgElement("text",{x:labelX,y:py+5,"text-anchor":"middle","font-size":e.type==="medication"?13:17,"pointer-events":"none"},glyph));
+        if(e.continued)node.append(svgElement("text",{x:labelX-13,y:py-7,"font-size":10,fill:color,"pointer-events":"none"},"←"));
+        node.append(svgElement("title",{},`${temporalTitle(e)} · ${dateFormat.format(e.timestamp)} ${localTime(e.timestamp)}`));
+        svg.registerChartEvents?.([{node,event:e,x:e.markerX,y:py}]);
         const show=()=>{
-          const selected=stack.events[index];line.setAttribute("x1",selected.markerX);line.setAttribute("x2",selected.markerX);
-          detail.replaceChildren();if(selected.continued)detail.append(element("p","small","← Este período de sueño comenzó antes de la vista mostrada. Se conserva su hora real de inicio."));
-          if(selected.displayDay)detail.append(element("p","small",`Día comparado: ${comparisonDateLabel(selected.displayDay)}`));appendChartEvent(detail,selected,true);
-          if(stack.events.length>1){const label=element("label","small","Registros cercanos: "),select=element("select");select.setAttribute("aria-label","Elegir el registro del marcador");stack.events.forEach((item,i)=>{const option=element("option","",`${dateFormat.format(item.timestamp)} ${localTime(item.timestamp)} · ${temporalTitle(item)}`);option.value=i;select.append(option);});select.value=String(index);select.addEventListener("change",()=>{index=Number(select.value);show();});label.append(select);detail.append(label);}
+          detail.replaceChildren();
+          if(e.continued)detail.append(element("p","small","← Este período de sueño comenzó antes de la vista mostrada. Se conserva su hora real de inicio."));
+          if(e.displayDay)detail.append(element("p","small",`Día comparado: ${comparisonDateLabel(e.displayDay)}`));
+          appendChartEvent(detail,e,true);
         };
-        node.addEventListener("pointerdown",ev=>{if(ev.pointerType==="mouse")show();});node.addEventListener("click",ev=>{ev.stopPropagation();svg.selectChartPosition?.(e.markerX,py);});node.addEventListener("pointerenter",ev=>{if(ev.pointerType==="mouse")show();});node.addEventListener("focus",show);node.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();show();}});svg.append(node);
+        node.addEventListener("pointerdown",ev=>{if(ev.pointerType==="mouse")show();});
+        node.addEventListener("click",ev=>{ev.stopPropagation();show();svg.selectChartPosition?.(e.markerX,py);});
+        node.addEventListener("pointerenter",ev=>{if(ev.pointerType==="mouse")show();});
+        node.addEventListener("focus",show);
+        node.addEventListener("keydown",ev=>{if(ev.key==="Enter"||ev.key===" "){ev.preventDefault();show();}});
+        svg.append(node);
       }
     }
     const healthTimeChartBase=renderTimeChart;
