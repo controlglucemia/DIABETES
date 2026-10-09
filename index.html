@@ -1064,6 +1064,7 @@
       const tooltip=element("div","chart-tooltip");tooltip.hidden=true;tooltip.setAttribute("aria-hidden","true");host.append(tooltip);
       const events=nodes.map((item,index)=>({...item,index,x:item.x??scale.timestampToX(item.event.plotTimestamp??item.event.timestamp)})).sort((a,b)=>a.x-b.x);
       // Markers are drawn after curves; register every event, including omitted glyphs.
+      // Tooltip and selected detail display only the exact closest event, never neighboring events.
       svg.registerChartEvents=items=>{for(const item of items)events.push({...item,index:events.length,x:item.x??scale.timestampToX(item.event.plotTimestamp??item.event.timestamp)});events.sort((a,b)=>a.x-b.x);};
       let frame=0,pending=null,activePointer=null,down=null,dragged=false,lastKey=null;
       const crossesDays=localDateKey(scale.start)!==localDateKey(scale.end);
@@ -1076,7 +1077,7 @@
           const dx=Math.abs(item.x-position),delta=Math.hypot(dx,cy-pointerY);
           if(dx<=tolerance&&delta<distance){nearest=item;distance=delta;}
         }
-        return nearest?{x:nearest.x,timestamp:nearest.event.timestamp,items:events.filter(item=>Math.abs(item.x-nearest.x)<=tolerance)}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
+        return nearest?{x:nearest.x,timestamp:nearest.event.timestamp,items:[nearest]}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
       };
       const highlight=(items,name)=>{const selected=new Set(items.map(item=>item.node));for(const {node} of events)node.classList.toggle(name,selected.has(node));};
       const hide=()=>{if(frame)cancelAnimationFrame(frame);frame=0;pending=null;line.setAttribute("visibility","hidden");tooltip.hidden=true;highlight([],"is-preview");};
@@ -1092,7 +1093,7 @@
         tooltip.hidden=false;
         const bounds=svg.getBoundingClientRect(),hostBounds=host.getBoundingClientRect();
         tooltip.style.maxWidth=Math.max(1,bounds.width-8)+"px";tooltip.style.maxHeight=Math.max(1,bounds.height-8)+"px";
-        // Fit long groups inside the chart. Their full details remain available by tap/click.
+        // Fit the single selected event inside the chart. Full details remain available by tap/click.
         const oldHint=tooltip.querySelector(".chart-tooltip-hint");oldHint?.remove();
         if(tooltip.scrollHeight>bounds.height-8){const hint=element("p","chart-tooltip-hint","Toca para ver todos los detalles debajo del gráfico.");tooltip.prepend(hint);}
         const screen=new DOMPoint(group.x,pointerY).matrixTransform(svg.getScreenCTM());
