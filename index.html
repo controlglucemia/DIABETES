@@ -529,6 +529,52 @@ button.now-button[role="switch"]:focus-visible {
   outline-offset: 2px;
 }
 </style>
+
+<style id="glucose-ai-chat-styles">
+/* Asistente: aislado de las tarjetas, navegación y formularios existentes. */
+#assistant-launcher{position:fixed;right:18px;bottom:22px;z-index:50;min-height:56px;display:flex;align-items:center;gap:9px;border:0;border-radius:30px;padding:0 19px;background:#2563eb;color:#fff;font-weight:750;box-shadow:0 8px 28px #174ca64d}
+#assistant-launcher svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#assistant-chat[hidden]{display:none!important}
+#assistant-chat{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#14233caa;padding:16px;overscroll-behavior:contain}
+#assistant-chat .assistant-window{display:flex;flex-direction:column;width:min(760px,100%);height:min(800px,calc(100dvh - 32px));min-height:0;background:#fff;border-radius:22px;box-shadow:0 24px 80px #0d234c40;overflow:hidden}
+#assistant-chat .assistant-header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px;background:#f8faff;border-bottom:1px solid #e5ebf2}
+#assistant-chat .assistant-header strong{display:block;font-size:1.12rem}#assistant-chat .assistant-header small{color:#62738a;font-size:.75rem}
+#assistant-close{border:0;border-radius:10px;background:#e8eef7;width:42px;height:42px;min-width:42px;padding:0;font-size:24px;color:#36516f}
+#assistant-messages{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:18px;display:flex;flex-direction:column;gap:13px;background:#fff}
+.assistant-msg{max-width:88%;padding:12px 14px;border-radius:15px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.94rem;line-height:1.53}
+.assistant-msg.bot{align-self:flex-start;background:#eef4fe;color:#203752;border-bottom-left-radius:5px}
+.assistant-msg.user{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:5px}
+.assistant-msg.error{background:#fff1f3;color:#9a3447}
+#assistant-chat .assistant-foot{flex:none;border-top:1px solid #e5ebf2;background:#fafcfe;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+#assistant-chat .assistant-consent{display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:#4c5f79;line-height:1.4;font-weight:500;margin:0 0 10px}
+#assistant-chat .assistant-consent input{width:19px;height:19px;min-width:19px;min-height:19px;margin:1px 0 0;padding:0;accent-color:#2563eb}
+#assistant-chat .assistant-compose{display:flex;gap:9px;align-items:flex-end}
+#assistant-question{min-height:48px;max-height:120px;flex:1;resize:vertical;background:#fff;font-size:16px;padding:11px 12px}
+#assistant-send{min-height:48px;flex:none;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:700;padding:0 17px}
+#assistant-status{min-height:18px;font-size:.75rem;color:#62738a;margin-top:5px}
+body.assistant-chat-open{overflow:hidden}
+@media(max-width:760px){#assistant-launcher{bottom:calc(88px + env(safe-area-inset-bottom));right:13px;min-height:52px;padding:0 15px}#assistant-chat{padding:0}#assistant-chat .assistant-window{height:100dvh;width:100%;border-radius:0}#assistant-chat .assistant-header{padding:12px 15px}#assistant-messages{padding:14px}#assistant-chat .assistant-foot{padding:10px 12px calc(10px + env(safe-area-inset-bottom))}}
+
+/* Respuestas del asistente: Markdown legible, sin interpretar HTML recibido. */
+#assistant-chat .assistant-msg.bot:not(.error){white-space:normal;line-height:1.65;padding:16px 18px;max-width:min(92%,690px);background:#f0f5ff;border:1px solid #e0eafc;box-shadow:0 2px 8px #19375a09}
+#assistant-chat .assistant-msg.bot:not(.error)>:first-child{margin-top:0}
+#assistant-chat .assistant-msg.bot:not(.error)>:last-child{margin-bottom:0}
+#assistant-chat .assistant-msg.bot p{margin:0 0 11px}
+#assistant-chat .assistant-msg.bot h3,#assistant-chat .assistant-msg.bot h4{font-size:1rem;line-height:1.35;letter-spacing:-.01em;margin:17px 0 8px;color:#163c73}
+#assistant-chat .assistant-msg.bot strong{font-weight:750;color:#173a6d}
+#assistant-chat .assistant-msg.bot em{font-style:italic}
+#assistant-chat .assistant-msg.bot ul,#assistant-chat .assistant-msg.bot ol{padding-left:24px;margin:5px 0 13px}
+#assistant-chat .assistant-msg.bot li{padding-left:2px;margin:5px 0}
+#assistant-chat .assistant-msg.bot li::marker{color:#397bd7;font-weight:650}
+#assistant-chat .assistant-msg.bot blockquote{margin:11px 0;padding:9px 12px;border-left:3px solid #8aace5;background:#e6eefc;border-radius:0 8px 8px 0}
+#assistant-chat .assistant-msg.bot code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.85em;background:#e2eafa;border-radius:5px;padding:2px 5px;overflow-wrap:anywhere}
+#assistant-chat .assistant-msg.bot pre{background:#172b46;color:#f7fbff;padding:12px;border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 12px;overflow-x:auto}
+#assistant-chat .assistant-msg.bot pre code{background:transparent;color:inherit;padding:0}
+#assistant-chat .assistant-msg.bot hr{border:0;border-top:1px solid #cfdbef;margin:14px 0}
+#assistant-chat .assistant-msg.bot a{color:#1459bd;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+#assistant-chat .assistant-msg.error{white-space:pre-wrap}
+@media(max-width:760px){#assistant-chat .assistant-msg.bot:not(.error){max-width:96%;padding:13px 14px}}
+</style>
 </head>
 <body data-page="inicio">
   <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
@@ -3257,5 +3303,185 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
   max-width:100% !important;
 }
 </style>
+
+<!-- Asistente añadido sin modificar los módulos anteriores -->
+<button id="assistant-launcher" type="button" aria-haspopup="dialog" aria-controls="assistant-chat" aria-expanded="false"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 13.9 9.1 20 11l-6.1 1.9L12 19l-1.9-6.1L4 11l6.1-1.9L12 3ZM19 17l.7 1.3L21 19l-1.3.7L19 21l-.7-1.3L17 19l1.3-.7L19 17Z"/></svg><span>Asistente IA</span></button>
+<section id="assistant-chat" role="dialog" aria-modal="true" aria-label="Asistente IA de glucemia" hidden>
+  <div class="assistant-window">
+    <div class="assistant-header"><div><strong>✦ Asistente IA</strong><small>Consulta todo tu historial, medicamentos y estadísticas</small></div><button id="assistant-close" type="button" aria-label="Cerrar chat">×</button></div>
+    <div id="assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="assistant-msg bot">¡Hola! Puedo consultar las glucemias, fechas, horarios, comidas, medicamentos, presión, pulso, sueño, HbA1c y notas que tengas registradas. Para consultar tu historial, activa el permiso inferior. No modifico los datos.</div></div>
+    <form id="assistant-form" class="assistant-foot">
+      <label class="assistant-consent" for="assistant-share"><input id="assistant-share" type="checkbox"><span>Autorizo enviar a Google los datos necesarios de mi historial de salud, incluidas fechas, mediciones, medicamentos, comidas y notas registradas, para responder mis preguntas. Google puede usar el contenido de la API gratuita para mejorar sus servicios. No se envían identificadores de registros ni claves.</span></label>
+      <div class="assistant-compose"><textarea id="assistant-question" maxlength="900" rows="1" placeholder="Ej.: ¿En qué horario hay más lecturas altas?" aria-label="Escribe tu pregunta" required></textarea><button id="assistant-send" type="submit">Enviar</button></div>
+      <p id="assistant-status" role="status" aria-live="polite">Solo lectura · El asistente no modifica registros ni medicamentos.</p>
+    </form>
+  </div>
+</section>
+
+<script id="glucose-ai-chat-script">
+(()=>{
+  "use strict";
+  const byId=id=>document.getElementById(id);
+  const dialog=byId("assistant-chat"),launcher=byId("assistant-launcher"),close=byId("assistant-close"),form=byId("assistant-form"),question=byId("assistant-question"),send=byId("assistant-send"),messages=byId("assistant-messages"),status=byId("assistant-status"),share=byId("assistant-share");
+  const ENDPOINT="https://ikbksrbvfvflgodmookv.supabase.co/functions/v1/glucose-ai-chat";
+  let pending=false;let controller=null;const conversation=[];
+  // Renderizado seguro de Markdown: nunca se asigna innerHTML ni se ejecuta HTML de Gemini.
+  function renderAssistantMarkdown(target,source){
+    target.replaceChildren();
+    const lines=String(source).replace(/\r\n?/g,"\n").split("\n");
+    const addInline=(parent,input)=>{
+      const re=/\[([^\]\n]{1,160})\]\((https?:\/\/[^\s)]+)\)|\*\*([^*\n]+)\*\*|__([^_\n]+)__|`([^`\n]+)`|\*([^*\n]+)\*|(?<!\w)_([^_\n]+)_(?!\w)/g;
+      let start=0,match;
+      while((match=re.exec(input))!==null){
+        if(match.index>start)parent.append(document.createTextNode(input.slice(start,match.index)));
+        let node;
+        if(match[1]!==undefined){node=document.createElement("a");node.textContent=match[1];node.href=match[2];node.target="_blank";node.rel="noopener noreferrer";}
+        else if(match[3]!==undefined||match[4]!==undefined){node=document.createElement("strong");node.textContent=match[3]??match[4];}
+        else if(match[5]!==undefined){node=document.createElement("code");node.textContent=match[5];}
+        else{node=document.createElement("em");node.textContent=match[6]??match[7];}
+        parent.append(node);start=re.lastIndex;
+      }
+      if(start<input.length)parent.append(document.createTextNode(input.slice(start)));
+    };
+    let index=0,blocks=0;
+    while(index<lines.length&&blocks<300){
+      const line=lines[index];
+      if(!line.trim()){index++;continue;}
+      if(/^\s*```/.test(line)){
+        const lang=line.replace(/^\s*```/,"").trim();index++;const chunks=[];
+        while(index<lines.length&&!/^\s*```/.test(lines[index]))chunks.push(lines[index++]);
+        if(index<lines.length)index++;
+        const pre=document.createElement("pre"),code=document.createElement("code");code.textContent=chunks.join("\n");if(lang)code.setAttribute("data-language",lang.slice(0,30));pre.append(code);target.append(pre);blocks++;continue;
+      }
+      if(/^\s*(?:---+|___+|\*\*\*+)\s*$/.test(line)){target.append(document.createElement("hr"));index++;blocks++;continue;}
+      const heading=line.match(/^\s*#{1,4}\s+(.+)$/);
+      if(heading){const h=document.createElement("h3");addInline(h,heading[1]);target.append(h);index++;blocks++;continue;}
+      const listMatch=line.match(/^\s{0,3}([-*+]\s+|\d+[.)]\s+)(.*)$/);
+      if(listMatch){
+        const ordered=/^\d/.test(listMatch[1]);const list=document.createElement(ordered?"ol":"ul");
+        while(index<lines.length){const m=lines[index].match(/^\s{0,3}([-*+]\s+|\d+[.)]\s+)(.*)$/);if(!m||/^\d/.test(m[1])!==ordered)break;
+          const li=document.createElement("li");addInline(li,m[2]);list.append(li);index++;
+        }
+        target.append(list);blocks++;continue;
+      }
+      if(/^\s*>\s?/.test(line)){
+        const quote=document.createElement("blockquote");const linesQuote=[];
+        while(index<lines.length&&/^\s*>\s?/.test(lines[index]))linesQuote.push(lines[index++].replace(/^\s*>\s?/,""));
+        addInline(quote,linesQuote.join(" "));target.append(quote);blocks++;continue;
+      }
+      const paragraph=[];
+      while(index<lines.length&&lines[index].trim()&&!/^\s*```/.test(lines[index])&&!/^\s*#{1,4}\s+/.test(lines[index])&&!/^\s{0,3}(?:[-*+]\s+|\d+[.)]\s+)/.test(lines[index])&&!/^\s*>\s?/.test(lines[index]))paragraph.push(lines[index++]);
+      if(!paragraph.length){index++;continue;}
+      const p=document.createElement("p");paragraph.forEach((part,i)=>{if(i)p.append(document.createElement("br"));addInline(p,part);});target.append(p);blocks++;
+    }
+    if(index<lines.length){const p=document.createElement("p");p.textContent="… Respuesta truncada por longitud.";target.append(p);}
+  }
+  function addMessage(role,text,klass=""){
+    const node=document.createElement("div");node.className=`assistant-msg ${role}${klass?" "+klass:""}`;
+    if(role==="bot"&&!klass)renderAssistantMarkdown(node,text);else node.textContent=text;
+    messages.append(node);messages.scrollTop=messages.scrollHeight;return node;
+  }
+  function openChat(){dialog.hidden=false;launcher.setAttribute("aria-expanded","true");document.body.classList.add("assistant-chat-open");question.focus();}
+  function closeChat(){dialog.hidden=true;launcher.setAttribute("aria-expanded","false");document.body.classList.remove("assistant-chat-open");launcher.focus();}
+  launcher.addEventListener("click",openChat);close.addEventListener("click",closeChat);
+  dialog.addEventListener("click",e=>{if(e.target===dialog)closeChat();});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!dialog.hidden){e.preventDefault();closeChat();}});
+  question.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(form.requestSubmit)form.requestSubmit();else send.click();}});
+  function summaryLast30Days(){
+    // Solo números agregados: nunca se envían IDs, nombres, notas, fechas precisas, comidas ni fármacos.
+    const all=typeof state!=="undefined"&&Array.isArray(state.records)?state.records:[];
+    const now=Date.now(),since=now-30*86400000;
+    const slots=Array.from({length:8},(_,i)=>({interval:`${String(i*3).padStart(2,"0")}:00–${String((i+1)*3).padStart(2,"0")}:00`,values:[],days:new Set(),lowDays:new Set(),highDays:new Set()}));
+    let count=0,sum=0,min=Infinity,max=-Infinity,low=0,high=0;const days=new Set();
+    for(const r of all){
+      if(!r||!Number.isInteger(r.glucose)||r.glucose<1||r.glucose>999||r.type==="meal")continue;
+      const t=Date.parse(r.createdAt);if(!Number.isFinite(t)||t<since||t>now)continue;
+      const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Santiago",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"}).formatToParts(new Date(t));
+      const p=Object.fromEntries(parts.filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+      const hour=Number(p.hour);if(hour<0||hour>23)continue;
+      const day=`${p.year}-${p.month}-${p.day}`,slot=slots[Math.floor(hour/3)];
+      const v=r.glucose;count++;sum+=v;min=Math.min(min,v);max=Math.max(max,v);days.add(day);slot.values.push(v);slot.days.add(day);
+      if(v<70){low++;slot.lowDays.add(day);}if(v>180){high++;slot.highDays.add(day);}
+    }
+    return {periodo:"últimos 30 días",zonaHoraria:"America/Santiago",unidad:"mg/dL",umbralesDescriptivos:{baja:"<70",alta:">180"},totalMediciones:count,diasConMediciones:days.size,promedio:count?Math.round(sum/count*10)/10:null,minimo:count?min:null,maximo:count?max:null,lecturasBajas:low,lecturasAltas:high,franjas:slots.map(s=>({horario:s.interval,mediciones:s.values.length,dias:s.days.size,promedio:s.values.length?Math.round(s.values.reduce((a,b)=>a+b,0)/s.values.length*10)/10:null,diasConBajas:s.lowDays.size,diasConAltas:s.highDays.size}))};
+  }
+  // Contexto integral: las estadísticas se calculan sobre TODO el historial cargado.
+  // Los registros individuales se escogen según la pregunta para respetar los límites de la API.
+  const chileClock=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Santiago",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"});
+  const toChile=value=>{const t=Date.parse(value);if(!Number.isFinite(t))return null;const p=Object.fromEntries(chileClock.formatToParts(new Date(t)).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;};
+  const num=x=>typeof x==="number"&&Number.isFinite(x)?x:null;
+  const clean=x=>typeof x==="string"?x.trim().slice(0,240):"";
+  const round=x=>Math.round(x*10)/10;
+  function makeFullKnowledge(prompt){
+    const all=typeof state!=="undefined"&&Array.isArray(state.records)?state.records:[];
+    const dates=all.filter(r=>r&&toChile(r.createdAt)).sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt));
+    const glucose=dates.filter(r=>Number.isInteger(r.glucose)&&r.glucose>=1&&r.glucose<=999&&r.type!=="meal");
+    const values=glucose.map(r=>r.glucose),low=glucose.filter(r=>r.glucose<70),high=glucose.filter(r=>r.glucose>180);
+    const summarize=list=>({cantidad:list.length,promedio:list.length?round(list.reduce((s,r)=>s+r.glucose,0)/list.length):null,minimo:list.length?Math.min(...list.map(r=>r.glucose)):null,maximo:list.length?Math.max(...list.map(r=>r.glucose)):null});
+    const extrema=(max)=>{if(!glucose.length)return [];const val=max?Math.max(...values):Math.min(...values);return glucose.filter(r=>r.glucose===val).map(r=>({fechaHora:toChile(r.createdAt),glucemia:r.glucose})).slice(0,30);};
+    const byHour=Array.from({length:8},(_,i)=>{const readings=glucose.filter(r=>+toChile(r.createdAt).slice(11,13)>=i*3&&+toChile(r.createdAt).slice(11,13)<(i+1)*3);return {horario:`${String(i*3).padStart(2,"0")}:00–${String((i+1)*3).padStart(2,"0")}:00`,...summarize(readings),bajas:readings.filter(r=>r.glucose<70).length,altas:readings.filter(r=>r.glucose>180).length};});
+    const now=Date.now();const days=n=>glucose.filter(r=>{const t=Date.parse(r.createdAt);return t<=now&&t>=now-n*86400000;});
+    const medicationNames={metformin:"Metformina",glibenclamide:"Glibenclamida",losartan:"Losartán",amlodipine:"Amlodipino",atorvastatin:"Atorvastatina",anulit:"ANULIT (levonorgestrel)"};
+    function medications(r){return Object.entries(r.medications||{}).filter(([,m])=>m&&m.taken===true&&Number.isFinite(m.doseMg)).map(([key,m])=>({nombre:medicationNames[key]||key,dosisMg:num(m.doseMg),fechaHora:toChile(m.recordedAt)||null,horaRegistrada:clean(m.time).slice(0,5)||null}));}
+    function mapRecord(r){const out={fechaHora:toChile(r.createdAt),tipo:r.type||"glucemia"};if(Number.isInteger(r.glucose)&&r.type!=="meal")out.glucemia=r.glucose;
+      for(const k of ["systolic","diastolic","ppm"])if(num(r[k])!==null)out[k]=r[k];
+      if(r.pressureCreatedAt)out.fechaPresion=toChile(r.pressureCreatedAt);
+      if(r.pulseCreatedAt)out.fechaPulso=toChile(r.pulseCreatedAt);
+      if(r.sleepEnd)out.finSueno=toChile(r.sleepEnd);
+      if(r.mealType)out.tipoComida=clean(r.mealType);
+      if(r.food)out.comida=clean(r.food);
+      if(r.moment||r.measurementContext)out.momento=clean(r.moment||r.measurementContext);
+      if(r.note)out.nota=clean(r.note);
+      if(r.eventText)out.evento=clean(r.eventText);
+      const ms=medications(r);if(ms.length)out.medicamentos=ms;
+      return out;}
+    const hb=typeof hba1cState!=="undefined"&&Array.isArray(hba1cState.records)?hba1cState.records:[];
+    const exams=hb.filter(r=>r&&/^\d{4}-\d{2}-\d{2}$/.test(r.test_date)&&num(r.hba1c)!==null).map(r=>({fecha:r.test_date,hba1c:r.hba1c})).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(-150);
+    // Selección semántica amplia, siempre añade extremos y los últimos registros.
+    const words=prompt.toLocaleLowerCase("es");const queryDates=[...words.matchAll(/\b(20\d{2})[-\/]([01]?\d)[-\/]([0-3]?\d)\b/g)].map(m=>`${m[1]}-${m[2].padStart(2,"0")}-${m[3].padStart(2,"0")}`);
+    const terms=[...words.matchAll(/\b(glucosa|glucemia|hipogluc|azucar|azúcar|alta|baja|metformina|glibenclamida|losart|amlodip|atorvast|anulit|comida|desayuno|almuerzo|once|cena|presi[oó]n|pulso|sue[nñ]o|dorm|evento|nota|ejercicio|medica|pastilla)\w*/g)].map(m=>m[0].normalize("NFD").replace(/[\u0300-\u036f]/g,""));
+    const scored=dates.map((r,i)=>{let score=i/Math.max(1,dates.length)*4;const d=toChile(r.createdAt)||"";if(queryDates.some(x=>d.startsWith(x)))score+=100;
+       if(/maxim|alta|mayor|pico/.test(words)&&r.glucose===Math.max(...values))score+=90;
+       if(/minim|baja|menor|hipogluc/.test(words)&&r.glucose===Math.min(...values))score+=90;
+       if(/medicament|pastilla|dosis|gliben|metfor|losart|amlodip|atorvast|anulit/.test(words)&&medications(r).length)score+=35;
+       if(/comid|desayun|almuer|cena|once/.test(words)&&r.food)score+=35;
+       if(/presion|presión|pulso/.test(words)&&(r.systolic||r.ppm))score+=35;
+       if(/sueño|sueno|dorm/.test(words)&&r.type==="sleep")score+=35;
+       if(/event|nota|sintom/.test(words)&&(r.eventText||r.note))score+=35;
+       if(terms.some(t=>JSON.stringify(r).toLowerCase().includes(t)))score+=10;
+       return {r,i,score};});
+    const chosen=new Set(scored.sort((a,b)=>b.score-a.score).slice(0,220).map(x=>x.i));
+    for(const r of glucose.filter(r=>r.glucose===Math.max(...values)||r.glucose===Math.min(...values))){const i=dates.indexOf(r);if(i>=0)chosen.add(i);}
+    const selected=[...chosen].sort((a,b)=>a-b).slice(-260).map(i=>mapRecord(dates[i]));
+    while(selected.length>1&&JSON.stringify(selected).length>90000)selected.shift();
+    const dateRange=dates.length?{primero:toChile(dates[0].createdAt),ultimo:toChile(dates.at(-1).createdAt)}:null;
+    const medicationsCount={};for(const r of dates)for(const m of medications(r))medicationsCount[m.nombre]=(medicationsCount[m.nombre]||0)+1;
+    return {version:1,zonaHoraria:"America/Santiago",fuente:"Registros actualmente cargados en el navegador; no es historial clínico completo",alcance:dateRange,
+      totalRegistrosCargados:dates.length,totalRegistrosIndividualesIncluidos:selected.length,hayRegistrosOmitidos:dates.length>selected.length,
+      estadisticas:{todo:summarize(glucose),ultimos7Dias:summarize(days(7)),ultimos14Dias:summarize(days(14)),ultimos30Dias:summarize(days(30)),ultimos90Dias:summarize(days(90)),bajas:low.length,altas:high.length,fechasDelMaximo:extrema(true),fechasDelMinimo:extrema(false),porHorario:byHour},
+      conteos:{comidas:dates.filter(r=>r.type==="meal").length,suenos:dates.filter(r=>r.type==="sleep").length,eventos:dates.filter(r=>r.type==="event").length,registrosConPresion:dates.filter(r=>num(r.systolic)!==null).length,registrosConPulso:dates.filter(r=>num(r.ppm)!==null).length,medicamentos:medicationsCount},
+      hba1c:exams,registros:selected};
+  }
+  form.addEventListener("submit",async e=>{
+    e.preventDefault();if(pending)return;
+    const prompt=question.value.trim();if(!prompt)return;
+    if(prompt.length>900){status.textContent="La pregunta es demasiado larga.";return;}
+    addMessage("user",prompt);question.value="";pending=true;send.disabled=true;send.textContent="…";status.textContent="Consultando a Gemini…";
+    const pendingBubble=addMessage("bot","Pensando…");controller=new AbortController();const timer=setTimeout(()=>controller.abort(),30000);
+    try{
+      if(typeof getCloudIdentity!=="function")throw new Error("Todavía no está disponible la identidad familiar.");
+      const identity=await getCloudIdentity();
+      const recent=conversation.slice(-6);
+      const response=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","x-glucose-key":identity.token},body:JSON.stringify({question:prompt,history:recent,summary:null,knowledge:share.checked?makeFullKnowledge(prompt):null}),signal:controller.signal,cache:"no-store"});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(data.error||`Error de conexión (${response.status}).`);
+      if(typeof data.answer!=="string"||!data.answer.trim())throw new Error("Gemini no devolvió una respuesta.");
+      const answerText=data.answer.trim();renderAssistantMarkdown(pendingBubble,answerText);conversation.push({role:"user",text:prompt},{role:"model",text:answerText});if(conversation.length>12)conversation.splice(0,conversation.length-12);
+      status.textContent=share.checked?"Se envió contexto del historial autorizado a Gemini; la selección de registros detallados tiene un límite de tamaño.":"No se enviaron registros de glucemia.";
+    }catch(err){pendingBubble.classList.add("error");pendingBubble.textContent=err.name==="AbortError"?"La consulta tardó demasiado. Inténtalo otra vez.":err.message;status.textContent="No se guardaron ni modificaron registros.";}
+    finally{clearTimeout(timer);controller=null;pending=false;send.disabled=false;send.textContent="Enviar";messages.scrollTop=messages.scrollHeight;}
+  });
+})();
+</script>
 </body>
 </html>
