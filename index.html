@@ -1100,7 +1100,7 @@ button.now-button[role="switch"]:focus-visible {
         }else if(event.type==="meal"){
           const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar comida ${record.mealType}`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMeal(record.id));actions.append(edit);
         }else if(["pressure","pulse","sleep"].includes(event.type)){
-          const edit=element("button","edit-one","Editar");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.addEventListener("click",()=>openHealthEdit(record.id));actions.append(edit);
+          const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",event.type==="pressure"?"Editar presión arterial":event.type==="pulse"?"Editar pulso":"Editar sueño");edit.append(icon("edit"));edit.addEventListener("click",()=>openHealthEdit(record.id));actions.append(edit);
         }else if(event.type==="medication"){
           const edit=element("button","edit-one");edit.type="button";edit.disabled=state.busy||state.storageProblem;edit.setAttribute("aria-label",`Editar ${event.medication.name}`);edit.append(icon("edit"));edit.addEventListener("click",()=>openEditMedication(record.id,event.medication.key));actions.append(edit);
         }
