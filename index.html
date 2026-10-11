@@ -361,6 +361,33 @@
       -webkit-appearance:auto;
       appearance:auto;
     }
+    /* Detector de patrones horarios: agregado independiente, sin alterar gráficos. */
+    .patterns-card .card-head { align-items:flex-start; }
+    .patterns-periods { display:flex;flex-wrap:wrap;gap:5px;background:#f2f5f9;padding:4px;border-radius:12px;width:fit-content;max-width:100%; }
+    .patterns-periods button { border:0;border-radius:9px;background:transparent;color:var(--muted);padding:9px 12px;min-height:40px;font-size:.82rem;font-weight:600; }
+    .patterns-periods button[aria-pressed="true"] { color:#0874b9;background:#e1f3ff;box-shadow:0 1px 4px #15476b14; }
+    .patterns-overview { margin:12px 0 16px;color:var(--muted);font-size:.85rem; }
+    .patterns-grid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px; }
+    .pattern-slot { min-width:0;padding:14px 12px;border:1px solid var(--line);background:#fafbfd;border-radius:15px; }
+    .pattern-slot .pattern-hours { font-weight:700;font-size:.89rem; }
+    .pattern-slot .pattern-value { font-size:1.32rem;font-weight:750;letter-spacing:-.03em;margin-top:6px; }
+    .pattern-slot .pattern-value small { font-size:.7rem;font-weight:500;color:var(--muted);letter-spacing:0; }
+    .pattern-slot .pattern-samples { color:var(--muted);font-size:.76rem;margin-top:5px;line-height:1.35; }
+    .pattern-slot.pattern-low { background:#fff6e7;border-color:#efdcad; }
+    .pattern-slot.pattern-high { background:#fff1f3;border-color:#edcdd2; }
+    .pattern-slot.pattern-normal { background:#edf9f4;border-color:#cce5d9; }
+    .patterns-findings { margin-top:18px;padding-top:16px;border-top:1px solid var(--line); }
+    .patterns-findings h3 { margin-bottom:9px; }
+    .patterns-finding { padding:11px 13px;margin:9px 0;border:1px solid #dfe7f1;border-radius:12px;background:#f7faff; }
+    .patterns-finding strong { display:block;font-size:.9rem; }
+    .patterns-finding p { color:var(--muted);font-size:.82rem;margin-top:3px; }
+    .patterns-note { margin-top:16px;color:var(--muted);font-size:.78rem;line-height:1.55; }
+    @media(max-width:570px) {
+      .patterns-grid { grid-template-columns:repeat(2,minmax(0,1fr));gap:8px; }
+      .pattern-slot { padding:11px 10px; }
+      .patterns-periods { width:100%; }
+      .patterns-periods button { flex:1;min-width:0;padding:9px 5px; }
+    }
   </style>
 <style id="notification-styles-restored">
 /* Notificaciones: estilos autónomos y acotados, restauran la presentación original. */
@@ -679,6 +706,22 @@ button.now-button[role="switch"]:focus-visible {
           <div class="range-item"><div class="range-label"><span class="swatch" style="background:#de7788"></span>Altas</div><strong id="percent-high">—</strong><small id="label-high"></small></div>
         </div><p class="range-note">Rangos de demostración, configurables en el código. Define tus objetivos personales con un profesional de salud.</p>
       </section>
+      <section class="card full patterns-card" data-pages="estadisticas" aria-labelledby="patterns-title" hidden>
+        <div class="card-head"><div><h2 id="patterns-title">🕒 Patrones por horario</h2><p class="small muted">Observa cuándo se repiten lecturas bajas o altas</p></div></div>
+        <div class="patterns-periods" role="group" aria-label="Período del análisis de patrones">
+          <button type="button" data-pattern-days="7" aria-pressed="false">7 días</button>
+          <button type="button" data-pattern-days="14" aria-pressed="true">14 días</button>
+          <button type="button" data-pattern-days="30" aria-pressed="false">30 días</button>
+          <button type="button" data-pattern-days="all" aria-pressed="false">Todo</button>
+        </div>
+        <p id="patterns-overview" class="patterns-overview" role="status" aria-live="polite">Analizando mediciones…</p>
+        <div id="patterns-grid" class="patterns-grid" aria-label="Promedios de glucemia por intervalos de tres horas"></div>
+        <div class="patterns-findings" aria-labelledby="patterns-findings-title">
+          <h3 id="patterns-findings-title">Observaciones</h3>
+          <div id="patterns-findings" aria-live="polite"></div>
+        </div>
+        <p class="patterns-note">Cada franja incluye su hora inicial y termina justo antes de la hora final (por ejemplo, una medición a las 03:00 pertenece a 03:00–06:00). Los promedios se calculan únicamente con las glucemias registradas, en hora de Chile; no se estiman valores entre mediciones. Se señala una posible repetición solo cuando hay mediciones en al menos 3 días diferentes dentro de una franja, un mínimo de 4 lecturas y lecturas fuera del rango en al menos 2 días (50% o más de los días observados). Los datos manuales pueden estar concentrados en ciertos momentos y no representan una medición continua. Los límites de referencia de esta aplicación son &lt;70 y &gt;180 mg/dL; los objetivos individuales dependen del contexto y del equipo médico. Esto no es un diagnóstico ni indica cambiar medicamentos.</p>
+      </section>
       <section class="card full" id="vitals-card" data-pages="estadisticas" hidden aria-labelledby="vitals-title">
         <div class="card-head"><div><h2 id="vitals-title">Tu presión arterial y pulso</h2><p class="small muted">Una mirada a tus mediciones</p></div></div>
         <div id="vitals-summary" class="vitals-summary"></div>
@@ -881,7 +924,7 @@ button.now-button[role="switch"]:focus-visible {
       return saved?.taken===true && typeof saved.doseMg==="number" && Number.isFinite(saved.doseMg) && saved.doseMg>0 ? saved : null;
     }
     function hasRecordedMedication(record) { return MEDICATIONS.some(m=>recordedMedication(record,m.key)); }
-    const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showEvents:true, calendarShowEvents:true, showMeals:true, calendarShowMeals:true, showFastingRange:false,showDayColors:false };
+    const state = { records:[], period:1, page:"inicio", busy:false, storageProblem:false, showMedications:true, calendarMonth:null, calendarDay:null, calendarShowMedications:true, showEvents:true, calendarShowEvents:true, showMeals:true, calendarShowMeals:true, showFastingRange:false,showDayColors:false,patternDays:14 };
 
     state.comparisonMode=false;
     const comparisonState={onlyAverage:false,showAverage:false,showValues:false,showConnectors:false,open:false,draft:[],days:[],previous:null,colors:["#2563eb","#b34b16","#087d61","#8b46bd","#bd3563","#127e93","#6b6320",...Array.from({length:23},(_,i)=>`hsl(${(i*137.508+25)%360} 65% ${32+(i%3)*7}%)`)]};
@@ -1040,7 +1083,7 @@ button.now-button[role="switch"]:focus-visible {
       $$("[data-nav]").forEach(button=>{ if(button.dataset.nav===page) button.setAttribute("aria-current","page"); else button.removeAttribute("aria-current"); });
       $$("[data-pages]").forEach(section=>{ section.hidden=!section.dataset.pages.split(" ").includes(page); section.classList.remove("page-enter"); if(!section.hidden){void section.offsetWidth;section.classList.add("page-enter");} });
       if(page==="registrar"&&!editingNoteEvent&&!$("#note-event-text").value.trim())setDateNow("note-event");
-      window.scrollTo({top:0,behavior:"instant"}); renderChart();renderCalendar();renderVitals();
+      window.scrollTo({top:0,behavior:"instant"}); renderChart();renderCalendar();renderVitals();if(page==="estadisticas")renderHourlyPatterns();
     }
     function renderSummary() {
       const stats=calculateStats(state.records);
@@ -1058,6 +1101,71 @@ button.now-button[role="switch"]:focus-visible {
       const measurements=state.records.filter(hasGlucose),{counts,percentages}=rangePercentages(measurements);
       ["low","normal","high"].forEach((key,index)=>{ $("#bar-"+key).style.width=measurements.length?`${counts[index]*100/measurements.length}%`:"0%"; $("#percent-"+key).textContent=measurements.length?`${percentages[index]}%`:"—"; $("#percent-"+key).title=`${counts[index]} mediciones`; });
       $("#label-low").textContent=`< ${CONFIG.range.low} mg/dL`; $("#label-normal").textContent=`${CONFIG.range.low}–${CONFIG.range.high} mg/dL`; $("#label-high").textContent=`> ${CONFIG.range.high} mg/dL`;
+    }
+    // Análisis descriptivo de mediciones manuales, sin interpolación ni escritura de datos.
+    // Las repeticiones se evalúan por fechas civiles de Chile para que varias mediciones
+    // de un mismo día no cuenten como múltiples días con el mismo patrón.
+    function calculateHourlyPatterns(records, period) {
+      const now=Date.now(),today=localDateKey(now),firstDay=period==="all"?null:shiftDay(today,1-Number(period));
+      const slots=Array.from({length:8},(_,index)=>({index,readings:[],byDay:new Map()}));
+      const observedDays=new Set();let total=0;
+      for(const record of records) {
+        if(!hasGlucose(record))continue;
+        const timestamp=Date.parse(record.createdAt);
+        if(!Number.isFinite(timestamp)||timestamp>now)continue;
+        const parts=chileParts(timestamp),day=`${parts.year}-${parts.month}-${parts.day}`;
+        if(firstDay&&day<firstDay)continue;
+        const slotIndex=Math.floor(Number(parts.hour)/3);
+        if(!Number.isInteger(slotIndex)||slotIndex<0||slotIndex>7)continue;
+        const slot=slots[slotIndex];slot.readings.push(record.glucose);
+        if(!slot.byDay.has(day))slot.byDay.set(day,[]);
+        slot.byDay.get(day).push(record.glucose);
+        observedDays.add(day);total++;
+      }
+      return {slots,total,observedDays:observedDays.size,firstDay};
+    }
+    function renderHourlyPatterns() {
+      const grid=$("#patterns-grid"),findings=$("#patterns-findings"),overview=$("#patterns-overview");
+      if(!grid||!findings||!overview)return;
+      const {slots,total,observedDays}=calculateHourlyPatterns(state.records,state.patternDays);
+      const periodText=state.patternDays==="all"?"todo el historial":`los últimos ${state.patternDays} días`;
+      overview.textContent=`${numberFormat.format(total)} ${total===1?"medición":"mediciones"} de glucemia en ${numberFormat.format(observedDays)} ${observedDays===1?"día":"días"} con registros · ${periodText} · hora de Chile.`;
+      const fragment=document.createDocumentFragment(),patterns=[];
+      for(const slot of slots) {
+        const start=String(slot.index*3).padStart(2,"0")+":00",end=String(slot.index*3+3).padStart(2,"0")+":00";
+        const count=slot.readings.length,days=slot.byDay.size;
+        const average=count?slot.readings.reduce((sum,value)=>sum+value,0)/count:null;
+        const classification=count?classify(average).key:"empty";
+        const tile=element("div","pattern-slot"+(count?" pattern-"+classification:""));
+        tile.append(element("div","pattern-hours",`${start}–${end}`));
+        const value=element("div","pattern-value",count?numberFormat.format(average):"—");
+        if(count)value.append(element("small",""," mg/dL"));
+        tile.append(value,element("p","pattern-samples",count?`${count} ${count===1?"lectura":"lecturas"} · ${days} ${days===1?"día":"días"}`:"Sin mediciones"));
+        const dayValues=[...slot.byDay.values()];
+        const lowDays=dayValues.filter(values=>values.some(value=>value<CONFIG.range.low)).length;
+        const highDays=dayValues.filter(values=>values.some(value=>value>CONFIG.range.high)).length;
+        for(const [kind,affected] of [["low",lowDays],["high",highDays]]){
+          if(days>=3&&count>=4&&affected>=2&&affected/days>=0.5)
+            patterns.push({kind,start,end,affected,days,count,frequency:affected/days});
+        }
+        fragment.append(tile);
+      }
+      grid.replaceChildren(fragment);findings.replaceChildren();
+      if(!total){findings.append(element("p","small muted","Todavía no hay mediciones de glucemia en este período. Prueba con más días."));return;}
+      if(!patterns.length){
+        findings.append(element("p","small muted","No se detectan repeticiones con los criterios definidos. Esto no significa que no existan cambios: puede faltar información de algunos horarios o días."));
+        return;
+      }
+      patterns.sort((a,b)=>b.frequency-a.frequency||b.affected-a.affected||a.start.localeCompare(b.start));
+      for(const pattern of patterns.slice(0,5)) {
+        const card=element("div","patterns-finding");
+        const label=pattern.kind==="low"?"Lecturas bajas repetidas":"Lecturas altas repetidas";
+        const threshold=pattern.kind==="low"?`menos de ${CONFIG.range.low}`:`más de ${CONFIG.range.high}`;
+        card.append(element("strong","",`${pattern.kind==="low"?"🟡":"🔴"} ${label} · ${pattern.start}–${pattern.end}`));
+        card.append(element("p","",`${pattern.affected} de ${pattern.days} días con mediciones en esta franja tuvieron al menos una lectura de ${threshold} mg/dL. Se registraron ${pattern.count} mediciones en total. Es una observación, no una predicción.`));
+        findings.append(card);
+      }
+      if(patterns.length>5)findings.append(element("p","small muted",`Se muestran 5 de ${patterns.length} observaciones.`));
     }
     function groupEventsByChileDate(events) {
       const groups=new Map();
@@ -1439,7 +1547,7 @@ button.now-button[role="switch"]:focus-visible {
       drawTemporalMarkers({graph:prefix?"calendar":"main",svg,detail:q("chart-detail"),scale,left,top,plotW,plotH});
     }
 
-    function renderAll() { renderSummary();renderRanges();renderHistory();renderChart();renderCalendar();renderVitals(); }
+    function renderAll() { renderSummary();renderRanges();renderHistory();renderChart();renderCalendar();renderVitals();renderHourlyPatterns(); }
 
     // EXPORTACIÓN EXCEL: lectura independiente y no destructiva del almacenamiento.
     // SheetJS CE 0.20.3, CDN oficial, cargado solo cuando se pide exportar.
@@ -1775,6 +1883,11 @@ button.now-button[role="switch"]:focus-visible {
 
 
     $("#show-day-colors").addEventListener("click",()=>{state.showDayColors=!state.showDayColors;renderChart();});
+    $$('[data-pattern-days]').forEach(button=>button.addEventListener("click",()=>{
+      state.patternDays=button.dataset.patternDays;
+      $$('[data-pattern-days]').forEach(item=>item.setAttribute("aria-pressed",String(item===button)));
+      renderHourlyPatterns();
+    }));
     $("#history-type").addEventListener("change",renderHistory);
     $("#export-excel").addEventListener("click",exportToExcel);
     $("#cloud-refresh").addEventListener("click",loadMeasurements);
