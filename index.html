@@ -312,6 +312,25 @@
     overscroll-behavior:none;
   }
 #health-dialog{width:min(520px,calc(100vw - 24px));max-height:90dvh;overflow-y:auto;overflow-x:hidden;border:1px solid #dce5f2;border-radius:20px;padding:22px}#health-dialog .card-head{position:sticky;top:-22px;background:white;z-index:2;padding:12px 0}#sleep-register h2{margin-bottom:12px}#sleep-register form{margin-top:18px}#sleep-duration{font-weight:700;color:#66509a}
+
+    /* Corrección iPhone/Safari: controles nativos de fecha/hora sin desbordes. */
+    .event-datetime { width:100%; max-width:100%; min-width:0; }
+    .event-datetime > .form-field { min-width:0; max-width:100%; }
+    .event-datetime input[type="date"],
+    .event-datetime input[type="time"] {
+      display:block;
+      box-sizing:border-box;
+      width:100%;
+      min-width:0;
+      max-width:100%;
+      -webkit-min-logical-width:0;
+      font-size:16px;
+    }
+    /* En pantallas estrechas, cada control ocupa su propia fila: el selector
+       nativo de iOS necesita más espacio que una columna de media tarjeta. */
+    @media (max-width:480px) {
+      .event-datetime { grid-template-columns:minmax(0,1fr); gap:0; }
+    }
   </style>
 <style id="notification-styles-restored">
 /* Notificaciones: estilos autónomos y acotados, restauran la presentación original. */
