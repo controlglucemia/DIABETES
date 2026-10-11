@@ -173,7 +173,7 @@
     #calendar-clock-detail:empty::before { content:"Toca un punto del reloj para consultar su hora y sus detalles."; }
     #calendar-clock-note { margin:12px 0; }
     #calendar-chart-title { margin-top:24px; }
-    .event-datetime { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px; }
+    .event-datetime { display:grid;grid-template-columns:minmax(0,1fr);gap:14px;width:100%;min-width:0;max-width:100%; }
     .event-datetime input { min-width:0;max-width:100%; }
     .record.record-meal { background:#fff7ec;border-color:#ecd8bc; }
     .meal-register-card,.medication-register-card { scroll-margin-top:20px; }
@@ -393,7 +393,7 @@
 #notification-dialog .notification-toggle span {flex:1;min-width:0;overflow-wrap:anywhere;}
 #notification-dialog .notification-toggle input[type="checkbox"] {width:20px;height:20px;min-height:20px;flex:none;margin:0;accent-color:#2563eb;cursor:pointer;}
 #notification-dialog label:not(.notification-toggle) {margin:12px 0 6px;}
-#notification-dialog .reminder-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+#notification-dialog .reminder-grid {display:grid;grid-template-columns:minmax(0,1fr);gap:10px;}
 #notification-dialog .reminder-grid > div {min-width:0;}
 #notification-dialog :is(input,select,textarea) {min-width:0;max-width:100%;}
 #notification-dialog h3 {margin:16px 0 9px;}
@@ -3067,5 +3067,82 @@ button.now-button[role="switch"]:focus-visible {
 })();
 
 </script>
+<style id="ios-datetime-inside-box">
+/* Fecha y hora siempre dentro del recuadro, también en iPhone/Safari.
+   El control nativo ignora el ancho de la columna y pinta el valor por fuera del borde. */
+.event-datetime,
+#notification-dialog .reminder-grid {
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  gap:14px !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+.event-datetime > .form-field,
+#notification-dialog .reminder-grid > div,
+.form-field {
+  min-width:0 !important;
+  max-width:100% !important;
+}
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance:none !important;
+  appearance:none !important;
+  display:block !important;
+  box-sizing:border-box !important;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  min-height:48px !important;
+  margin:0 !important;
+  padding:12px 14px !important;
+  overflow:hidden !important;
+  text-align:left !important;
+  line-height:1.25 !important;
+  font-size:16px !important;
+  color:#182940 !important;
+  background:#fafbfd !important;
+  border:1px solid #dce4ee !important;
+  border-radius:12px !important;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value {
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  text-align:left !important;
+  overflow:hidden !important;
+}
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  display:inline-flex !important;
+  align-items:center !important;
+  width:auto !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow:hidden !important;
+}
+.medication-time-row {
+  display:flex !important;
+  flex-wrap:wrap !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+.medication-time-row > input[type="time"] {
+  flex:1 1 140px !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:100% !important;
+}
+</style>
 </body>
 </html>
