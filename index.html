@@ -2182,9 +2182,10 @@
       const bins=calculateComparisonAverage(state.records,comparisonState.days),color="#243244",format=new Intl.NumberFormat("es",{maximumFractionDigits:2});
       const legendItem=element("span","comparison-key comparison-average-legend"),sample=element("span","comparison-swatch");sample.style.background=color;sample.style.height="5px";legendItem.append(sample,document.createTextNode("Promedio · franjas de 3 h"));legend.append(legendItem);
       const curve=svgElement("g",{class:"comparison-average-curves","pointer-events":"none","aria-hidden":"true"});
-      let segment=[];
-      const finishSegment=()=>{if(segment.length>1)curve.append(svgElement("polyline",{class:"comparison-average-line",points:segment.map(bin=>`${minuteX(bin.centerMinute)},${y(bin.average)}`).join(" "),fill:"none",stroke:color,"stroke-width":3.5,"stroke-dasharray":"8 4","stroke-linejoin":"round"}));segment=[];};
-      for(const bin of bins){if(bin.count)segment.push(bin);else finishSegment();}finishSegment();
+      // Conectar únicamente los promedios calculados con datos reales.
+      // Las franjas vacías se saltan: no se crean estimaciones ni puntos ficticios.
+      const measuredBins=bins.filter(bin=>bin.count>0);
+      if(measuredBins.length>1)curve.append(svgElement("polyline",{class:"comparison-average-line",points:measuredBins.map(bin=>`${minuteX(bin.centerMinute)},${y(bin.average)}`).join(" "),fill:"none",stroke:color,"stroke-width":3.5,"stroke-dasharray":"8 4","stroke-linejoin":"round"}));
       svg.insertBefore(curve,svg.querySelector(".comparison-point"));
       if(!bins.some(bin=>bin.count)){legendItem.append(document.createTextNode(" · Sin mediciones"));return;}
       const tooltip=element("div","chart-tooltip comparison-average-tooltip");tooltip.hidden=true;tooltip.setAttribute("aria-hidden","true");svg.parentElement.append(tooltip);
