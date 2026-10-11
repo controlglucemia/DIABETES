@@ -331,6 +331,36 @@
     @media (max-width:480px) {
       .event-datetime { grid-template-columns:minmax(0,1fr); gap:0; }
     }
+
+    /* FIX definitivo: fecha y hora en filas independientes en TODOS los formularios.
+       Evita la superposición de controles nativos date/time en Safari iOS
+       incluso cuando el viewport CSS es mayor que el ancho visual del teléfono. */
+    .event-datetime {
+      display:grid !important;
+      grid-template-columns:minmax(0,1fr) !important;
+      gap:14px !important;
+      width:100%;
+      min-width:0;
+      max-width:100%;
+      margin-bottom:14px;
+    }
+    .event-datetime > .form-field {
+      display:block;
+      width:100%;
+      min-width:0;
+      max-width:100%;
+      margin:0;
+    }
+    .event-datetime > .form-field > input:is([type="date"],[type="time"]) {
+      display:block;
+      box-sizing:border-box !important;
+      width:100% !important;
+      min-width:0 !important;
+      max-width:100% !important;
+      margin:0 !important;
+      -webkit-appearance:auto;
+      appearance:auto;
+    }
   </style>
 <style id="notification-styles-restored">
 /* Notificaciones: estilos autónomos y acotados, restauran la presentación original. */
