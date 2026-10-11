@@ -1076,7 +1076,7 @@
           const dx=Math.abs(item.x-position),delta=Math.hypot(dx,cy-pointerY);
           if(dx<=tolerance&&delta<distance){nearest=item;distance=delta;}
         }
-        return nearest?{x:nearest.x,timestamp:nearest.event.timestamp,items:events.filter(item=>Math.abs(item.x-nearest.x)<=tolerance)}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
+        return nearest?{x:nearest.x,timestamp:nearest.event.timestamp,items:[nearest]}:{x:position,timestamp:scale.xToTimestamp(position),items:[]};
       };
       const highlight=(items,name)=>{const selected=new Set(items.map(item=>item.node));for(const {node} of events)node.classList.toggle(name,selected.has(node));};
       const hide=()=>{if(frame)cancelAnimationFrame(frame);frame=0;pending=null;line.setAttribute("visibility","hidden");tooltip.hidden=true;highlight([],"is-preview");};
