@@ -546,12 +546,9 @@ button.now-button[role="switch"]:focus-visible {
 .assistant-msg.user{align-self:flex-end;background:#2563eb;color:#fff;border-bottom-right-radius:5px}
 .assistant-msg.error{background:#fff1f3;color:#9a3447}
 #assistant-chat .assistant-foot{flex:none;border-top:1px solid #e5ebf2;background:#fafcfe;padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
-#assistant-chat .assistant-consent{display:flex;gap:10px;align-items:flex-start;font-size:.79rem;color:#4c5f79;line-height:1.4;font-weight:500;margin:0 0 10px}
-#assistant-chat .assistant-consent input{width:19px;height:19px;min-width:19px;min-height:19px;margin:1px 0 0;padding:0;accent-color:#2563eb}
 #assistant-chat .assistant-compose{display:flex;gap:9px;align-items:flex-end}
 #assistant-question{min-height:48px;max-height:120px;flex:1;resize:vertical;background:#fff;font-size:16px;padding:11px 12px}
 #assistant-send{min-height:48px;flex:none;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:700;padding:0 17px}
-#assistant-status{min-height:18px;font-size:.75rem;color:#62738a;margin-top:5px}
 body.assistant-chat-open{overflow:hidden}
 @media(max-width:760px){#assistant-launcher{bottom:calc(88px + env(safe-area-inset-bottom));right:13px;min-height:52px;padding:0 15px}#assistant-chat{padding:0}#assistant-chat .assistant-window{height:100dvh;width:100%;border-radius:0}#assistant-chat .assistant-header{padding:12px 15px}#assistant-messages{padding:14px}#assistant-chat .assistant-foot{padding:10px 12px calc(10px + env(safe-area-inset-bottom))}}
 
@@ -3309,11 +3306,9 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
 <section id="assistant-chat" role="dialog" aria-modal="true" aria-label="Asistente IA de glucemia" hidden>
   <div class="assistant-window">
     <div class="assistant-header"><div><strong>✦ Asistente IA</strong><small>Consulta todo tu historial, medicamentos y estadísticas</small></div><button id="assistant-close" type="button" aria-label="Cerrar chat">×</button></div>
-    <div id="assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="assistant-msg bot">¡Hola! Puedo consultar las glucemias, fechas, horarios, comidas, medicamentos, presión, pulso, sueño, HbA1c y notas que tengas registradas. Para consultar tu historial, activa el permiso inferior. No modifico los datos.</div></div>
+    <div id="assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="assistant-msg bot">¡Hola! Puedo consultar las glucemias, fechas, horarios, comidas, medicamentos, presión, pulso, sueño, HbA1c y notas que tengas registradas. Puedo responder usando los registros cargados. No modifico los datos.</div></div>
     <form id="assistant-form" class="assistant-foot">
-      <label class="assistant-consent" for="assistant-share"><input id="assistant-share" type="checkbox"><span>Autorizo enviar a Google los datos necesarios de mi historial de salud, incluidas fechas, mediciones, medicamentos, comidas y notas registradas, para responder mis preguntas. Google puede usar el contenido de la API gratuita para mejorar sus servicios. No se envían identificadores de registros ni claves.</span></label>
       <div class="assistant-compose"><textarea id="assistant-question" maxlength="900" rows="1" placeholder="Ej.: ¿En qué horario hay más lecturas altas?" aria-label="Escribe tu pregunta" required></textarea><button id="assistant-send" type="submit">Enviar</button></div>
-      <p id="assistant-status" role="status" aria-live="polite">Solo lectura · El asistente no modifica registros ni medicamentos.</p>
     </form>
   </div>
 </section>
@@ -3322,7 +3317,7 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
 (()=>{
   "use strict";
   const byId=id=>document.getElementById(id);
-  const dialog=byId("assistant-chat"),launcher=byId("assistant-launcher"),close=byId("assistant-close"),form=byId("assistant-form"),question=byId("assistant-question"),send=byId("assistant-send"),messages=byId("assistant-messages"),status=byId("assistant-status"),share=byId("assistant-share");
+  const dialog=byId("assistant-chat"),launcher=byId("assistant-launcher"),close=byId("assistant-close"),form=byId("assistant-form"),question=byId("assistant-question"),send=byId("assistant-send"),messages=byId("assistant-messages");
   const ENDPOINT="https://ikbksrbvfvflgodmookv.supabase.co/functions/v1/glucose-ai-chat";
   let pending=false;let controller=null;const conversation=[];
   // Renderizado seguro de Markdown: nunca se asigna innerHTML ni se ejecuta HTML de Gemini.
@@ -3465,20 +3460,19 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
   form.addEventListener("submit",async e=>{
     e.preventDefault();if(pending)return;
     const prompt=question.value.trim();if(!prompt)return;
-    if(prompt.length>900){status.textContent="La pregunta es demasiado larga.";return;}
-    addMessage("user",prompt);question.value="";pending=true;send.disabled=true;send.textContent="…";status.textContent="Consultando a Gemini…";
+    if(prompt.length>900){addMessage("bot","La pregunta es demasiado larga.","error");return;}
+    addMessage("user",prompt);question.value="";pending=true;send.disabled=true;send.textContent="…";
     const pendingBubble=addMessage("bot","Pensando…");controller=new AbortController();const timer=setTimeout(()=>controller.abort(),30000);
     try{
       if(typeof getCloudIdentity!=="function")throw new Error("Todavía no está disponible la identidad familiar.");
       const identity=await getCloudIdentity();
       const recent=conversation.slice(-6);
-      const response=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","x-glucose-key":identity.token},body:JSON.stringify({question:prompt,history:recent,summary:null,knowledge:share.checked?makeFullKnowledge(prompt):null}),signal:controller.signal,cache:"no-store"});
+      const response=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","x-glucose-key":identity.token},body:JSON.stringify({question:prompt,history:recent,summary:null,knowledge:makeFullKnowledge(prompt)}),signal:controller.signal,cache:"no-store"});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||`Error de conexión (${response.status}).`);
       if(typeof data.answer!=="string"||!data.answer.trim())throw new Error("Gemini no devolvió una respuesta.");
       const answerText=data.answer.trim();renderAssistantMarkdown(pendingBubble,answerText);conversation.push({role:"user",text:prompt},{role:"model",text:answerText});if(conversation.length>12)conversation.splice(0,conversation.length-12);
-      status.textContent=share.checked?"Se envió contexto del historial autorizado a Gemini; la selección de registros detallados tiene un límite de tamaño.":"No se enviaron registros de glucemia.";
-    }catch(err){pendingBubble.classList.add("error");pendingBubble.textContent=err.name==="AbortError"?"La consulta tardó demasiado. Inténtalo otra vez.":err.message;status.textContent="No se guardaron ni modificaron registros.";}
+    }catch(err){pendingBubble.classList.add("error");pendingBubble.textContent=err.name==="AbortError"?"La consulta tardó demasiado. Inténtalo otra vez.":err.message;}
     finally{clearTimeout(timer);controller=null;pending=false;send.disabled=false;send.textContent="Enviar";messages.scrollTop=messages.scrollHeight;}
   });
 })();
