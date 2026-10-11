@@ -571,6 +571,13 @@ body.assistant-chat-open{overflow:hidden}
 #assistant-chat .assistant-msg.bot a{color:#1459bd;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
 #assistant-chat .assistant-msg.error{white-space:pre-wrap}
 @media(max-width:760px){#assistant-chat .assistant-msg.bot:not(.error){max-width:96%;padding:13px 14px}}
+
+/* Selector de modelo Gemini: aislado del resto de la app. */
+#assistant-chat .assistant-model-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+#assistant-chat .assistant-model-row label{margin:0;color:#536681;font-size:.8rem;font-weight:650}
+#assistant-chat #assistant-model{width:auto;min-width:0;max-width:100%;min-height:40px;padding:8px 32px 8px 11px;border-radius:11px;background:#fff;border:1px solid #d8e4f5;color:#173a6d;font-size:.85rem;font-weight:650}
+#assistant-chat .assistant-model-row .assistant-model-hint{font-size:.73rem;color:#64748b;flex:1;min-width:170px}
+@media(max-width:460px){#assistant-chat .assistant-model-row{gap:5px}#assistant-chat .assistant-model-row .assistant-model-hint{flex-basis:100%;font-size:.68rem}}
 </style>
 </head>
 <body data-page="inicio">
@@ -3308,6 +3315,14 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
     <div class="assistant-header"><div><strong>✦ Asistente IA</strong><small>Consulta todo tu historial, medicamentos y estadísticas</small></div><button id="assistant-close" type="button" aria-label="Cerrar chat">×</button></div>
     <div id="assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="assistant-msg bot">¡Hola! Puedo consultar las glucemias, fechas, horarios, comidas, medicamentos, presión, pulso, sueño, HbA1c y notas que tengas registradas. Puedo responder usando los registros cargados. No modifico los datos.</div></div>
     <form id="assistant-form" class="assistant-foot">
+      <div class="assistant-model-row">
+        <label for="assistant-model">Modelo IA</label>
+        <select id="assistant-model" aria-label="Elegir modelo de Gemini">
+          <option value="gemini-3.5-flash-lite">⚡ Rápido · Gemini 3.5 Flash-Lite</option>
+          <option value="gemini-3.8-flash">✦ Avanzado · Gemini 3.8 Flash</option>
+        </select>
+        <span id="assistant-model-hint" class="assistant-model-hint">Hasta 500 solicitudes/día según tu cuota.</span>
+      </div>
       <div class="assistant-compose"><textarea id="assistant-question" maxlength="900" rows="1" placeholder="Ej.: ¿En qué horario hay más lecturas altas?" aria-label="Escribe tu pregunta" required></textarea><button id="assistant-send" type="submit">Enviar</button></div>
     </form>
   </div>
@@ -3317,9 +3332,15 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
 (()=>{
   "use strict";
   const byId=id=>document.getElementById(id);
-  const dialog=byId("assistant-chat"),launcher=byId("assistant-launcher"),close=byId("assistant-close"),form=byId("assistant-form"),question=byId("assistant-question"),send=byId("assistant-send"),messages=byId("assistant-messages");
+  const dialog=byId("assistant-chat"),launcher=byId("assistant-launcher"),close=byId("assistant-close"),form=byId("assistant-form"),question=byId("assistant-question"),send=byId("assistant-send"),messages=byId("assistant-messages"),modelSelect=byId("assistant-model"),modelHint=byId("assistant-model-hint");
   const ENDPOINT="https://ikbksrbvfvflgodmookv.supabase.co/functions/v1/glucose-ai-chat";
   let pending=false;let controller=null;const conversation=[];
+  // Se guardan preferencias de interfaz, nunca secretos ni historial médico.
+  const models={"gemini-3.5-flash-lite":"Hasta 500 solicitudes/día según tu cuota.","gemini-3.8-flash":"Hasta 20 solicitudes/día según tu cuota."};
+  try{const saved=localStorage.getItem("glucose-ai-model-preference");if(Object.hasOwn(models,saved))modelSelect.value=saved;}catch{}
+  const updateModelHint=()=>{modelHint.textContent=models[modelSelect.value]||"Consulta la cuota en Google AI Studio.";};
+  modelSelect.addEventListener("change",()=>{updateModelHint();try{localStorage.setItem("glucose-ai-model-preference",modelSelect.value);}catch{}});
+  updateModelHint();
   // Renderizado seguro de Markdown: nunca se asigna innerHTML ni se ejecuta HTML de Gemini.
   function renderAssistantMarkdown(target,source){
     target.replaceChildren();
@@ -3467,7 +3488,7 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
       if(typeof getCloudIdentity!=="function")throw new Error("Todavía no está disponible la identidad familiar.");
       const identity=await getCloudIdentity();
       const recent=conversation.slice(-6);
-      const response=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","x-glucose-key":identity.token},body:JSON.stringify({question:prompt,history:recent,summary:null,knowledge:makeFullKnowledge(prompt)}),signal:controller.signal,cache:"no-store"});
+      const response=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","x-glucose-key":identity.token},body:JSON.stringify({question:prompt,history:recent,summary:null,knowledge:makeFullKnowledge(prompt),model:modelSelect.value}),signal:controller.signal,cache:"no-store"});
       const data=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(data.error||`Error de conexión (${response.status}).`);
       if(typeof data.answer!=="string"||!data.answer.trim())throw new Error("Gemini no devolvió una respuesta.");
