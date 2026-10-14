@@ -3313,7 +3313,7 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
 <section id="assistant-chat" role="dialog" aria-modal="true" aria-label="Asistente IA de glucemia" hidden>
   <div class="assistant-window">
     <div class="assistant-header"><div><strong>✦ Asistente IA</strong><small>Consulta todo tu historial, medicamentos y estadísticas</small></div><button id="assistant-close" type="button" aria-label="Cerrar chat">×</button></div>
-    <div id="assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="assistant-msg bot">¡Hola! Puedo consultar las glucemias, fechas, horarios, comidas, medicamentos, presión, pulso, sueño, HbA1c y notas que tengas registradas. Puedo responder usando los registros cargados. No modifico los datos.</div></div>
+    <div id="assistant-messages" role="log" aria-live="polite" aria-relevant="additions text"><div class="assistant-msg bot">¡Hola! Puedo consultar las glucemias, fechas, horarios, comidas, medicamentos, presión, pulso, sueño, HbA1c y notas que tengas registradas. También puedo interpretar tu día y preparar varios registros para que los confirmes antes de guardarlos.</div></div>
     <form id="assistant-form" class="assistant-foot">
       <div class="assistant-model-row">
         <label for="assistant-model">Modelo IA</label>
@@ -3323,11 +3323,37 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
         </select>
         <span id="assistant-model-hint" class="assistant-model-hint">Hasta 500 solicitudes/día según tu cuota.</span>
       </div>
-      <div class="assistant-compose"><textarea id="assistant-question" maxlength="900" rows="1" placeholder="Ej.: ¿En qué horario hay más lecturas altas?" aria-label="Escribe tu pregunta" required></textarea><button id="assistant-send" type="submit">Enviar</button></div>
+      <div class="assistant-compose"><button id="assistant-mic" type="button" aria-label="Hablar por micrófono" aria-pressed="false" title="Dictar con la voz">🎙️<span class="assistant-mic-caption">Hablar</span></button><textarea id="assistant-question" maxlength="4000" rows="1" placeholder="Ej.: Hoy comí pan a las 8:30, tomé metformina a las 9:00 y después dormí…" aria-label="Escribe tu pregunta" required></textarea><button id="assistant-send" type="submit">Enviar</button></div><div id="assistant-voice-status" role="status" aria-live="polite" hidden></div>
     </form>
   </div>
 </section>
 
+<style id="assistant-write-style">#assistant-chat .assistant-write-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}#assistant-chat .assistant-write-actions button{min-height:42px;padding:8px 12px;font-size:.85rem}#assistant-chat .assistant-write-actions .primary{background:#087d61;color:white}#assistant-chat .assistant-write-actions .now-button{background:white}</style>
+<style id="assistant-individual-voice-style">
+#assistant-chat #assistant-mic{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;flex:none;width:57px;min-height:48px;border:1px solid #c8d8f0;border-radius:12px;background:#eaf1ff;color:#174b9a;font-size:20px;padding:3px 5px;font-weight:650}
+#assistant-chat #assistant-mic .assistant-mic-caption{font-size:10px;line-height:1.1}
+#assistant-chat #assistant-mic[aria-pressed="true"]{background:#fce8e8;border-color:#ec8585;color:#a52828;animation:assistant-voice-pulse 1.25s ease-in-out infinite}
+#assistant-chat #assistant-voice-status:not([hidden]){font-size:.76rem;color:#526781;margin:7px 1px 0;line-height:1.4}
+@keyframes assistant-voice-pulse{50%{box-shadow:0 0 0 5px #e65b5226}}
+#assistant-chat .assistant-diary-grid{display:grid;gap:12px;margin:15px 0}
+#assistant-chat .assistant-diary-item{border:1px solid #cfdff1;background:#fff;border-radius:14px;padding:13px;min-width:0}
+#assistant-chat .assistant-diary-item h4{margin:0 0 9px;color:#174673}
+#assistant-chat .assistant-diary-item .assistant-diary-info{font-size:.89rem;line-height:1.45;overflow-wrap:anywhere}
+#assistant-chat .assistant-diary-item .assistant-diary-info ul{margin:5px 0 9px;padding-left:21px}
+#assistant-chat .assistant-diary-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:11px}
+#assistant-chat .assistant-diary-actions button{min-height:39px;padding:7px 10px;font-size:.8rem;border-radius:9px}
+#assistant-chat .assistant-diary-actions button.assistant-remove{background:#fff4f4;border:1px solid #f0d2d2;color:#9d3543}
+#assistant-chat .assistant-diary-edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #e4eaf3}
+#assistant-chat .assistant-diary-edit label{font-size:.78rem;margin:0;color:#445971;min-width:0}
+#assistant-chat .assistant-diary-edit input,#assistant-chat .assistant-diary-edit select,#assistant-chat .assistant-diary-edit textarea{margin-top:4px;min-width:0;max-width:100%;width:100%;min-height:42px;padding:8px;font-size:16px}
+#assistant-chat .assistant-diary-edit .assistant-wide{grid-column:1/-1}
+#assistant-chat .assistant-diary-edit-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px}
+#assistant-chat .assistant-diary-edit-errors{grid-column:1/-1;color:#a42536;font-size:.83rem}
+#assistant-chat .assistant-diary-missing{margin:9px 0;padding:9px 10px;border-radius:9px;background:#fff5e2;color:#755012;font-size:.84rem}
+#assistant-chat .assistant-write-actions{margin-top:16px;padding-top:11px;border-top:1px solid #dbe6f8}
+@media(max-width:480px){#assistant-chat .assistant-diary-edit{grid-template-columns:minmax(0,1fr)}#assistant-chat .assistant-diary-edit .assistant-wide,#assistant-chat .assistant-diary-edit-actions{grid-column:1}#assistant-chat .assistant-diary-item{padding:10px}#assistant-chat .assistant-compose{gap:6px}#assistant-chat #assistant-mic{width:49px;font-size:18px}#assistant-chat #assistant-send{padding:0 12px}}
+@media(prefers-reduced-motion:reduce){#assistant-chat #assistant-mic[aria-pressed="true"]{animation:none}}
+</style>
 <script id="glucose-ai-chat-script">
 (()=>{
   "use strict";
@@ -3398,11 +3424,64 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
     messages.append(node);messages.scrollTop=messages.scrollHeight;return node;
   }
   function openChat(){dialog.hidden=false;launcher.setAttribute("aria-expanded","true");document.body.classList.add("assistant-chat-open");question.focus();}
-  function closeChat(){dialog.hidden=true;launcher.setAttribute("aria-expanded","false");document.body.classList.remove("assistant-chat-open");launcher.focus();}
+  function closeChat(){if(voiceListening)stopVoice(true);dialog.hidden=true;launcher.setAttribute("aria-expanded","false");document.body.classList.remove("assistant-chat-open");launcher.focus();}
   launcher.addEventListener("click",openChat);close.addEventListener("click",closeChat);
   dialog.addEventListener("click",e=>{if(e.target===dialog)closeChat();});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!dialog.hidden){e.preventDefault();closeChat();}});
   question.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();if(form.requestSubmit)form.requestSubmit();else send.click();}});
+  // DICTADO: el navegador convierte la voz a texto; Gemini recibe el texto,
+  // jamás una grabación de audio. No hay escrituras hasta la confirmación.
+  const mic=byId('assistant-mic'),voiceStatus=byId('assistant-voice-status');
+  const BrowserSpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  let voiceEngine=null,voiceListening=false,voiceFinal='',voicePrefix='',voiceError='',voiceCanceled=false;
+  function voiceNotice(message){voiceStatus.hidden=!message;voiceStatus.textContent=message||'';}
+  function micAppearance(active){voiceListening=active;mic.setAttribute('aria-pressed',String(active));mic.querySelector('.assistant-mic-caption').textContent=active?'Detener':'Hablar';mic.title=active?'Detener dictado':'Dictar con la voz';}
+  function stopVoice(cancel=false){
+    if(!voiceEngine)return;
+    if(cancel)voiceCanceled=true;
+    try{voiceEngine.stop();}catch{}
+  }
+  mic.addEventListener('click',()=>{
+    if(voiceListening){stopVoice(false);return;}
+    if(pending||diaryBusy||writeSaving){voiceNotice('Espera a que termine la consulta o el guardado.');return;}
+    if(!BrowserSpeechRecognition){voiceNotice('Este navegador no admite dictado por voz. Prueba Chrome o Edge con el micrófono habilitado.');return;}
+    voiceFinal='';voiceError='';voiceCanceled=false;voicePrefix=question.value.trim();
+    try{
+      const rec=new BrowserSpeechRecognition();voiceEngine=rec;rec.lang='es-CL';rec.continuous=false;rec.interimResults=true;rec.maxAlternatives=1;
+      rec.onstart=()=>{micAppearance(true);voiceNotice('Escuchando… habla normalmente. Pulsa «Detener» para enviar lo reconocido.');};
+      rec.onresult=e=>{
+        let final='',interim='';
+        for(let i=0;i<e.results.length;i++){
+          const segment=e.results[i]?.[0]?.transcript||'';
+          if(e.results[i].isFinal)final+=segment+' ';else interim+=segment+' ';
+        }
+        voiceFinal=final.trim();
+        const speech=(voiceFinal+' '+interim).trim();
+        question.value=[voicePrefix,speech].filter(Boolean).join(' ').slice(0,4000);
+        voiceNotice(interim?'Transcribiendo: '+interim.trim():'Texto reconocido. Se enviará al terminar el dictado.');
+      };
+      rec.onerror=e=>{
+        const errors={'not-allowed':'Permiso de micrófono denegado. Actívalo en el navegador.','service-not-allowed':'El servicio de voz no está permitido en este navegador.','audio-capture':'No se encontró un micrófono disponible.','network':'Falló la conexión con el reconocimiento de voz.','no-speech':'No se detectó voz. Vuelve a intentarlo.','language-not-supported':'El idioma de voz español (Chile) no está disponible.'};
+        voiceError=errors[e.error]||'No se pudo reconocer el audio.';
+        voiceNotice(voiceError);
+      };
+      rec.onend=()=>{
+        if(voiceEngine!==rec)return;
+        voiceEngine=null;micAppearance(false);
+        if(voiceCanceled)return;
+        const spoken=voiceFinal.trim();
+        if(voiceError){voiceNotice(voiceError+(spoken?' El texto permanece en el cuadro para revisarlo.':''));return;}
+        if(!spoken){voiceNotice('No se reconoció una frase completa. Puedes corregir el texto y pulsar Enviar.');return;}
+        const complete=[voicePrefix,spoken].filter(Boolean).join(' ').trim();
+        if(complete.length>4000){question.value=complete.slice(0,4000);voiceNotice('El dictado superó el límite. Revisa el texto y envíalo manualmente.');return;}
+        question.value=complete;voiceNotice('Voz transcrita. Enviando al chat…');
+        if(!pending&&!diaryBusy&&!writeSaving){
+          if(form.requestSubmit)form.requestSubmit(send);else send.click();
+        }else voiceNotice('Voz transcrita. Envía el texto cuando termine el procesamiento anterior.');
+      };
+      rec.start();
+    }catch(e){voiceEngine=null;micAppearance(false);voiceNotice('No se pudo iniciar el micrófono. Comprueba los permisos del navegador.');}
+  });
   function summaryLast30Days(){
     // Solo números agregados: nunca se envían IDs, nombres, notas, fechas precisas, comidas ni fármacos.
     const all=typeof state!=="undefined"&&Array.isArray(state.records)?state.records:[];
@@ -3478,11 +3557,813 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
       conteos:{comidas:dates.filter(r=>r.type==="meal").length,suenos:dates.filter(r=>r.type==="sleep").length,eventos:dates.filter(r=>r.type==="event").length,registrosConPresion:dates.filter(r=>num(r.systolic)!==null).length,registrosConPulso:dates.filter(r=>num(r.ppm)!==null).length,medicamentos:medicationsCount},
       hba1c:exams,registros:selected};
   }
+  // REGISTRO ASISTIDO MULTITIPO: los textos nunca autorizan un guardado sin botón explícito.
+  let writeDraft=null, writeSaving=false, writeActions=null;
+  const norm=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+  const dateOK=day=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(day||'');if(!m)return false;const x=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));return x.getUTCFullYear()===+m[1]&&x.getUTCMonth()+1===+m[2]&&x.getUTCDate()===+m[3];};
+  const numberWords={cero:0,uno:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,seis:6,siete:7,ocho:8,nueve:9,diez:10,once:11,doce:12,trece:13,catorce:14,quince:15,dieciseis:16,diecisiete:17,dieciocho:18,diecinueve:19,veinte:20,treinta:30,cuarenta:40,cincuenta:50};
+  const drugNames={metformin:'Metformina',glibenclamide:'Glibenclamida',losartan:'Losartán',amlodipine:'Amlodipino',atorvastatin:'Atorvastatina',anulit:'ANULIT'};
+  function identifyKind(t){
+    if(/\b(hba1c|hemoglobina glicosilada|hemoglobina glucosilada)\b/.test(t))return 'hba1c';
+    if(/\b(sueno|dormi|dormir|desperte|acoste)\b/.test(t))return 'sleep';
+    if(/\b(metformina|glibenclamida|losartan|amlodipino|atorvastatina|anulit|medicamento|pastilla|remedio)\b/.test(t))return 'medication';
+    if(/\b(desayun|almorz|almuerzo|once|cena|cene|comida|comi|merienda|snack|colacion)\w*\b/.test(t))return 'meal';
+    if(/\b(evento|anota que|nota|actividad|ejercicio|camine|caminata|sintoma)\w*\b/.test(t))return 'event';
+    if(/\b(presion|sistolica|diastolica|tension|pulso|latidos)\b/.test(t))return 'vitals';
+    if(/\b(glucemia|glicemia|glucosa|azucar|mg\/dl)\b/.test(t))return 'glucose';
+    return null;
+  }
+  const writeVerb=t=>/\b(registr\w*|guard\w*|agreg\w*|anot\w*|sub\w*|ingres\w*|carg\w*|apunt\w*|tom\w*)\b/.test(t);
+  function parseDayTime(t,d){
+    let m=t.match(/\b(20\d{2})[-\/](\d{1,2})[-\/](\d{1,2})\b/);
+    if(m)d.day=`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+    else if((m=t.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})\b/)))d.day=`${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    else if((m=t.match(/\b(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?: de)? (20\d{2})\b/))){const months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];d.day=`${m[3]}-${String(months.indexOf(m[2])+1).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+    else if(/\banteayer\b/.test(t))d.day=shiftDay(localDateKey(Date.now()),-2);
+    else if(/\bayer\b/.test(t))d.day=shiftDay(localDateKey(Date.now()),-1);
+    else if(/\bhoy\b/.test(t))d.day=localDateKey(Date.now());
+    const tm=t.match(/\b(?:a las?\s*|las\s*|hora\s*:?\s*|a\s*)?([01]?\d|2[0-3])[:.]([0-5]\d)\b/);
+    if(tm)d.time=`${tm[1].padStart(2,'0')}:${tm[2]}`;
+    else if((m=t.match(/\b(?:a las?|a la|hora|las?)\s+(\w+)(?:\s+y\s+(\w+))?\b/))){let h=numberWords[m[1]],minutes=m[2]?numberWords[m[2]]:0;if(h!==undefined&&minutes!==undefined&&h<24&&minutes<60){if(/\b(tarde|noche|pm)\b/.test(t)&&h<12)h+=12;d.time=`${String(h).padStart(2,'0')}:${String(minutes).padStart(2,'0')}`;}}
+  }
+  function parseWrite(t,old){
+    const normalized=norm(t), d=old?{...old}: {kind:identifyKind(normalized)};
+    if(!d.kind)return null;
+    parseDayTime(normalized,d);
+    const n=src=>src?Number(src.replace(',','.')):null;
+    let m;
+    if(d.kind==='glucose'){
+      m=normalized.match(/\b(?:glucemia|glicemia|glucosa|azucar|medicion)\s*(?:de|es|fue|era|en|:)?\s*(\d{1,3})\b/)||normalized.match(/\b(\d{1,3})\s*mg\/dl\b/);
+      if(!m)m=normalized.match(/\b(\d{1,3})\s*(?:de\s+)?(?:glucemia|glicemia|glucosa)\b/);if(m)d.glucose=n(m[1]);else if(old&&/^\d{1,3}$/.test(normalized))d.glucose=n(normalized);
+    } else if(d.kind==='vitals'){
+      m=normalized.match(/\b(?:presion|tension)\s*(?:de|fue|es|:)?\s*(\d{2,3})\s*(?:\/|sobre|con|y)\s*(\d{1,3})\b/)||normalized.match(/\b(\d{2,3})\s*\/\s*(\d{1,3})\b/);
+      if(m){d.systolic=n(m[1]);d.diastolic=n(m[2]);}
+      m=normalized.match(/\b(?:glucemia|glicemia|glucosa|azucar)\s*(?:de|es|fue|era|en|:)?\s*(\d{1,3})\b/);if(m)d.glucose=n(m[1]);
+      m=normalized.match(/\b(?:pulso|latidos|ppm)\s*(?:de|fue|es|:)?\s*(\d{2,3})\b/);if(m)d.ppm=n(m[1]);
+      if(old&&(m=normalized.match(/\b(?:sistolica)\s*(?:es|de|:)?\s*(\d{2,3})\b/)))d.systolic=n(m[1]);
+      if(old&&(m=normalized.match(/\b(?:diastolica)\s*(?:es|de|:)?\s*(\d{1,3})\b/)))d.diastolic=n(m[1]);
+    } else if(d.kind==='meal'){
+      m=normalized.match(/\b(desayuno|desayune|almuerzo|almorce|once|cena|cene|snack|colacion|merienda)\b/);
+      if(m)d.mealType=({desayuno:'Desayuno',desayune:'Desayuno',almuerzo:'Almuerzo',almorce:'Almuerzo',once:'Once',cena:'Cena',cene:'Cena',snack:'Snack',colacion:'Snack',merienda:'Snack'})[m[1]];
+      if(/\b(comida)\b/.test(normalized)&&!d.mealType)d.mealType='Otro';
+      m=normalized.match(/\b(?:comi|comido|comiendo|desayune|almorce|cene|tome|comida de|almuerzo de|desayuno de|once de|cena de|fue|era|consumi)\s+(.+)/);
+      if(m){let food=m[1].replace(/\s+(?:hoy|ayer|anteayer|a las?\s+\d{1,2}[:.]\d{2}|el\s+\d{1,2}[\/.]\d{1,2}[\/.]20\d{2}).*$/,'').trim();if(food.length>2)d.food=food.slice(0,1000);}
+      if(old&&/^(?:comi|fue|era|consumi)\s+/.test(normalized))d.food=normalized.replace(/^(?:comi|fue|era|consumi)\s+/,'').slice(0,1000);
+      if(old&&!d.food&&!/\b(hora|fecha|hoy|ayer)\b/.test(normalized)&&normalized.length>2&&!/[\d:]/.test(normalized))d.food=normalized.slice(0,1000);
+    } else if(d.kind==='medication'){
+      for(const [key,pattern] of [['metformin',/\bmetformina\b/],['glibenclamide',/\bglibenclamida\b/],['losartan',/\blosartan\b/],['amlodipine',/\bamlodipino\b/],['atorvastatin',/\batorvastatina\b/],['anulit',/\banulit\b/]])if(pattern.test(normalized))d.drug=key;
+      m=normalized.match(/\b(\d+(?:[.,]\d+)?)\s*mg\b/);if(m)d.dose=n(m[1]);
+      if(old&&/^(\d+(?:[.,]\d+)?)$/.test(normalized))d.dose=n(normalized);
+      // Nunca se infiere una dosis a partir de los fármacos habituales.
+    } else if(d.kind==='event'){
+      m=normalized.match(/\b(?:evento|nota|actividad|anota que|registra que|anotar que|anote que)\s*(?:de|:|fue|que)?\s*(.+)/);
+      if(m&&m[1].length>2)d.eventText=m[1].trim().slice(0,1000);
+      else if(old&&!/\b(hora|fecha|hoy|ayer)\b/.test(normalized)&&normalized.length>2)d.eventText=normalized.slice(0,1000);
+    } else if(d.kind==='sleep'){
+      // Se solicita explícitamente el inicio y el fin: nunca se inventa la duración.
+      const sm=normalized.match(/\b(?:me acoste|me dormi|inicio|dormi desde)\s*(?:a las?\s*)?(\d{1,2})[:.]([0-5]\d)/);
+      const em=normalized.match(/\b(?:desperte|despertar|hasta las?|termine|fin)\s*(?:a las?\s*)?(\d{1,2})[:.]([0-5]\d)/);
+      if(sm)d.time=`${sm[1].padStart(2,'0')}:${sm[2]}`;
+      if(em)d.endTime=`${em[1].padStart(2,'0')}:${em[2]}`;
+      const ed=normalized.match(/\b(?:desperte|fin|despertar)\s+(?:el\s+)?(\d{1,2})[\/.-](\d{1,2})[\/.-](20\d{2})/);
+      if(ed)d.endDay=`${ed[3]}-${ed[2].padStart(2,'0')}-${ed[1].padStart(2,'0')}`;
+      if(/\b(desperte|despertar|fin)\b/.test(normalized)&&/\bhoy\b/.test(normalized))d.endDay=localDateKey(Date.now());
+      if(old&&/^(\d{1,2}):([0-5]\d)$/.test(normalized)&&!d.endTime)d.endTime=normalized;
+    } else if(d.kind==='hba1c'){
+      m=normalized.match(/(?:hba1c|hemoglobina (?:glicosilada|glucosilada))\s*(?:de|es|fue|:)?\s*(\d{1,2}(?:[.,]\d+)?)\s*%?/)||normalized.match(/^(\d{1,2}[.,]\d+)\s*%?$/);
+      if(m)d.hba1c=n(m[1]);
+    }
+    return d;
+  }
+  function missingWrite(d){
+    if(!d)return 'No pude identificar qué quieres registrar.';
+    if(d.kind==='glucose'&&(!Number.isInteger(d.glucose)||d.glucose<1||d.glucose>999))return '¿Cuál es la glucemia en mg/dL? Escribe un número entero entre 1 y 999.';
+    if(d.kind==='vitals'){
+      if(d.glucose!=null&&(!Number.isInteger(d.glucose)||d.glucose<1||d.glucose>999))return '¿Cuál es el valor correcto de glucemia entre 1 y 999 mg/dL?';
+      const pressure=d.systolic!=null||d.diastolic!=null;
+      if(pressure&&(!Number.isInteger(d.systolic)||!Number.isInteger(d.diastolic)))return '¿Cuáles son los dos valores de presión? Ejemplo: 123/60.';
+      if(pressure&&(d.systolic<1||d.systolic>350||d.diastolic<1||d.diastolic>250||d.systolic<=d.diastolic))return 'La presión ingresada no es válida. Indica sistólica/diastólica, por ejemplo 123/60.';
+      if(d.ppm!=null&&(!Number.isInteger(d.ppm)||d.ppm<1||d.ppm>300))return 'Indica un pulso válido de 1 a 300 latidos por minuto.';
+      if(!pressure&&d.ppm==null)return '¿Qué presión o pulso quieres registrar? Ejemplo: 123/60 y pulso 82.';
+    }
+    if(d.kind==='meal'&&!d.mealType)return '¿Qué tipo de comida fue: desayuno, almuerzo, once, cena, snack u otro?';
+    if(d.kind==='meal'&&!d.food)return '¿Qué alimentos o bebidas consumió?';
+    if(d.kind==='medication'&&!d.drug)return '¿Qué medicamento tomó? Metformina, glibenclamida, losartán, amlodipino, atorvastatina o ANULIT.';
+    if(d.kind==='medication'&&!(d.dose>0&&d.dose<=2000))return '¿Cuántos miligramos (mg) tomó? Indica la dosis exacta, sin suposiciones.';
+    if(d.kind==='event'&&!d.eventText)return '¿Qué ocurrió? Describe el evento o nota.';
+    if(d.kind==='hba1c'&&!(d.hba1c>0&&d.hba1c<=100))return '¿Cuál es el resultado de HbA1c en porcentaje?';
+    if(!d.day)return '¿En qué fecha fue? Escribe hoy, ayer o DD/MM/AAAA.';
+    if(!dateOK(d.day))return 'La fecha no es válida. Corrígela usando DD/MM/AAAA.';
+    if(d.kind==='hba1c')return null;
+    if(!d.time)return '¿A qué hora ocurrió? Indica HH:MM, por ejemplo 10:40.';
+    if(d.kind==='sleep'){
+      // Preguntar primero la hora; para una siesta que termina después del
+      // inicio, la fecha de despertar puede deducirse sin molestar al usuario.
+      if(!d.endTime)return '¿A qué hora despertó? Puedes decir «a las 5:30 de la tarde».';
+      if(!d.endDay)return '¿En qué fecha despertó? Indica hoy, ayer o DD/MM/AAAA. Si cruzó la medianoche, especifica el día.';
+      if(!dateOK(d.endDay))return 'La fecha de despertar es inválida.';
+    }
+    return null;
+  }
+  const typeLabel={glucose:'Glucemia',vitals:'Signos vitales',meal:'Comida',medication:'Medicamento tomado',event:'Evento',sleep:'Sueño',hba1c:'HbA1c'};
+  // Mostrar únicamente las mediciones realmente proporcionadas: la presión no implica pulso.
+  function writeTypeLabel(d){
+    if(!d||d.kind!=='vitals')return typeLabel[d?.kind]||'Registro';
+    const hasBP=d.systolic!=null||d.diastolic!=null;
+    const hasPulse=d.ppm!=null;
+    if(hasBP&&hasPulse)return 'Presión arterial y pulso';
+    if(hasBP)return 'Presión arterial';
+    if(hasPulse)return 'Pulso';
+    return 'Signos vitales';
+  }
+  function writeSummary(d){
+    const parts=[`**${writeTypeLabel(d)}**`];
+    if(d.glucose!=null)parts.push(`- Glucemia: **${d.glucose} mg/dL**`);
+    if(d.systolic!=null){
+      parts.push(`- Presión: **${d.systolic}/${d.diastolic} mmHg**`);
+      if(d.diastolic<40)parts.push('⚠️ **Diastólica extremadamente baja**. Comprueba que los números estén bien y repite la medición. Si se confirma, busca valoración médica urgente.');
+    }
+    if(d.ppm!=null)parts.push(`- Pulso: **${d.ppm} lpm**`);
+    if(d.kind==='meal')parts.push(`- Tipo: **${d.mealType}**`,`- Consumido: **${d.food}**`);
+    if(d.kind==='medication')parts.push(`- Medicamento: **${drugNames[d.drug]||'Pendiente'}**`,`- Dosis tomada: **${d.dose??'Pendiente'} mg**`);
+    if(d.kind==='event')parts.push(`- Descripción: **${d.eventText}**`);
+    if(d.kind==='hba1c')parts.push(`- Resultado: **${d.hba1c} %**`);
+    parts.push(`- Fecha: **${d.day.split('-').reverse().join('/')}**`);
+    if(d.kind!=='hba1c')parts.push(`- Hora: **${d.time} (Chile)**`);
+    if(d.kind==='sleep')parts.push(`- Despertar: **${(d.endDay||'').split('-').reverse().join('/')} ${d.endTime} (Chile)**`);
+    return parts.join('\n');
+  }
+  function removeWriteButtons(){if(writeActions){writeActions.querySelectorAll('button').forEach(b=>b.disabled=true);writeActions=null;}}
+  function showWriteConfirmation(){
+    removeWriteButtons();const node=addMessage('bot',`**Confirma antes de guardar en Supabase:**\n\n${writeSummary(writeDraft)}\n\n¿Son correctos los datos?`);
+    const buttons=document.createElement('div');buttons.className='assistant-write-actions';writeActions=buttons;
+    for(const [title,what] of [['✓ Confirmar y guardar','save'],['✎ Corregir','edit'],['Cancelar','cancel']]){
+      const btn=document.createElement('button');btn.type='button';btn.textContent=title;btn.className=what==='save'?'primary':'now-button';
+      btn.addEventListener('click',async()=>{
+        if(buttons!==writeActions||writeSaving)return;
+        if(what==='cancel'){removeWriteButtons();writeDraft=null;addMessage('bot','Cancelado: no se modificó ningún dato.');return;}
+        if(what==='edit'){removeWriteButtons();addMessage('bot','Escribe solo lo que quieres corregir, por ejemplo «la hora es 11:30», «ayer» o «la glucemia es 125».');question.focus();return;}
+        writeSaving=true;buttons.querySelectorAll('button').forEach(x=>x.disabled=true);btn.textContent='Guardando…';
+        try{await persistWriteDraft();removeWriteButtons();}
+        catch(err){addMessage('bot',`No se guardó: ${err.message}`,'error');buttons.querySelectorAll('button').forEach(x=>x.disabled=false);btn.textContent=title;}
+        finally{writeSaving=false;}
+      });buttons.append(btn);
+    }
+    node.append(buttons);messages.scrollTop=messages.scrollHeight;
+  }
+  function chileInstant(day,time){const candidates=chileWallCandidates(day,time);if(candidates.length!==1)throw Error(candidates.length?'Hora ambigua por cambio horario en Chile. Usa el formulario de registro.':'Esta hora no existe en Chile para la fecha indicada.');return new Date(candidates[0]).toISOString();}
+  // El chat espera la carga de Supabase, igual que los formularios normales.
+  // Nunca evita la verificación de conexión ni almacena datos sin confirmación.
+  async function waitForAssistantCloudReady(){
+    const limit=Date.now()+30000;
+    while(state.busy&&Date.now()<limit){
+      await new Promise(resolve=>setTimeout(resolve,250));
+    }
+    if(state.busy)throw Error('Supabase sigue sincronizando después de 30 segundos. Espera a que termine y pulsa Confirmar y guardar nuevamente.');
+    if(state.storageProblem){
+      // La pantalla pudo abrirse antes de que terminara la primera sincronización.
+      // Se reintenta el mismo mecanismo utilizado por «Actualizar».
+      await loadMeasurements();
+      if(state.busy||state.storageProblem)throw Error('No hay conexión confirmada con Supabase. Pulsa Actualizar en la aplicación y revisa el aviso de conexión antes de reintentar. No se guardó nada.');
+    }
+  }
+  async function persistWriteDraft(){
+    const d=writeDraft;if(!d||missingWrite(d))throw Error('Faltan datos.');
+    await waitForAssistantCloudReady();
+    if(d.kind==='hba1c'){
+      const {hash}=await getCloudIdentity();const existing=hba1cState.records.find(r=>r.test_date===d.day&&r.hba1c===d.hba1c);
+      if(existing)throw Error('Esta HbA1c ya existe con la misma fecha y valor.');
+      const rec=await Hba1cRepository.save(hash,{id:createId(),test_date:d.day,hba1c:d.hba1c},false);
+      hba1cState.records=[...hba1cState.records,rec];hba1cState.owner=hash;cacheHba1c();renderHba1c();
+      addMessage('bot',`✅ Guardado en Supabase.\n\n${writeSummary(d)}`);writeDraft=null;return;
+    }
+    const createdAt=chileInstant(d.day,d.time);if(Date.parse(createdAt)>Date.now()+60000)throw Error('No se pueden registrar horas futuras como mediciones ya realizadas.');
+    const common={id:createId(),createdAt};let records=[];
+    switch(d.kind){
+      case 'glucose': records=[{...common,glucose:d.glucose,food:'',moment:'',note:''}];break;
+      case 'vitals':{
+        if(d.glucose!=null)records.push({...common,id:createId(),glucose:d.glucose,food:'',moment:'',note:''});
+        if(d.systolic!=null)records.push({...common,type:'pressure',systolic:d.systolic,diastolic:d.diastolic,note:''});
+        if(d.ppm!=null)records.push({...common,id:createId(),type:'pulse',ppm:d.ppm,note:''});break;
+      }
+      case 'meal':records=[{...common,type:'meal',mealType:d.mealType,food:d.food,note:'',glucose:null}];break;
+      case 'event':records=[{...common,type:'event',eventText:d.eventText}];break;
+      case 'medication':records=[{...common,medications:{[d.drug]:{taken:true,doseMg:d.dose,time:d.time,recordedAt:createdAt}},note:''}];break;
+      case 'sleep':{
+        const end=chileInstant(d.endDay,d.endTime);if(Date.parse(end)<=Date.parse(createdAt))throw Error('El despertar debe ser posterior al inicio del sueño.');
+        records=[{...common,type:'sleep',sleepEnd:end,note:''}];break;
+      }
+    }
+    const cloud=await MeasurementRepository.load();
+    for(const r of records){
+      const duplicate=cloud.some(x=>Date.parse(x.createdAt)===Date.parse(r.createdAt)&&(
+        (hasGlucose(r)&&hasGlucose(x)&&r.glucose===x.glucose)||
+        (r.type==='pressure'&&hasPressure(x)&&r.systolic===x.systolic&&r.diastolic===x.diastolic)||
+        (r.type==='pulse'&&hasPulse(x)&&r.ppm===x.ppm)||
+        (r.type==='meal'&&isMeal(x)&&r.food===x.food&&r.mealType===x.mealType)||
+        (r.type==='event'&&isNoteEvent(x)&&r.eventText===x.eventText)||
+        (r.type==='sleep'&&isSleep(x)&&r.sleepEnd===x.sleepEnd)||
+        (r.medications&&Object.keys(r.medications).some(key=>recordedMedication(x,key)?.doseMg===r.medications[key].doseMg))
+      ));if(duplicate)throw Error('Ya existe un registro idéntico a la misma hora. No se guardó un duplicado.');
+    }
+    await MeasurementRepository.addMany(records);
+    state.records=[...cloud,...records];cacheCloudRecords(state.records);renderAll();
+    byId('cloud-status').textContent='✓ Guardado en Supabase';notify(`✓ ${writeTypeLabel(d)} guardado en Supabase`);
+    addMessage('bot',`✅ **Guardado en Supabase**\n\n${writeSummary(d)}`);writeDraft=null;
+  }
+  async function handleWrite(prompt){
+    const t=norm(prompt);
+    if(!writeDraft&&!(writeVerb(t)&&identifyKind(t)))return false;
+    if(writeDraft&&/^(cancelar|cancela|olvidalo|descartar|no)$/i.test(t)){removeWriteButtons();writeDraft=null;addMessage('bot','Cancelado. Ningún dato fue guardado.');return true;}
+    if(writeDraft&&/^(si|confirmo|confirmar|guardar|ok|dale)$/i.test(t)){
+      addMessage('bot','Para guardar pulsa el botón verde «Confirmar y guardar» de la tarjeta. No es necesario escribir nada.');return true;
+    }
+    if(writeDraft&&!t){return true;}
+    if(writeDraft&&/^(corrige|corregir|cambiar|modificar)$/i.test(t)){removeWriteButtons();addMessage('bot','Indica qué dato deseas corregir.');return true;}
+    removeWriteButtons();const d=parseWrite(prompt,writeDraft);if(!d)return false;writeDraft=d;
+    diaryCompleteSleepDay(d);
+    const missing=missingWrite(d);
+    if(missing){addMessage('bot',missing);return true;}
+    showWriteConfirmation();return true;
+  }
+
+  // DIARIO INTELIGENTE: Gemini interpreta varios sucesos en una sola narración.
+  // No se concede a Gemini acceso a escritura; solo devuelve propuestas JSON.
+  let diaryStory='',diaryEntries=null,diaryButtons=null,diaryPanel=null,diaryBusy=false,diaryAwaiting=false;
+  const diaryTypes=new Set(['glucose','vitals','meal','medication','event','sleep','hba1c']);
+  const diaryMedications=new Set(Object.keys(drugNames));
+  function diaryRequested(text){
+    const t=norm(text);
+    if(diaryAwaiting)return true;
+    const mentions=(t.match(/\b(comi|desayune|almorce|cene|tome|medique|dormi|desperte|glucemia|glicemia|presion|pulso|caminata|camine|hba1c|me acoste)\b/g)||[]).length;
+    return (writeVerb(t)&&!!identifyKind(t)) || (/\b(mi dia|todo mi dia|todo lo que hice|registra todo|anota todo|te cuento mi dia|despues|luego|mas tarde|posteriormente)\b/.test(t)&&mentions>=1) || (mentions>=2&&/\b(hoy|ayer|anteayer|registr|anota|guarda|sube|despues|luego)\b/.test(t)) || (/\b(hoy|ayer|anteayer)\b.*\b(comi|desayune|almorce|cene|tome|dormi|desperte)\b/.test(t));
+  }
+  // Solo una ACLARACIÓN explícita de un sueño pendiente puede completar un
+  // intervalo directamente. Un relato nuevo SIEMPRE lo interpreta Gemini.
+  // Nunca unir «desperté a las 7:30. A las 8 desayuné» como si fuera sueño.
+  function diarySleepInterval(message){
+    if(!diaryAwaiting||!diaryEntries||diaryEntries.length!==1||diaryEntries[0].kind!=='sleep')return null;
+    const t=norm(message);
+    for(const clause of t.split(/[.!?;\n]+/)){
+      const range=clause.match(/\b(?:desde\s+)?(?:de\s+las?|a\s+las?|las?)\s+(\d{1,2}(?:[:.][0-5]\d)?)([^\n]*?)\b(?:hasta|a)\s+las?\s+(\d{1,2}(?:[:.][0-5]\d)?)([^\n]*)/);
+      if(!range)continue;
+      const numeric=(raw,ctx,inherited)=>{
+        const m=raw.match(/^(\d{1,2})(?:[:.]([0-5]\d))?$/);if(!m)return null;
+        let h=+m[1],min=+(m[2]||0);
+        if(/\b(tarde|noche|pm)\b/.test(ctx)&&h<12)h+=12;
+        else if(/\b(madrugada|manana|am)\b/.test(ctx)&&h===12)h=0;
+        else if(!/\b(tarde|noche|pm|madrugada|manana|am)\b/.test(ctx)&&inherited>=12&&h<12)h+=12;
+        return h<=23?`${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`:null;
+      };
+      const time=numeric(range[1],range[2],-1);
+      const endTime=numeric(range[3],range[4],time?+time.slice(0,2):-1);
+      if(!time||!endTime)return null;
+      const dayObj={};parseDayTime(t,dayObj);
+      const explicit=/\b(hoy|ayer|anteayer)\b|\b\d{1,2}[\/.\-]\d{1,2}[\/.\-]20\d{2}\b/.test(t);
+      const day=explicit?dayObj.day||'':'';
+      return {kind:'sleep',day,time,endDay:day&&endTime>time?day:'',endTime};
+    }
+    return null;
+  }
+  function diaryDate(){return localDateKey(Date.now());}
+  function diaryContext(){return {today:diaryDate(),timezone:'America/Santiago',medications:drugNames,possibleTypes:[...diaryTypes]};}
+  // Gemini puede expresar los mismos tipos en español, inglés o camelCase.
+  // Unificar nombres antes de validar, sin crear ni guardar registros nuevos.
+  function diaryNormalizeKind(v){
+    if(!v||typeof v!=='object')return null;
+    const raw=String(v.kind??v.type??v.tipo??v.category??v.categoria??'');
+    const t=norm(raw.replace(/([a-z])([A-Z])/g,'$1 $2').replace(/[_-]+/g,' '));
+    const aliases={
+      glucose:['glucose','glucemia','glicemia','glucosa','blood glucose','blood sugar','azucar','sugar','medicion glucemia'],
+      vitals:['vitals','vital','vital signs','vital sign','signos vitales','signo vital','pressure','blood pressure','bloodpressure','presion','presion arterial','arterial pressure','tension','tension arterial','bp','pulse','heart rate','heartrate','ritmo cardiaco','frecuencia cardiaca','pulso','presion pulso','pressure pulse','blood pressure pulse','systolic diastolic'],
+      meal:['meal','food','comida','alimento','alimentacion','desayuno','desayune','almuerzo','cena','once','merienda','snack','colacion'],
+      medication:['medication','medicine','medicament','medicamento','medicina','medicacion','farmaco','pastilla','drug','medication taken','medicamento tomado','toma medicamento'],
+      event:['event','evento','nota','note','actividad','activity','ejercicio','exercise','sintoma','symptom'],
+      sleep:['sleep','sueno','dormir','dormi','siesta','nap','rest','descanso','registro de sueno'],
+      hba1c:['hba1c','hemoglobina glicosilada','hemoglobina glucosilada','a1c','glycated hemoglobin']
+    };
+    for(const [kind,values] of Object.entries(aliases))if(values.includes(t))return kind;
+    if(/^(?:(?:registro|medicion|medida) (?:de |del )?)?(?:blood pressure|arterial pressure|presion|tension|pulso|frecuencia cardiaca|heart rate)\b/.test(t))return 'vitals';
+    // Deducir de campos estructurados inequívocos, nunca de la dosis sola.
+    if(v.systolic!=null||v.diastolic!=null||v.sistolica!=null||v.diastolica!=null||v.bloodPressure!=null||v.pressure!=null||v.presion!=null||v.ppm!=null||v.pulse!=null||v.pulso!=null||v.heartRate!=null)return 'vitals';
+    if(v.glucose!=null||v.glucemia!=null||v.glicemia!=null)return 'glucose';
+    if(v.hba1c!=null||v.hemoglobinaGlicosilada!=null)return 'hba1c';
+    if(v.drug!=null||v.drugName!=null||v.medicamento!=null||v.medication!=null)return 'medication';
+    if(v.mealType!=null||v.food!=null||v.alimentos!=null||v.comida!=null)return 'meal';
+    if(v.endTime!=null||v.endDay!=null||v.horaDespertar!=null||v.hora_fin!=null)return 'sleep';
+    if(v.eventText!=null||v.evento!=null||v.descripcion!=null)return 'event';
+    return null;
+  }
+  function diaryClean(raw){
+    if(!raw||typeof raw!=='object'||!Array.isArray(raw.entries))throw Error('Gemini no devolvió un listado válido. Intenta describir de nuevo el día.');
+    if(raw.entries.length>25)throw Error('Gemini devolvió demasiados registros. Divide el relato en partes.');
+    const get=(v,...keys)=>{for(const key of keys)if(v[key]!==undefined&&v[key]!==null&&v[key]!=='')return v[key];return undefined;};
+    const parseNumber=v=>{
+      if(v===undefined||v===null||v==='')return undefined;
+      const match=String(v).replace(',','.').match(/^\s*(-?\d+(?:\.\d+)?)(?:\s*(?:mg\/?dl|mmhg|mg|lpm|ppm|%))?\s*$/i);
+      return match?Number(match[1]):undefined;
+    };
+    const parseDate=v=>{
+      if(typeof v!=='string')return '';
+      const t=v.trim();let m;
+      if((m=/^(20\d{2})-(\d{1,2})-(\d{1,2})$/.exec(t)))return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+      if((m=/^(\d{1,2})[\/-](\d{1,2})[\/-](20\d{2})$/.exec(t)))return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+      return t;
+    };
+    const parseTime=v=>{
+      if(typeof v!=='string')return '';
+      const m=/^(\d{1,2}):([0-5]\d)$/.exec(v.trim());
+      return m?`${m[1].padStart(2,'0')}:${m[2]}`:v.trim();
+    };
+    const entries=raw.entries.map((v,i)=>{
+      if(!v||typeof v!=='object')throw Error(`El registro ${i+1} no es un objeto válido.`);
+      const kind=diaryNormalizeKind(v);
+      if(!kind||!diaryTypes.has(kind)){
+        const proposed=String(v.kind??v.type??v.tipo??v.category??'sin tipo').slice(0,65);
+        throw Error(`Gemini devolvió el tipo «${proposed}» para el registro ${i+1}. No se guardó nada.`);
+      }
+      const d={kind};
+      const strings={
+        day:get(v,'day','date','fecha'),time:get(v,'time','hora','startTime','start_time','horaInicio','hora_inicio'),
+        endDay:get(v,'endDay','endDate','end_date','fechaFin','fecha_fin','fechaDespertar'),
+        endTime:get(v,'endTime','end_time','horaFin','hora_fin','horaDespertar','wakeTime'),
+        mealType:get(v,'mealType','tipoComida','tipo_comida'),food:get(v,'food','alimentos','comida','descripcionComida'),
+        drug:get(v,'drug','drugName','medicamento','medication','nombreMedicamento'),
+        eventText:get(v,'eventText','evento','descripcion','description','nota')
+      };
+      for(const [key,value] of Object.entries(strings))if(typeof value==='string')d[key]=value.trim().slice(0,key==='food'||key==='eventText'?1000:100);
+      const numeric={
+        glucose:get(v,'glucose','glucemia','glicemia','glucosa','bloodGlucose'),
+        systolic:get(v,'systolic','sistolica','sistólica','systolicPressure'),
+        diastolic:get(v,'diastolic','diastolica','diastólica','diastolicPressure'),
+        ppm:get(v,'ppm','pulse','pulso','heartRate','heart_rate','lpm'),
+        dose:get(v,'dose','dosis','doseMg','dosisMg'),
+        hba1c:get(v,'hba1c','a1c','hemoglobinaGlicosilada')
+      };
+      for(const [key,value] of Object.entries(numeric)){
+        const n=parseNumber(value);if(n!==undefined&&Number.isFinite(n))d[key]=n;
+      }
+      if(d.kind==='vitals'&&(d.systolic==null||d.diastolic==null)){
+        const pair=get(v,'bloodPressure','pressure','presion','bp');
+        if(typeof pair==='string'){
+          const m=pair.match(/(\d{2,3})\s*(?:\/|sobre)\s*(\d{1,3})/i);
+          if(m){d.systolic=Number(m[1]);d.diastolic=Number(m[2]);}
+        }
+      }
+      if(d.kind==='medication'&&d.drug){
+        const name=norm(d.drug);
+        const key=Object.keys(drugNames).find(k=>k===name||norm(drugNames[k])===name);
+        d.drug=key||'';
+      }
+      if(d.mealType){
+        const options={desayuno:'Desayuno',almuerzo:'Almuerzo',once:'Once',cena:'Cena',snack:'Snack',colacion:'Snack',merienda:'Snack',otro:'Otro',comida:'Otro'};
+        d.mealType=options[norm(d.mealType)]||'';
+      }
+      d.day=parseDate(d.day);d.endDay=parseDate(d.endDay);
+      d.time=parseTime(d.time);d.endTime=parseTime(d.endTime);
+      if(d.day&&!dateOK(d.day))d.day='';
+      if(d.endDay&&!dateOK(d.endDay))d.endDay='';
+      if(d.time&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.time))d.time='';
+      if(d.endTime&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.endTime))d.endTime='';
+      return d;
+    });
+    if(!entries.length)throw Error('No encontré registros concretos en el relato. Indica qué comiste, qué tomaste o qué ocurrió.');
+    return entries;
+  }
+  // La función Edge existente acepta question de 1 a 900 caracteres.
+  // Los relatos largos se procesan por segmentos; nunca enviamos las instrucciones
+  // extensas de extracción a question ni cambiamos el límite de seguridad del servidor.
+  function diaryChunks(story,max=390){
+    const sentences=String(story||'').replace(/\r/g,'').split(/(?<=[.!?;\n])\s+/).filter(Boolean);
+    const result=[];let current='';
+    for(const sentence of sentences){
+      // Separar incluso una frase sin puntos muy larga, conservando las palabras.
+      const words=sentence.split(/\s+/);let segment='';
+      for(const word of words){
+        if(word.length>max)throw Error('Una palabra del relato es demasiado larga. Revisa el texto.');
+        if(segment&&segment.length+word.length+1>max){
+          if(current)result.push(current);
+          current=segment;segment=word;
+        }else segment+=(segment?' ':'')+word;
+      }
+      if(segment){
+        if(current&&current.length+segment.length+1>max){result.push(current);current=segment;}
+        else current+=(current?' ':'')+segment;
+      }
+    }
+    if(current)result.push(current);
+    if(result.length>16)throw Error('El relato es demasiado extenso. Envíalo en partes más pequeñas.');
+    return result;
+  }
+  // Comprobación de cobertura: NO clasifica ni crea registros. Solamente detecta
+  // si Gemini olvidó una categoría EXPLÍCITA en un relato de varias actividades.
+  function diaryExpectedKinds(story){
+    const t=norm(story),k=[];
+    if(/\b(desayun\w*|almorz\w*|cene|cena|comi|comida|once|merienda|colacion|snack)\b/.test(t))k.push('meal');
+    if(/\b(metformina|glibenclamida|losartan|amlodipino|atorvastatina|anulit|medicamento\w*|pastilla\w*)\b/.test(t))k.push('medication');
+    if(/\b(glucemia|glicemia|glucosa|azucar)\b/.test(t))k.push('glucose');
+    if(/\b(presion|tension|sistolica|diastolica|pulso|latidos)\b/.test(t)&&!/\b(sin medir el pulso|no medi el pulso)\b/.test(t.replace(/\bpresion\b/g,'')))k.push('vitals');
+    else if(/\b(presion|tension|sistolica|diastolica)\b/.test(t))k.push('vitals');
+    if(/\b(siesta|me acoste a dormir|me dormi|dormi|descanse)\b/.test(t))k.push('sleep');
+    if(/\b(hba1c|hemoglobina glicosilada|hemoglobina glucosilada)\b/.test(t))k.push('hba1c');
+    if(/\b(evento|caminata|camine|ejercicio|sintoma|nota)\b/.test(t))k.push('event');
+    return [...new Set(k)];
+  }
+  function diaryCoversKind(entries,kind){
+    return entries.some(e=>e.kind===kind||(kind==='glucose'&&e.kind==='vitals'&&e.glucose!=null));
+  }
+  async function diaryAskGemini(question,identity){
+    if(question.length>900)throw Error('La solicitud de extracción excede los 900 caracteres; no se envió.');
+    const response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json','x-glucose-key':identity.token},body:JSON.stringify({question,history:[],summary:null,knowledge:null,model:modelSelect.value}),cache:'no-store',signal:controller.signal});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw Error(data.error||`Gemini no respondió (${response.status}).`);
+    const answer=String(data.answer||'').trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'');
+    let parsed;
+    try{parsed=JSON.parse(answer);}catch{
+      const match=answer.match(/\{[\s\S]*\}/);if(match)try{parsed=JSON.parse(match[0]);}catch{}
+    }
+    if(!parsed||!Array.isArray(parsed.entries))throw Error('Gemini no devolvió un JSON con registros. No se guardó nada.');
+    return parsed.entries;
+  }
+  async function diaryInterpret(story){
+    const identity=await getCloudIdentity();
+    const today=diaryDate();
+    const prompt=`Devuelve SOLO JSON {"entries":[...]} con UN objeto por actividad explícita del relato, en orden; NO omitas ninguna. kind EXACTAMENTE: glucose,vitals (presión/pulso),meal,medication,event,sleep,hba1c. Campos: day(AAAA-MM-DD),time(HH:MM),endDay,endTime,glucose,systolic,diastolic,ppm,mealType,food,drug,dose,eventText,hba1c. Hoy Chile ${today}; aplica la fecha indicada a los eventos siguientes. NO inventes horas/dosis/pulso. Despertarse por la mañana sin inicio previo NO es sueño; una siesta con inicio/fin SÍ. drug: metformin,glibenclamide,losartan,amlodipine,atorvastatin,anulit. mealType: Desayuno,Almuerzo,Once,Cena,Snack,Otro. Texto: `;
+    const maxLength=Math.max(120,900-prompt.length-12);
+    const chunks=diaryChunks(story,maxLength);
+    if(!chunks.length)throw Error('Escribe primero tu relato.');
+    const extracted=[];
+    for(let i=0;i<chunks.length;i++){
+      const label=chunks.length>1?`${i+1}/${chunks.length}: `:'';
+      extracted.push(...await diaryAskGemini(prompt+label+chunks[i],identity));
+    }
+    let entries=diaryRecoverExplicit(diaryClean({entries:extracted}),story);
+    const missing=diaryExpectedKinds(story).filter(k=>!diaryCoversKind(entries,k));
+    // Solo si Gemini omitió hechos claros, darle UNA segunda oportunidad usando
+    // sus capacidades. No crear registros de forma local ni guardar parcialmente.
+    if(missing.length){
+      const retryPrefix=`SOLO JSON {"entries":[...]}. Extrae SOLO los sucesos de estos tipos omitidos: ${missing.join(',')}. No incluyas otros ni inventes datos. Usa kind EXACTAMENTE glucose,vitals (presión/pulso),meal,medication,event,sleep,hba1c y claves day,time,endDay,endTime,glucose,systolic,diastolic,ppm,mealType,food,drug,dose,eventText,hba1c. Hoy Chile ${today}. Sueño solo con inicio explícito. Texto: `;
+      const retryChunks=diaryChunks(story,Math.max(120,900-retryPrefix.length-12));
+      const retries=[];
+      for(let i=0;i<retryChunks.length;i++){
+        const label=retryChunks.length>1?`${i+1}/${retryChunks.length}: `:'';
+        retries.push(...await diaryAskGemini(retryPrefix+label+retryChunks[i],identity));
+      }
+      const recovered=diaryRecoverExplicit(diaryClean({entries:retries}),story).filter(d=>missing.includes(d.kind));
+      entries.push(...recovered);
+      // No enseñar una confirmación engañosa cuando faltan actividades.
+      const stillMissing=missing.filter(k=>!diaryCoversKind(entries,k));
+      if(stillMissing.length)throw Error(`Gemini omitió ${stillMissing.join(', ')} incluso tras reintentar. No se guardó nada. Intenta nuevamente o divide el relato.`);
+    }
+    // Si todos tienen fecha y hora, respetar el orden cronológico incluso
+    // cuando Gemini recuperó alguno en una segunda consulta.
+    if(entries.every(d=>dateOK(d.day)&&/^([01]\d|2[0-3]):[0-5]\d$/.test(d.time||''))){
+      entries.sort((a,b)=>(a.day+'T'+a.time).localeCompare(b.day+'T'+b.time));
+    }
+    return entries;
+  }
+  // Corrección de entidades explícitas: Gemini propone; el relato original es la fuente.
+  // Recupera nombre/dosis mencionados claramente sin suponer medicamentos habituales.
+  function diaryRecoverExplicit(entries,story){
+    // El pulso NO se deduce a partir de los dos valores de presión.
+    // Si Gemini añadiera un pulso que el usuario nunca mencionó, se descarta.
+    const pulseMentioned=/\b(pulso|latidos|pulsaciones|frecuencia cardiaca|lpm|ppm|fc)\b/.test(norm(story))&&!/\b(sin medir (?:el )?pulso|no medi (?:el )?pulso)\b/.test(norm(story));
+    if(!pulseMentioned){for(const d of entries)if(d.kind==='vitals')delete d.ppm;}
+    const clauses=norm(story).split(/(?<=[.!?;])\s+|\b(?:despues|luego|posteriormente|mas tarde)\b/g).map(x=>x.trim()).filter(Boolean);
+    const meds=[];
+    for(const part of clauses){
+      for(const [key,name] of Object.entries(drugNames)){
+        if(!new RegExp('\\b'+norm(name)+'\\b','i').test(part))continue;
+        const match=part.match(/\b(\d+(?:[.,]\d+)?)\s*mg\b/);
+        const tm=part.match(/\b(?:a las?\s*)?([01]?\d|2[0-3])[:.]([0-5]\d)\b/);
+        meds.push({drug:key,dose:match?Number(match[1].replace(',','.')):null,time:tm?tm[1].padStart(2,'0')+':'+tm[2]:null});
+      }
+    }
+    const targets=entries.filter(x=>x.kind==='medication');
+    if(targets.length===1&&meds.length===1){
+      const d=targets[0],m=meds[0];
+      if(!d.drug)d.drug=m.drug;
+      if(!(d.dose>0)&&m.dose>0)d.dose=m.dose;
+      if(!d.time&&m.time)d.time=m.time;
+    }else{
+      for(const d of targets){
+        const candidates=meds.filter(m=>(d.drug&&m.drug===d.drug)||(d.time&&m.time===d.time));
+        if(candidates.length!==1)continue;
+        const m=candidates[0];
+        if(!d.drug)d.drug=m.drug;
+        if(!(d.dose>0)&&m.dose>0)d.dose=m.dose;
+        if(!d.time&&m.time)d.time=m.time;
+      }
+    }
+    // Heredar «hoy/ayer» solo cuando el relato usa una única referencia de día.
+    const relative=norm(story).match(/\b(hoy|ayer|anteayer)\b/g)||[];
+    if(relative.length&&new Set(relative).size===1&&!/\b\d{1,2}[\/.-]\d{1,2}[\/.-]20\d{2}\b/.test(story)){
+      const day=relative[0]==='hoy'?diaryDate():shiftDay(diaryDate(),relative[0]==='ayer'?-1:-2);
+      for(const d of entries)if(!d.day)d.day=day;
+    }
+    return entries;
+  }
+  // El sueño tiene DOS momentos distintos. Una respuesta sobre el despertar jamás
+  // puede reemplazar la fecha/hora de inicio ya recogida en el relato.
+  function diarySpokenTime(answer){
+    const t=norm(answer);
+    let m=t.match(/\b([01]?\d|2[0-3])[:.]([0-5]\d)\b/);
+    let hour,minute;
+    if(m){hour=Number(m[1]);minute=Number(m[2]);}
+    else{
+      m=t.match(/\b(?:a las?|a la|las?|hora|desde las?|hasta las?)\s+(\w+)(?:\s+y\s+(\w+))?\b/);
+      if(!m)return null;
+      hour=/^\d{1,2}$/.test(m[1])?Number(m[1]):numberWords[m[1]];minute=m[2]?(/^\d{1,2}$/.test(m[2])?Number(m[2]):numberWords[m[2]]):0;
+      if(hour===undefined||minute===undefined)return null;
+    }
+    if(hour<1||hour>23||minute<0||minute>59)return null;
+    if(/\b(tarde|noche|p\.?m\.?)\b/.test(t)&&hour<12)hour+=12;
+    else if(/\b(madrugada|manana|a\.?m\.?)\b/.test(t)&&hour===12)hour=0;
+    return String(hour).padStart(2,'0')+':'+String(minute).padStart(2,'0');
+  }
+  // Si ya conocemos el día de inicio y ambos horarios de una siesta
+  // que termina más tarde ese mismo día, la fecha de despertar se deduce
+  // del propio intervalo. No suponemos un día en sueños nocturnos ambiguos.
+  function diaryCompleteSleepDay(d){
+    if(!d||d.kind!=='sleep'||d.endDay||!dateOK(d.day))return false;
+    if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.time||'')||!/^([01]\d|2[0-3]):[0-5]\d$/.test(d.endTime||''))return false;
+    const minutes=clock=>Number(clock.slice(0,2))*60+Number(clock.slice(3,5));
+    const duration=minutes(d.endTime)-minutes(d.time);
+    if(duration<=0||duration>12*60)return false; // Podría cruzar medianoche.
+    d.endDay=d.day;
+    return true;
+  }
+  function diarySleepAnswer(answer,d){
+    const t=norm(answer);
+    const missing=missingWrite(d);
+    const aboutEnd=/\b(desperte|despertar|desperto|me levante|levante|me desperte|hasta|termine|finalizo)\b/.test(t);
+    const aboutStart=/\b(me dormi|dormi|acoste|me acoste|inicio|comenzo)\b/.test(t)&&!aboutEnd;
+    const parsed={...d};
+    const dayCandidate={};parseDayTime(t,dayCandidate);
+    // Solo fechas mencionadas explícitamente. La fecha del inicio no se altera.
+    const hasDay=/\b(hoy|ayer|anteayer)\b|\b\d{1,2}[\/.-]\d{1,2}[\/.-]20\d{2}\b|\b20\d{2}-\d{1,2}-\d{1,2}\b/.test(t);
+    const time=diarySpokenTime(answer);
+    if(aboutEnd||(!aboutStart&&/despert/.test(missing||''))){
+      if(hasDay&&dayCandidate.day)parsed.endDay=dayCandidate.day;
+      if(time)parsed.endTime=time;
+    }else if(aboutStart||(!aboutEnd&&/inicio|a que hora ocurrio|en que fecha fue/i.test(norm(missing)))){
+      if(hasDay&&dayCandidate.day)parsed.day=dayCandidate.day;
+      if(time)parsed.time=time;
+    }else if(hasDay&&dayCandidate.day&&time){
+      // Si pregunta por despertar y contesta «hoy a las seis», es el despertar.
+      if(!parsed.endDay||!parsed.endTime){parsed.endDay=dayCandidate.day;parsed.endTime=time;}
+    }
+    // Respuestas cortas «hoy» o «18:00» corresponden exactamente al campo pendiente.
+    if(!aboutEnd&&!aboutStart){
+      if(/fecha desperto/i.test(norm(missing))&&hasDay&&dayCandidate.day)parsed.endDay=dayCandidate.day;
+      if(/hora desperto/i.test(norm(missing))&&time)parsed.endTime=time;
+      if(/fecha fue/i.test(norm(missing))&&hasDay&&dayCandidate.day)parsed.day=dayCandidate.day;
+      if(/hora ocurrio/i.test(norm(missing))&&time)parsed.time=time;
+    }
+    Object.assign(d,parsed);
+    diaryCompleteSleepDay(d);
+  }
+  // Las aclaraciones rellenan el registro pendiente sin solicitar otra llamada a Gemini.
+  function diaryApplyAnswer(answer){
+    const missing=diaryMissing();if(!missing)return false;
+    const d=diaryEntries[missing.index],t=norm(answer);
+    if(!t||t.length>350)return false;
+    const before=JSON.stringify(d);
+    if(d.kind==='sleep'){
+      diarySleepAnswer(answer,d);
+      return JSON.stringify(d)!==before;
+    }
+    const next=parseWrite(answer,d);
+    if(next){for(const [key,value] of Object.entries(next))if(value!==undefined)d[key]=value;}
+    if(/^(?:metformina|glibenclamida|losartan|amlodipino|atorvastatina|anulit)$/i.test(t)){
+      d.day=JSON.parse(before).day;d.time=JSON.parse(before).time;
+    }
+    return JSON.stringify(d)!==before;
+  }
+  function diaryDisableButtons(){if(diaryPanel){diaryPanel.querySelectorAll('button').forEach(b=>b.disabled=true);diaryPanel=null;}diaryButtons=null;}
+  function diaryMissing(){
+    for(let i=0;i<diaryEntries.length;i++){
+      const d=diaryEntries[i];
+      // Completar una fecha derivable ANTES de preguntar por ella; esta misma
+      // validación se repite al contestar al asistente sin llamar a Gemini.
+      diaryCompleteSleepDay(d);
+      const missing=missingWrite(d);
+      if(missing)return {index:i,question:missing};
+    }
+    return null;
+  }
+  // Tarjetas independientes: un error en un registro nunca obliga a guardar
+  // ni a descartar todos los demás. Los formularios nunca se guardan solos.
+  function diaryEditor(row,record){
+    const editor=document.createElement('div');editor.className='assistant-diary-edit';
+    const draft={...record};
+    const readFields=[];
+    function field(key,label,type='text',options){
+      const wrap=document.createElement('label');wrap.className=(key==='food'||key==='eventText')?'assistant-wide':'';
+      wrap.append(document.createTextNode(label));
+      let el;
+      if(type==='select'){
+        el=document.createElement('select');
+        for(const [value,text] of options){const opt=document.createElement('option');opt.value=value;opt.textContent=text;el.append(opt);}
+      }else if(type==='textarea'){el=document.createElement('textarea');el.rows=2;el.maxLength=1000;}
+      else{el=document.createElement('input');el.type=type;}
+      if(type==='number'){el.step=(key==='dose'||key==='hba1c')?'any':'1';el.min=0;}
+      el.value=draft[key]??'';
+      if(type==='date'&&draft[key]&&!dateOK(draft[key]))el.value='';
+      el.setAttribute('aria-label',label);wrap.append(el);editor.append(wrap);
+      readFields.push({key,type,el});
+    }
+    if(record.kind==='glucose')field('glucose','Glucemia (mg/dL)','number');
+    if(record.kind==='vitals'){
+      field('systolic','Presión sistólica (mmHg)','number');field('diastolic','Presión diastólica (mmHg)','number');
+      field('ppm','Pulso (lpm, opcional)','number');
+      if(record.glucose!=null)field('glucose','Glucemia (mg/dL)','number');
+    }
+    if(record.kind==='meal'){
+      field('mealType','Tipo de comida','select',[['','Seleccionar'],...['Desayuno','Almuerzo','Once','Cena','Snack','Otro'].map(x=>[x,x])]);
+      field('food','Alimentos y bebidas','textarea');
+    }
+    if(record.kind==='medication'){
+      field('drug','Medicamento','select',[['','Seleccionar'],...Object.entries(drugNames)]);
+      field('dose','Dosis tomada (mg)','number');
+    }
+    if(record.kind==='event')field('eventText','Descripción del evento','textarea');
+    if(record.kind==='hba1c')field('hba1c','HbA1c (%)','number');
+    field('day','Fecha en Chile','date');
+    if(record.kind!=='hba1c')field('time','Hora en Chile','time');
+    if(record.kind==='sleep'){
+      field('endDay','Fecha de despertar','date');field('endTime','Hora de despertar','time');
+    }
+    const errors=document.createElement('p');errors.className='assistant-diary-edit-errors';errors.hidden=true;editor.append(errors);
+    const actions=document.createElement('div');actions.className='assistant-diary-edit-actions';
+    const accept=document.createElement('button');accept.type='button';accept.className='primary';accept.textContent='Aplicar cambios';
+    const cancel=document.createElement('button');cancel.type='button';cancel.className='now-button';cancel.textContent='Cancelar edición';
+    actions.append(accept,cancel);editor.append(actions);row.append(editor);
+    cancel.onclick=()=>{editor.remove();if(diaryPanel?.contains(row))row.querySelectorAll('button[data-diary-action]').forEach(x=>x.disabled=false);};
+    accept.onclick=()=>{
+      if(!diaryEntries?.includes(record)||diaryBusy)return;
+      for(const {key,type,el} of readFields){
+        const value=el.value.trim();
+        if(type==='number'){if(!value)delete draft[key];else draft[key]=Number(value);}
+        else if(value)draft[key]=value;else delete draft[key];
+      }
+      diaryCompleteSleepDay(draft);
+      const missing=missingWrite(draft);
+      if(missing){errors.textContent=missing;errors.hidden=false;return;}
+      if(draft.kind==='sleep'){
+        try{if(Date.parse(chileInstant(draft.endDay,draft.endTime))<=Date.parse(chileInstant(draft.day,draft.time)))throw Error('La hora de despertar debe ser posterior al inicio de sueño.');}
+        catch(err){errors.textContent=err.message;errors.hidden=false;return;}
+      }
+      // Una edición solo actualiza la propuesta, no escribe en Supabase.
+      Object.keys(record).forEach(k=>delete record[k]);Object.assign(record,draft);
+      diaryShow();
+    };
+    return editor;
+  }
+  function diaryShow(){
+    const previousPanel=diaryPanel?.isConnected?diaryPanel:null;
+    diaryDisableButtons();
+    if(!diaryEntries?.length){diaryReset();addMessage('bot','No quedan registros pendientes. No se guardará nada más.');return;}
+    diaryAwaiting=true;
+    const missing=diaryMissing();
+    const introduction=`**Gemini identificó ${diaryEntries.length} registro${diaryEntries.length===1?'':'s'}.** Revisa cada uno. Puedes guardar, editar o descartar individualmente, o guardar todos cuando estén completos.`;
+    const node=previousPanel||addMessage('bot',introduction);
+    if(previousPanel){renderAssistantMarkdown(node,introduction);messages.append(node);}
+    diaryPanel=node;
+    const group=document.createElement('div');group.className='assistant-diary-grid';node.append(group);
+    const buttons=document.createElement('div');buttons.className='assistant-write-actions';diaryButtons=buttons;
+    for(let i=0;i<diaryEntries.length;i++){
+      const d=diaryEntries[i];
+      const row=document.createElement('article');row.className='assistant-diary-item';
+      const heading=document.createElement('h4');heading.textContent=`Registro ${i+1} de ${diaryEntries.length} · ${writeTypeLabel(d)}`;row.append(heading);
+      const summary=document.createElement('div');summary.className='assistant-diary-info';
+      // writeSummary presupone todos los campos obligatorios; al faltar algo
+      // completar aquí con marcadores de pendiente sin inventar valores.
+      const view={...d,day:d.day||'Pendiente',time:d.time||'Pendiente',endDay:d.endDay||'Pendiente',endTime:d.endTime||'Pendiente'};
+      renderAssistantMarkdown(summary,writeSummary(view).replace(/^\*\*[^\n]+\*\*\n/,''));row.append(summary);
+      const issue=missingWrite(d);
+      if(issue){const warning=document.createElement('p');warning.className='assistant-diary-missing';warning.textContent='Dato pendiente: '+issue;row.append(warning);}
+      const actions=document.createElement('div');actions.className='assistant-diary-actions';
+      const save=document.createElement('button');save.type='button';save.className='primary';save.dataset.diaryAction='save';save.textContent='✓ Guardar este';save.disabled=!!issue;
+      const edit=document.createElement('button');edit.type='button';edit.className='now-button';edit.dataset.diaryAction='edit';edit.textContent='✎ Editar';
+      const discard=document.createElement('button');discard.type='button';discard.className='assistant-remove';discard.dataset.diaryAction='discard';discard.textContent='✕ Descartar';
+      actions.append(save,edit,discard);row.append(actions);group.append(row);
+      edit.onclick=()=>{
+        if(buttons!==diaryButtons||diaryBusy)return;
+        if(row.querySelector('.assistant-diary-edit'))return;
+        row.querySelectorAll('button[data-diary-action]').forEach(b=>b.disabled=true);
+        diaryEditor(row,d);
+        row.querySelector('input,textarea,select')?.focus();
+      };
+      discard.onclick=()=>{
+        if(buttons!==diaryButtons||diaryBusy)return;
+        diaryEntries=diaryEntries.filter(x=>x!==d);
+        addMessage('bot',`Registro ${i+1} (${writeTypeLabel(d)}) descartado. **No se guardó** en Supabase.`);
+        diaryShow();
+      };
+      save.onclick=async()=>{
+        if(buttons!==diaryButtons||diaryBusy||missingWrite(d))return;
+        diaryBusy=true;buttons.querySelectorAll('button').forEach(b=>b.disabled=true);save.textContent='Guardando…';
+        try{
+          writeDraft=d;await persistWriteDraft();
+          diaryEntries=diaryEntries.filter(x=>x!==d);
+          diaryShow();
+        }catch(err){addMessage('bot',`No se guardó este registro: ${err.message}`,'error');diaryShow();}
+        finally{writeDraft=null;diaryBusy=false;}
+      };
+    }
+    const allSave=document.createElement('button');allSave.type='button';allSave.className='primary';allSave.textContent='✓ Guardar todos los pendientes';allSave.disabled=!!missing;
+    const recheck=document.createElement('button');recheck.type='button';recheck.className='now-button';recheck.textContent='✎ Corregir relato por texto';
+    const cancelAll=document.createElement('button');cancelAll.type='button';cancelAll.className='now-button';cancelAll.textContent='Cancelar pendientes';
+    buttons.append(allSave,recheck,cancelAll);node.append(buttons);
+    cancelAll.onclick=()=>{
+      if(buttons!==diaryButtons||diaryBusy)return;
+      const count=diaryEntries.length;diaryDisableButtons();diaryReset();
+      addMessage('bot',`Cancelados ${count} registros pendientes. Los que ya guardaste individualmente permanecen en Supabase.`);
+    };
+    recheck.onclick=()=>{
+      if(buttons!==diaryButtons||diaryBusy)return;
+      diaryDisableButtons();addMessage('bot','Escribe la corrección. Gemini volverá a interpretar el relato completo y puede volver a proponer registros descartados; revisa los datos antes de confirmar.');question.focus();
+    };
+    allSave.onclick=async()=>{
+      if(buttons!==diaryButtons||diaryBusy||diaryMissing())return;
+      diaryBusy=true;buttons.querySelectorAll('button').forEach(b=>b.disabled=true);
+      let saved=0;
+      try{
+        for(const d of [...diaryEntries]){
+          writeDraft=d;await persistWriteDraft();saved++;
+          diaryEntries=diaryEntries.filter(x=>x!==d);
+        }
+        diaryDisableButtons();diaryReset();addMessage('bot',`✅ Guardados **${saved} registros** en Supabase.`);
+      }catch(err){
+        addMessage('bot',`Se guardaron ${saved} registros y se detuvo el proceso: ${err.message}. No se intentará duplicar los ya guardados.`, 'error');
+        diaryShow();
+      }finally{diaryBusy=false;writeDraft=null;}
+    };
+    if(missing){addMessage('bot',`Para el registro **${missing.index+1} (${writeTypeLabel(diaryEntries[missing.index])})** falta información: ${missing.question}\n\nPuedes responder aquí o pulsar «Editar» en su tarjeta. Los demás registros completos pueden guardarse individualmente.`);}
+    messages.scrollTop=messages.scrollHeight;
+  }
+  function diaryReset(){diaryDisableButtons();diaryStory='';diaryEntries=null;diaryAwaiting=false;writeDraft=null;}
+  async function diaryHandle(prompt){
+    const requested=diaryRequested(prompt);
+    const sleepPending=diaryAwaiting&&diaryEntries&&diaryEntries.length===1&&diaryEntries[0].kind==='sleep';
+    // Un diario completo jamás debe cortocircuitarse por el detector de sueño.
+    const standaloneSleep=/\b(siesta|dormi|sueno|descanse)\b/.test(norm(prompt))&&(/\b(hoy|ayer|anota|registra|desde|hasta)\b/.test(norm(prompt))||/\d{1,2}[:.]\d{2}/.test(prompt));
+    if(!requested&&!sleepPending&&!standaloneSleep)return false;
+    const t=norm(prompt);
+    if(diaryAwaiting&&/^(cancelar|cancela|olvidalo|descartar)$/i.test(t)){diaryDisableButtons();diaryReset();addMessage('bot','Cancelado. No se guardó ningún dato.');return true;}
+    if(diaryAwaiting&&/^(si|confirmo|confirmar|guardar|ok|dale)$/i.test(t)){addMessage('bot','Para guardar, usa «Guardar este» en cada tarjeta o «Guardar todos los pendientes».');return true;}
+    // Con una respuesta concreta (p. ej. «metformina», «1000 mg» o «11:00»)
+    // se completa el registro pendiente sin volver a extraer todo y perder datos.
+    // Cuando ya se aclaró el intervalo de una siesta, actualizar ese registro
+    // en lugar de mandar la frase a Gemini como una consulta estadística.
+    const sleepInterval=sleepPending?diarySleepInterval(prompt):null;
+    if(sleepInterval){
+      if(diaryAwaiting&&diaryEntries&&diaryEntries.length===1&&diaryEntries[0].kind==='sleep'){
+        const previous=diaryEntries[0];
+        const updated={...previous,...sleepInterval};
+        if(!sleepInterval.day)updated.day=previous.day||'';
+        if(!sleepInterval.endDay&&sleepInterval.endTime>sleepInterval.time)updated.endDay=updated.day||previous.endDay||'';
+        diaryEntries=[updated];
+      }else{
+        diaryDisableButtons();
+        diaryEntries=[sleepInterval];
+      }
+      diaryAwaiting=true;
+      diaryStory+=(diaryStory?'\nACLARACIÓN: ':'')+prompt;
+      diaryShow();
+      return true;
+    }
+    if(diaryAwaiting&&diaryEntries&&diaryMissing()&&diaryApplyAnswer(prompt)){
+      diaryStory+='\nACLARACIÓN: '+prompt;
+      diaryShow();return true;
+    }
+    // Si ya hay propuestas completas, una consulta normal no debe borrar
+    // el borrador; solo una instrucción explícita de corrección lo modifica.
+    const explicitRevision=/\b(corrig\w*|cambi\w*|modific\w*|rectific\w*|ajust\w*|agreg\w*|anad\w*|inclu\w*|falt\w*|la hora era|la dosis era|en vez de|en lugar de)\b/.test(t);
+    if(diaryAwaiting&&diaryEntries&&!diaryMissing()&&!explicitRevision)return false;
+    const previousEntries=diaryEntries,previousStory=diaryStory;
+    diaryDisableButtons();
+    // Para correcciones complejas Gemini puede reevaluar el relato completo.
+    diaryStory+=(diaryStory?'\nCORRECCIÓN/RESPUESTA POSTERIOR: ':'')+prompt;
+    if(diaryStory.length>6000){addMessage('bot','El relato es demasiado extenso. Divide el día en fragmentos.','error');diaryStory=previousStory;if(previousEntries?.length){diaryEntries=previousEntries;diaryShow();}else diaryReset();return true;}
+    controller=new AbortController();const stop=setTimeout(()=>controller.abort(),90000);
+    const bubble=addMessage('bot','Gemini está interpretando tu día…');
+    try{diaryEntries=await diaryInterpret(diaryStory);bubble.remove();diaryShow();}
+    catch(err){bubble.classList.add('error');bubble.textContent=err.name==='AbortError'?'Gemini tardó demasiado. Vuelve a intentarlo.':`No pude interpretar el relato: ${err.message}. No se guardó nada.`;
+      diaryStory=previousStory;
+      if(previousEntries?.length){diaryEntries=previousEntries;diaryShow();}else diaryReset();
+    }
+    finally{clearTimeout(stop);controller=null;}
+    return true;
+  }
   form.addEventListener("submit",async e=>{
     e.preventDefault();if(pending)return;
-    const prompt=question.value.trim();if(!prompt)return;
-    if(prompt.length>900){addMessage("bot","La pregunta es demasiado larga.","error");return;}
-    addMessage("user",prompt);question.value="";pending=true;send.disabled=true;send.textContent="…";
+    const choice=form.dataset.writeChoice||"";const prompt=choice?"":question.value.trim();if(!prompt&&!choice)return;
+    if(prompt.length>4000){addMessage("bot","La pregunta es demasiado larga.","error");return;}
+    if(prompt)addMessage("user",prompt);question.value="";pending=true;send.disabled=true;send.textContent="…";
+    try{if(await diaryHandle(prompt)){return;}if(await handleWrite(prompt)){return;}}catch(err){addMessage("bot",err.message,"error");return;}finally{if(pending){pending=false;send.disabled=false;send.textContent="Enviar";}}
+    pending=true;send.disabled=true;send.textContent="…";
     const pendingBubble=addMessage("bot","Pensando…");controller=new AbortController();const timer=setTimeout(()=>controller.abort(),30000);
     try{
       if(typeof getCloudIdentity!=="function")throw new Error("Todavía no está disponible la identidad familiar.");
