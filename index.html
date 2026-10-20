@@ -4379,5 +4379,58 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
   });
 })();
 </script>
+
+<!-- Integración Alexa: módulo independiente. No modifica las funciones existentes. -->
+<style id="alexa-pairing-styles">
+  #alexa-pair-button{position:fixed;right:18px;bottom:92px;z-index:49;display:flex;align-items:center;gap:8px;padding:12px 17px;background:#fff;color:#1d4ed8;border:1px solid #cbdcf8;border-radius:28px;font-weight:700;box-shadow:0 7px 22px #14294420;max-width:calc(100vw - 36px)}
+  #alexa-pair-dialog{width:min(480px,calc(100vw - 28px));max-height:90dvh;overflow:auto;border:1px solid #dce5f2;border-radius:22px;padding:25px;background:#fff;color:#182940;box-shadow:0 24px 70px #142f5140}
+  #alexa-pair-dialog::backdrop{background:#10233b99}
+  #alexa-pair-dialog .alexa-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
+  #alexa-pair-dialog .alexa-close{width:42px;height:42px;min-height:42px;border:0;background:#f1f4f9;border-radius:12px;font-size:24px}
+  #alexa-pair-dialog p{margin:12px 0;line-height:1.6}
+  #alexa-pair-code{font-size:clamp(2rem,9vw,2.9rem);font-weight:800;letter-spacing:.15em;text-align:center;overflow-wrap:anywhere;margin:20px 0;color:#1d4ed8;font-variant-numeric:tabular-nums}
+  #alexa-pair-status{min-height:24px;overflow-wrap:anywhere}
+  @media(max-width:760px){#alexa-pair-button{bottom:calc(150px + env(safe-area-inset-bottom));right:13px;padding:10px 13px;font-size:.83rem}}
+</style>
+<button id="alexa-pair-button" type="button" aria-haspopup="dialog" aria-controls="alexa-pair-dialog">🔊 Vincular Alexa</button>
+<dialog id="alexa-pair-dialog" aria-labelledby="alexa-pair-title">
+  <div class="alexa-head"><h2 id="alexa-pair-title">Vincular Control de Glucemia con Alexa</h2><button class="alexa-close" id="alexa-pair-close" type="button" aria-label="Cerrar">×</button></div>
+  <p>Genera un código de seis dígitos para vincular una cuenta Amazon con esta familia. El código vence en 10 minutos.</p>
+  <button id="alexa-pair-generate" class="primary" type="button">Generar código</button>
+  <div id="alexa-pair-code" aria-live="polite"></div>
+  <p id="alexa-pair-status" role="status"></p>
+  <p class="small muted">Utiliza el código solo en un dispositivo Alexa de confianza. No compartas tu enlace familiar.</p>
+</dialog>
+<script id="alexa-pairing-script">
+(()=>{
+  "use strict";
+  const dialog=document.getElementById("alexa-pair-dialog");
+  const open=document.getElementById("alexa-pair-button");
+  const close=document.getElementById("alexa-pair-close");
+  const generate=document.getElementById("alexa-pair-generate");
+  const code=document.getElementById("alexa-pair-code");
+  const status=document.getElementById("alexa-pair-status");
+  open.addEventListener("click",()=>dialog.showModal());
+  close.addEventListener("click",()=>dialog.close());
+  dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()});
+  generate.addEventListener("click",async()=>{
+    generate.disabled=true;code.textContent="";status.textContent="Generando código...";
+    try{
+      const params=new URLSearchParams(location.hash.replace(/^#/,""));
+      const token=params.get("family")||localStorage.getItem("control-glucemia.cloud-access.v1");
+      if(!token||!/^[0-9a-f]{64}$/.test(token))throw new Error("No hay una clave familiar válida en este navegador.");
+      const response=await fetch("https://ikbksrbvfvflgodmookv.supabase.co/functions/v1/alexa-vincular",{
+        method:"POST",headers:{"Content-Type":"application/json","x-glucose-key":token},
+        body:JSON.stringify({action:"create_code"}),cache:"no-store"
+      });
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok||!/^\d{6}$/.test(result.code||""))throw new Error(result.error||"No se pudo generar el código.");
+      code.textContent=result.code;
+      status.textContent="Código listo. Válido durante 10 minutos. Ahora podrás usarlo cuando Alexa solicite la vinculación.";
+    }catch(error){status.textContent=error.message||"Error al generar código."}
+    finally{generate.disabled=false}
+  });
+})();
+</script>
 </body>
 </html>
