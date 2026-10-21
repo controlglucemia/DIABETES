@@ -3109,6 +3109,7 @@ body.assistant-chat-open{overflow:hidden}
   <dialog id="notification-dialog" class="notification-dialog" aria-labelledby="notification-title">
     <div class="card-head"><h2 id="notification-title">🔔 Notificaciones</h2><button type="button" class="now-button" data-close-notifications aria-label="Cerrar notificaciones">Cerrar</button></div>
     <p class="small muted">Elige los avisos que quieres recibir en este dispositivo.</p>
+    <div class="alexa-notification-section"><h3>🔊 Alexa</h3><p class="small muted">Vincula tu cuenta de Alexa para registrar glucemias, comidas y medicamentos por voz.</p><button id="alexa-pair-button" type="button" aria-haspopup="dialog" aria-controls="alexa-pair-dialog">🔊 Vincular Alexa</button></div>
     <div class="push-actions"><button id="push-enable" type="button" class="primary">Activar notificaciones</button><button id="push-test" type="button" class="now-button" hidden>Enviar prueba</button><button id="push-disable" type="button" class="now-button" hidden>Desactivar en este dispositivo</button></div>
     <button id="push-retry" type="button" class="now-button" style="margin-top:12px">Reintentar conexión</button>
     <p id="push-status" class="small push-status" role="status" aria-live="polite"></p>
@@ -4382,7 +4383,10 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
 
 <!-- Integración Alexa: módulo independiente. No modifica las funciones existentes. -->
 <style id="alexa-pairing-styles">
-  #alexa-pair-button{position:fixed;right:18px;bottom:92px;z-index:49;display:flex;align-items:center;gap:8px;padding:12px 17px;background:#fff;color:#1d4ed8;border:1px solid #cbdcf8;border-radius:28px;font-weight:700;box-shadow:0 7px 22px #14294420;max-width:calc(100vw - 36px)}
+  #alexa-pair-button{position:static;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 17px;background:#edf3ff;color:#1d4ed8;border:1px solid #cbdcf8;border-radius:12px;font-weight:700;max-width:100%;min-height:44px}
+  #notification-dialog .alexa-notification-section{margin:16px 0;padding:15px;border:1px solid #dce5f2;border-radius:15px;background:#fafbfd}
+  #notification-dialog .alexa-notification-section h3{margin:0 0 6px}
+  #notification-dialog .alexa-notification-section p{margin:0 0 12px}
   #alexa-pair-dialog{width:min(480px,calc(100vw - 28px));max-height:90dvh;overflow:auto;border:1px solid #dce5f2;border-radius:22px;padding:25px;background:#fff;color:#182940;box-shadow:0 24px 70px #142f5140}
   #alexa-pair-dialog::backdrop{background:#10233b99}
   #alexa-pair-dialog .alexa-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}
@@ -4390,9 +4394,9 @@ input[type="time"]::-webkit-datetime-edit-fields-wrapper {
   #alexa-pair-dialog p{margin:12px 0;line-height:1.6}
   #alexa-pair-code{font-size:clamp(2rem,9vw,2.9rem);font-weight:800;letter-spacing:.15em;text-align:center;overflow-wrap:anywhere;margin:20px 0;color:#1d4ed8;font-variant-numeric:tabular-nums}
   #alexa-pair-status{min-height:24px;overflow-wrap:anywhere}
-  @media(max-width:760px){#alexa-pair-button{bottom:calc(150px + env(safe-area-inset-bottom));right:13px;padding:10px 13px;font-size:.83rem}}
+  @media(max-width:760px){#alexa-pair-button{width:100%;font-size:.9rem}}
 </style>
-<button id="alexa-pair-button" type="button" aria-haspopup="dialog" aria-controls="alexa-pair-dialog">🔊 Vincular Alexa</button>
+
 <dialog id="alexa-pair-dialog" aria-labelledby="alexa-pair-title">
   <div class="alexa-head"><h2 id="alexa-pair-title">Vincular Control de Glucemia con Alexa</h2><button class="alexa-close" id="alexa-pair-close" type="button" aria-label="Cerrar">×</button></div>
   <p>Genera un código de seis dígitos para vincular una cuenta Amazon con esta familia. El código vence en 10 minutos.</p>
